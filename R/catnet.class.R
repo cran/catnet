@@ -1,0 +1,265 @@
+#########################################################################
+# Categorical Network Class
+
+setClass("catNetwork",  
+         representation(
+                        objectName="character",
+                        numnodes="integer", 
+                        nodes="vector",
+                        meta="character",
+                        maxParents="integer", parents="list",  
+                        maxCategories="integer", categories="list",
+                        probabilities="list",
+                        complexity="integer",
+                        nodeComplexity="vector",
+                        likelihood="numeric",
+                        nodeLikelihood="ANY"), 
+         validity = function(object) validCatNetwork(object),
+         package = "catnet"
+	   )
+
+setGeneric("cnAddNode", 
+          function(object, node, cats, parents, prob)
+           standardGeneric("cnAddNode")
+           )
+
+setGeneric("cnNumNodes", function(object)
+           standardGeneric("cnNumNodes")
+           )
+
+# returns list of nodes
+setGeneric("cnNodes", function(object, which)
+           standardGeneric("cnNodes")
+           )
+
+## returns list of edges
+setGeneric("cnEdges", function(object, which)
+           standardGeneric("cnEdges")
+           )
+
+setGeneric("cnMatEdges", function(object)
+           standardGeneric("cnMatEdges")
+           )
+
+## returns parents sets as a list
+setGeneric("cnParents", function(object, which)
+           standardGeneric("cnParents")
+           )
+
+## returns parents sets as a matrix
+setGeneric("cnMatParents", 
+          function(object, nodeorder)
+           standardGeneric("cnMatParents")
+           )
+
+setGeneric("cnProb", function(object, which, file)
+           standardGeneric("cnProb")
+           )
+
+setGeneric("cnDot", function(object, file)
+           standardGeneric("cnDot")
+           )
+
+setGeneric("cnSamples", function(object, numsamples=1, output="frame")
+           standardGeneric("cnSamples")
+           )
+
+setGeneric("cnSamplesPert", function(object, perturbations, numsamples=1, output = "frame")
+           standardGeneric("cnSamplesPert")
+           )
+
+setGeneric("cnSetProb", function(object, data)
+           standardGeneric("cnSetProb")
+           )
+
+setGeneric("cnLoglik", function(object, data)
+           standardGeneric("cnLoglik")
+           )
+
+setGeneric("cnPredict", function(object, data)
+           standardGeneric("cnPredict")
+           )
+           
+setGeneric("cnEvaluate", function(object, data, perturbations=NULL, maxParentSet = 0, maxComplexity=0)
+           standardGeneric("cnEvaluate")
+           )
+
+setGeneric("cnComplexity", function(object, node)
+           standardGeneric("cnComplexity")
+           )
+
+## returns a graph object
+setGeneric("as.graph", function(object)
+           standardGeneric("as.graph")
+           )
+
+setGeneric("as.igraph", function(object)
+           standardGeneric("as.igraph")
+           )
+
+setGeneric("cnJointProb", 
+          function(object, ...)
+           standardGeneric("cnJointProb")
+           )
+
+setGeneric("cnJointKLdist", 
+          function(object1, object2, ...)
+           standardGeneric("cnJointKLdist")
+           )
+
+setGeneric("cnNodeMarginalProb", 
+          function(object, node)
+           standardGeneric("cnNodeMarginalProb")
+           )
+
+setGeneric("cnMarginalKLdist", 
+          function(object1, object2,...)
+           standardGeneric("cnMarginalKLdist")
+           )
+
+setGeneric("cnMarginalKLdistList", 
+          function(object1, object2list,...)
+           standardGeneric("cnMarginalKLdistList")
+           )
+
+setGeneric("cnCondKLdist", 
+          function(object1, object2, ...)
+           standardGeneric("cnCondKLdist")
+           )
+
+setGeneric("cnCompare", 
+          function(object1, object2, extended = TRUE)
+           standardGeneric("cnCompare")
+           )
+
+setGeneric("cnSubNetwork", 
+          function(object, nodeIndices, indirectEdges)
+           standardGeneric("cnSubNetwork")
+           )
+
+setGeneric("cnReorderNodes", 
+          function(object, nodeIndices)
+           standardGeneric("cnReorderNodes")
+           )
+
+setGeneric("cnOrder", 
+          function(object)
+           standardGeneric("cnOrder")
+           )
+
+# draw a graph
+setGeneric("cnPlot", 
+          function(object, file)
+           standardGeneric("cnPlot")
+           )
+
+setGeneric("cnFindAIC", function(object)
+           standardGeneric("cnFindAIC")
+           )
+
+setGeneric("cnFindBIC", function(object, numsamples)
+           standardGeneric("cnFindBIC")
+           )
+
+setGeneric("addNetworkNode", 
+          function(object, newnode, newparents, loglik, problist, nodecats, ...)
+           standardGeneric("addNetworkNode")
+           )
+
+setGeneric("replaceNetworkNode", 
+          function(object, newnode, newparents, loglik, problist, ...)
+           standardGeneric("replaceNetworkNode")
+           )
+
+setGeneric("updateNetworkNode", 
+          function(newnet, listnet, ...)
+           standardGeneric("updateNetworkNode")
+           )
+
+setGeneric("cnPearsonTest", 
+          function(object, data)
+           standardGeneric("cnPearsonTest")
+           )
+
+#########################################################################
+# Categorical Network Diagnostic Class
+
+setClass("catNetworkDistance",  
+         representation(
+                        hamm = "numeric",
+                        hammexp = "ANY",
+                        tp = "numeric",
+                        fp = "numeric",
+                        fn = "numeric",
+                        skel.tp = "numeric",
+                        skel.fp = "numeric",
+                        skel.fn = "numeric",
+                        order.fp = "ANY",
+                        order.fn = "ANY", 
+                        markov.fp = "ANY",
+                        markov.fn = "ANY",
+                        KLdist = "ANY"),
+         package = "catnet"
+	   )
+
+setClass("catNetworkEvaluate",  
+         representation(
+                        numnodes = "integer",
+                        numsamples = "integer", 
+                        nets = "list",
+                        complexity = "vector",
+                        loglik = "vector", 
+                        hamm = "vector",
+                        hammexp = "vector",
+                        tp = "numeric",
+                        fp = "vector",
+                        fn = "vector",
+                        skel.tp = "vector",
+                        skel.fp = "vector",
+                        skel.fn = "vector",
+                        order.fp = "vector",
+                        order.fn = "vector", 
+                        markov.fp = "vector",
+                        markov.fn = "vector",
+                        KLdist = "vector",
+                        time = "numeric"),
+         package = "catnet"
+	   )
+
+setGeneric("cnFind", 
+          function(object, complexity)
+           standardGeneric("cnFind")
+           )
+
+setGeneric("cnParHist", 
+          function(object)
+           standardGeneric("cnParHist")
+           )
+
+setGeneric("cnProcTime", 
+          function(object)
+           standardGeneric("cnProcTime")
+           )
+
+#########################################################################
+# Complete Partially Directed Acyclic Graphs
+
+setClass("CPDAG",  
+         representation(
+                        numnodes = "integer",
+                        nodes = "vector", 
+                        edges = "list"
+                        ),
+         package = "catnet"
+	   )
+
+setGeneric("dag2cpdag", 
+          function(object)
+           standardGeneric("dag2cpdag")
+           )
+
+#########################################################################
+# Some constants
+
+EPSDIFF <- exp(-16)
+

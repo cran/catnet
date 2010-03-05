@@ -1,0 +1,214 @@
+#########################################################################
+# import network structure from a graph object
+
+edges2catnet <- function(.Object, nodes, edges, maxcats=2, cats=NULL, probs=NULL) {
+
+  ## Nodes and Parents  
+  .Object@nodes <- nodes
+  .Object@meta <- ""
+  nn <- length(.Object@nodes)
+  .Object@numnodes <- nn
+  parents <- vector("list", nn)  
+
+  for(i in (1:nn)) {
+    nedges <- edges[[i]]
+    if(length(nedges) == 0)   
+      next
+    if(is.list(nedges))
+      nedges <- nedges[[1]]
+    if(length(nedges) == 0)   
+      next
+    for(j in (1:length(nedges))) {  
+      k <- which(.Object@nodes == nedges[j])  
+      if(length(k)==1) {  
+        if(length(parents) < k)  
+          parents[[k]] <- c(i)  
+        else  
+          parents[[k]] <- c(parents[[k]], i)  
+      }  
+      else {  
+        stop("Invalid node in edge (", i, ", ", j, ")\n")  
+      }  
+    }  
+  }
+
+  maxpars <- 0  
+  for(i in (1:length(parents))) {  
+    if(maxpars < length(parents[[i]]))  
+      maxpars <- length(parents[[i]])  
+  }  
+  .Object@maxParents <- as.integer(maxpars)    
+  .Object@parents <- parents  
+
+  ## Categories  
+  .Object@categories <- list(NULL)  
+  maxcats <- 0  
+  if(length(cats) == nn) {  
+    for(i in (1:nn)) {  
+      if(maxcats < length(cats[i]))  
+        maxcats <- length(cats[i])  
+      .Object.categories[[i]] <- cats[i]  
+    }  
+  }  
+  else{  
+    maxcats <- 2
+    for(i in (1:nn)) {  
+      .Object@categories[[i]] <- c("0","1")  
+    }  
+  }  
+  .Object@maxCategories <- as.integer(maxcats)  
+  ## Probability Matrix  
+  pp <- list(NULL)  
+  if(!is.null(probs)) {  
+    pp <- probs  
+  }  
+  else {              
+    poutlist <- NULL
+    poutlist <- lapply(seq(1,nn), function(parid, obj) {
+      setRandomProb(parid, obj@parents[[parid]], obj@categories,
+                    seq(1, length(obj@parents[[parid]])))
+    }, .Object)
+    .Object@probabilities <- poutlist
+  }
+
+  .Object@nodeComplexity <- sapply(1:.Object@numnodes, function(x) nodeComplexity(.Object, x))
+  .Object@complexity <- as.integer(sum(.Object@nodeComplexity))
+  
+  .Object@likelihood <- 0
+  .Object@nodeLikelihood <- NA
+  
+  return(.Object)  
+}
+
+# inherit catnet from graph
+graph2catnet <- function(object, graph, maxCategories=2, cats=NULL, probs=NULL) {  
+  if(!validGraph(graph))
+    stop("Not a valid graph")
+  return(edges2catnet(object, nodes(graph), edges(graph), maxCategories, cats, probs))
+}
+
+
+setRandomProbMatrixForm <- function(idroot, ppars, pcatlist, idx, poutlist) {
+  if(is.null(ppars) || length(idx) < 1) {
+    if(length(pcatlist[[idroot]]) < 2) {
+      poutlist <- c(poutlist, 1)
+      return(NULL)
+    }
+    plist <- sapply(pcatlist[[idroot]], function(x) runif(1,0.01,0.99))
+    plist <- plist/sum(plist)
+    plist <- sapply(seq(1,length(plist)), function(n, plist){
+      plist[n] <- floor(100*plist[n])/100
+      }, plist)
+    plist[1] <- 1 - sum(plist[-1])
+    return(plist)
+  }
+  else {
+    id <- ppars[idx[1]]
+    poutlist <- sapply(pcatlist[[id]],
+           function(cat, idroot1, ppars1, pcatlis1t, idx1, poutlist1)
+           setRandomProbMatrixForm(idroot1, ppars1, pcatlis1t, idx1, poutlist1),
+           idroot, ppars, pcatlist, idx[-1], poutlist)
+  }
+}
+
+
+## generate a DAG graph
+## returns a graphNEL object
+genRandomGraph <- function(numnodes, maxparents) {
+  idx <- sample(seq(1, numnodes))
+  pars <- vector("list", numnodes)
+  for(i in (2:numnodes)) {
+    npars <- floor(maxparents*runif(1,0,1) + 0.5)
+    if(npars == 0)
+      next;
+    if(npars > i-1)
+      npars <- i - 1
+    pars[[idx[i]]] <- sample(idx[1:(i-1)], npars)
+  }
+  nodes <- sapply(seq(1,numnodes), function(i) paste("N", i ,sep=""))
+  edges <- vector("list", numnodes)
+  for(i in (1:numnodes)) {
+    for(j in (1:numnodes)) {
+       if(is.null(pars[[j]]))
+         next
+       ll <- which(pars[[j]]==i)
+       if(is.na(ll[1]))
+         next
+       edges[[i]] <- c(edges[[i]], nodes[j])
+     }
+  }
+  edges<-setNames(edges, rep("edges", numnodes))
+  edgesL <- sapply(1:numnodes, function(j, edges) {
+    list(edges[j])
+  }, edges)
+  edgesL <- setNames(edgesL, nodes)
+  if(require("graph"))
+    return(try(new("graphNEL", nodes=nodes, edgeL=edgesL, edgemode="directed")))
+  else
+    return(NULL)
+}
+
+listGraphEdges <- function(object) {
+  if(!is(object, "catNetwork") || object@numnodes < 1)
+    return(NULL)
+  numnodes <- object@numnodes
+  nodes <- object@nodes
+  pars <- object@parents
+  edges <- vector("list", numnodes)
+  for(i in (1:numnodes)) {
+    for(j in (1:numnodes)) {
+      if(is.null(pars[[j]]))
+        next
+      idx <- which(pars[[j]]==i)
+      if(is.na(idx[1]))
+        next
+      edges[[i]] <- c(edges[[i]], j)
+    }
+  }
+  edges<-setNames(edges, rep("edges", numnodes))
+  edgesL <- sapply(1:numnodes, function(j, edges) {
+    list(edges[j])
+  }, edges)
+  edgesL <- setNames(edgesL, nodes)
+  return(edgesL)
+}
+
+setMethod("as.graph", "catNetwork", 
+          function(object) {
+            if(!require("graph"))
+              return(NULL)
+            numnodes <- object@numnodes
+            nodes <- as.character(object@nodes)
+            pars <- object@parents
+            edges <- vector("list", numnodes)
+            for(i in (1:numnodes)) {
+              for(j in (1:numnodes)) {
+                if(is.null(pars[[j]]))
+                  next
+                ll <- which(pars[[j]]==i)
+                if(is.na(ll[1]))
+                  next
+                edges[[i]] <- c(edges[[i]], nodes[j])
+              }
+            }
+            edges<-setNames(edges, rep("edges", numnodes))
+            edgesL <- sapply(1:numnodes, function(j, edges) {
+              list(edges[j])
+            }, edges)
+            edgesL <- setNames(edgesL, nodes)
+            if(require("graph"))
+              return(try(new("graphNEL", nodes=nodes, edgeL=edgesL, edgemode="directed")))
+            else
+              return(NULL)
+          })
+
+setMethod("as.igraph", "catNetwork", 
+          function(object) {
+            if(!require("igraph"))
+              return(NULL)
+            medges <- cnMatEdges(object)
+            if(is.null(medges))
+              return(NULL)
+            return(graph.edgelist(medges))
+          })
+

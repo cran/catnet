@@ -1,0 +1,290 @@
+%
+% NOTE -- ONLY EDIT starter.Rnw!!!
+% catnet.tex file will get overwritten.
+%
+%\VignetteIndexEntry{catnet}
+%\VignetteDepends{}
+%\VignetteKeywords{catnet}
+%\VignettePackage{catnet}
+\documentclass{article}
+
+\usepackage{hyperref}
+
+\textwidth=6.2in
+\textheight=8.5in
+%\parskip=.3cm
+\oddsidemargin=.1in
+\evensidemargin=.1in
+\headheight=-.3in
+
+\newcommand{\Rfunction}[1]{{\texttt{#1}}}
+\newcommand{\Rmethod}[1]{{\texttt{#1}}}
+
+\newcommand{\Robject}[1]{{\texttt{#1}}}
+\newcommand{\Rpackage}[1]{{\textit{#1}}}
+\newcommand{\Rclass}[1]{{\textit{#1}}}
+
+
+\newcommand{\classdef}[1]{%
+  {\em #1}
+}
+
+\begin{document}
+\title{Getting Started with Catnet Package}
+
+\author{Nikolay Balov
+}
+
+\maketitle
+
+\Rpackage{Catnet} package provides tools for learning Bayesian networks from data with focus on model selection (\cite{salzman06}).
+A Bayesian network is defined by a graphical structure in form of directed acyclic graph and a probability model given as a set of conditional distributions, one for each node in the network. 
+The package deals with networks which nodes are categorical random variables and, consequently,  discrete probability models.
+In contrast to other learning algorithms, \Rpackage{catnet}'s search functions do not output one 
+learned network but a set of networks with increasing complexity that fit the data 
+according to the MLE criterion. These optimal networks explain and represent the relations between the node-variables. The final network selection is left to the user.
+
+To demonstrate some of the features of \Rpackage{catnet} package we provide a network learning example applied on a well known in the literature network, the ALARM network. 
+ALARM is a medical diagnostic alarm message system for patients monitoring developed by Beinlich, et.all., \cite{beinlich}.
+The belief propagation network behind ALARM has 37 nodes and 46 directed edges. 
+It is potted in Figure \ref{fig:alarm}. The node variables are described in the Appendix. 
+We have available a sample of size 2000 and our goal is to reconstruct the network from that sample. 
+
+\begin{figure}
+\centering
+\includegraphics[scale=0.6]{alarmnet.pdf}
+\caption{The original ALARM network.}
+\label{fig:alarm}
+\end{figure}
+
+In order to obtain reproducible results we set a stored in advance seed value. Even with that measure however, the user may get different results. Processing time depends on the hardware and the values shown below (in seconds) are those obtained during the building of the package.
+
+<<alarm0>>=
+library(catnet)
+## set the stored random generator kind and its seed
+data(alarmseed)
+## restore the random generator's kind
+saved.rng <- RNGkind()
+RNGkind(kind="Mersenne-Twister")
+@
+
+We start with loading the data and the ground-truth network. Calling a \Robject{catnet} object by name, as below, shows a short object description that includes number of nodes, maximum number of parents per node, maximum number of categories per node, likelihood (if available) and network complexity. 
+
+<<alarm1>>=
+## load the ALARM data sample and ground-truth network
+data(alarm)
+data(alarmnet)
+alarmnet
+@
+
+We can also calculate the likelihood of the data with respect to the ground-truth network. 
+
+<<alarm2>>=
+cnLoglik(alarmnet, alarm)
+@
+Since \Rpackage{catnet} implements a Maximum Likelihood estimation, the 'true' likelihood, which is about -21387, is the value we want to get near to later in the learning process. 
+
+Now we proceed with the network learning, first assuming the node order is known and then without 
+using any prior knowledge of their order. In the latter case we use stochastic search in the space of orders. Note that this space includes all possible permutations of the 37 nodes and it is huge.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Reconstruction using the true node order}
+
+We use \Rfunction{cnEvaluate} function that performs search for the \Robject{alarmnet}'s node order, the true order, finds a list of networks with increasing complexity, from the minimal possible (37) to the complexity of original network (509), and finally, compares each of these networks to \Robject{alarmnet}. To greatly speed-up the processing \Rfunction{cnEvaluate} function is called with parameter \Robject{maxParentSet} set to 3, although the original network has one node with four parents. 
+
+A diagnostic plot shows the likelihood versus complexity, the achieved true positive directed and undirected edges, as well as the Hamming distance, which is the sum of the false positive and false negative directed edges.
+
+<<alarm2>>=
+eval <- cnEvaluate(object=alarmnet, data=alarm, perturbations=NULL, maxParentSet=3)
+eval
+cnPlot(eval)
+@
+
+The reconstructed network (\Robject{bstnet}) with complexity 509 almost perfectly matches the original ALARM network with only two edges missed (FN=2). 
+
+\begin{center}
+<<alarm3>>=
+bstnet<- cnFind(eval, cnComplexity(alarmnet))
+bstnet
+cnCompare(alarmnet, bstnet)
+@
+\end{center}
+
+Note also that the likelihood with respect to \Robject{bstnet}, about -21220, is actually larger than 
+the likelihood with respect to the ground-truth network, which was about -21387.
+
+\begin{figure}
+\centering
+\includegraphics[scale=0.6]{alarmeval.pdf}
+\caption{Evaluation results. Estimated networks according to the true node order have complexities from 37 to 509. Reported are their likelihood, the number of true positive directed and undirected edges, and the hamming distance in comparison to the ground-truth network.}
+\label{fig:alarmeval}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Learning without assumptions on the node order}
+
+In more realistic setting, we do not have any prior knowledge of how the nodes are ordered in the network explaining the data. Given the sheer vastness of the space of orders, 
+exhaustive search is prohibitive and only stochastic approach seems possible. 
+\Rpackage{Catnet}  provides \Rfunction{cnSearchSA} and \Rfunction{cnSearchSAcluster} functions that implement Metropolis algorithm with Simulated Annealing (SA). The user may consult with the manual pages for more information on the functions' parameters. By varying some key parameters such as \Robject{orderShuffles} and \Robject{stopDiff}, 
+and constructing a chain of searches such that each new search starts where the previous has ended, 
+a great variety of different searching scenaria can be realized. 
+
+To speed-up the processing, \Rfunction{cnSearchSA} is called with parameter \Robject{maxParentSet} set to 2, for allowing 3 or 4 parents per node will make the computation many times slower.
+This, of course, limits the learning performance, but it is overall a good compromise. 
+
+For the purpose of this demonstration we will perform a two-stage search in the space of orders.
+First, we begin with a greedy search by processing 100 randomly selected orders and picking up the one with the best BIC score. Of course, 100 is a rather small number and in practice much larger one is recommended. To force the function \Rfunction{cnSearchSA} to use only random orders we set \Robject{orderShuffles} parameter to 0. 
+This is equivalent to defining the neighborhood of each order to be the whole space of orders.
+This first stage of the search plays the role of warming-up for the next 'true' SA search. 
+
+<<alarm3>>=
+set.seed(alarmseed)
+sanets <- cnSearchSA(data=alarm, perturbations=NULL, 
+			maxParentSet=2, maxComplexity=600,
+			parentsPool=NULL, fixedParentsPool=NULL,
+			selectMode="BIC", 
+			tempStart=10, tempCoolFact=1, tempCheckOrders=100, maxIter=100,
+			orderShuffles=0, stopDiff=0.0000000001,
+			priorSearch=NULL)
+sanets
+sanet1 <- cnFindBIC(sanets, nrow(alarm))
+cnCompare(alarmnet, sanet1)
+sanet1@meta <- "sanet1, SA learning, stage I"
+sanet1
+@
+
+As it is seen from the results, this first stage is rather successful, 
+with \Robject{sanet1} recovering 29 true positive directed edges and 37 undirected (from the skeleton).
+In the second step, we perform another SA search but this time working with smaller neighborhoods 
+(\Robject{orderShuffles} is set to 4). 
+We also start from the order of the best previously found network, \Robject{sanet1}, thus hoping to improve its performance.
+
+\begin{figure}
+\centering
+\includegraphics[scale=1]{sanet1.pdf}
+\caption{The network with the best BIC score learned in the first stage of SA.}
+\label{fig:sanet1}
+\end{figure}
+
+<<alarm4>>=
+set.seed(alarmseed)
+sanets <- cnSearchSA(data=alarm, perturbations=NULL, 
+			maxParentSet=2, maxComplexity=600,
+			parentsPool=NULL, fixedParentsPool=NULL,
+			selectMode="BIC", 
+			tempStart=10, tempCoolFact=0.95, tempCheckOrders=16, maxIter=256,
+			orderShuffles=4, stopDiff=0.0000000001,
+			priorSearch=sanets)
+sanets
+sanet2 <- cnFindBIC(sanets, nrow(alarm))
+cnCompare(alarmnet, sanet2)
+sanet2@meta <- "sanet2, SA learning, stage II"
+sanet2
+@
+
+And indeed, this second search step brings some performance improvement- 
+in comparison to \Robject{alarmnet}, \Robject{sanet2} has 30 and 39 true positive directed and undirected edges, respectfully. 
+The best found network, according to BIC, is depicted in Figure \ref{fig:sanet2}.
+
+\begin{figure}
+\centering
+\includegraphics[scale=1]{sanet2.pdf}
+\caption{The network with the best BIC score learned in the second stage of SA.}
+\label{fig:sanet2}
+\end{figure}
+
+Finally, we demonstrate the parallel search abilities of \Rpackage{catnet}. By calling 
+\Rfunction{cnSearchSAcluster} function with parameter \Robject{clustrNodes} set to 4, we create 4 parallel processing units each performing a SA search. At the end, the best out of the 4 sets of networks is selected according to its BIC score. The final network (again selected according BIC) is depicted in Figure \ref{fig:sanet3}. This parallel processing approach is suitable on machines with quad-core processors.
+
+<<alarm7>>=
+set.seed(alarmseed)
+sacnets <- cnSearchSAcluster(data=alarm, perturbations=NULL, 
+			maxParentSet=2, maxComplexity=600,
+			parentsPool=NULL, fixedParentsPool=NULL,
+			tempStart=100, tempCoolFact=0.9, tempCheckOrders=16, maxIter=256,
+			orderShuffles=-4, stopDiff=0.00000001,
+			priorSearch=NULL,
+			clusterNodes=4)
+sacnets
+sanet3 <- cnFindBIC(sacnets, nrow(alarm))
+cnCompare(alarmnet, sanet3)
+sanet3@meta <- "sanet3, SA cluster learning"
+sanet3
+@
+
+\begin{figure}
+\centering
+\includegraphics[scale=1]{sanet3.pdf}
+\caption{The best network according to BIC learned by SA in cluster.}
+\label{fig:sanet3}
+\end{figure}
+
+At this point we end the session.
+<<alarm_end>>=
+## restore the random generator's kind
+RNGkind(kind=saved.rng[1])
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{thebibliography}{10}
+
+\bibitem{beinlich}
+Beinlich, I., Suermondth, G., Chavez, R., Cooper, G., 
+\newblock{The ALARM monitoring system.}
+\newblock{1989, In Proc. 2-nd Euro. Conf. on AI and Medicine.}
+
+\bibitem{salzman06}
+Salzman, P., Almudevar, A., 
+\newblock{Using Complexity for the Estimation of Bayesian Networks.}
+\newblock{2006, Statistical Applications in Genetics and Molecular Biology, Vol. 5, Issue 1.}
+
+\end{thebibliography}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Appendix}
+
+The ALARM network's node variables are described in the following list. 
+
+\begin{enumerate}
+\item{CVP (central venous pressure): a three-level factor with levels LOW, NORMAL and HIGH.}
+\item{PCWP (pulmonary capillary wedge pressure): a three-level factor with levels LOW, NORMAL and HIGH.}
+\item{HIST (history): a two-level factor with levels TRUE and FALSE.}
+\item{TPR (total peripheral resistance): a three-level factor with levels LOW, NORMAL and HIGH.}
+\item{BP (blood pressure): a three-level factor with levels LOW, NORMAL and HIGH.}
+\item{CO (cardiac output): a three-level factor with levels LOW, NORMAL and HIGH.}
+\item{HRBP (heart rate / blood pressure): a three-level factor with levels LOW, NORMAL and HIGH.}
+\item{HREK (heart rate measured by an EKG monitor): a three-level factor with levels LOW, NORMAL and HIGH.}
+\item{HRSA (heart rate / oxygen saturation): a three-level factor with levels LOW, NORMAL and HIGH.}
+\item{PAP (pulmonary artery pressure): a three-level factor with levels LOW, NORMAL and HIGH.}
+\item{SAO2 (arterial oxygen saturation): a three-level factor with levels LOW, NORMAL and HIGH.}
+\item{FIO2 (fraction of inspired oxygen): a two-level factor with levels LOW and NORMAL.}
+\item{PRSS (breathing pressure): a four-level factor with levels ZERO, LOW, NORMAL and HIGH.}
+\item{ECO2 (expelled CO2): a four-level factor with levels ZERO, LOW, NORMAL and HIGH.}
+\item{MINV (minimum volume): a four-level factor with levels ZERO, LOW, NORMAL and HIGH.}
+\item{MVS (minimum volume set): a three-level factor with levels LOW, NORMAL and HIGH.}
+\item{HYP (hypovolemia): a two-level factor with levels TRUE and FALSE.}
+\item{LVF (left ventricular failure): a two-level factor with levels TRUE and FALSE.}
+\item{APL (anaphylaxis): a two-level factor with levels TRUE and FALSE.}
+\item{ANES (insufficient anesthesia/analgesia): a two-level factor with levels TRUE and FALSE.}
+\item{PMB (pulmonary embolus): a two-level factor with levels TRUE and FALSE.}
+\item{INT (intubation): a three-level factor with levels NORMAL, ESOPHAGEAL and ONE SIDED.}
+\item{KINK (kinked tube): a two-level factor with levels TRUE and FALSE.}
+\item{DISC (disconnection): a two-level factor with levels TRUE and FALSE.}
+\item{LVV (left ventricular end-diastolic volume): a three-level factor with levels LOW, NORMAL and HIGH.}
+\item{STKV (stroke volume): a three-level factor with levels LOW, NORMAL and HIGH.}
+\item{CCHL (catecholamine): a two-level factor with levels NORMAL and HIGH.}
+\item{ERLO (error low output): a two-level factor with levels TRUE and FALSE.}
+\item{HR (heart rate): a three-level factor with levels LOW, NORMAL and HIGH.}
+\item{ERCA (electrocauter): a two-level factor with levels TRUE and FALSE.}
+\item{SHNT (shunt): a two-level factor with levels NORMAL and HIGH.}
+\item{PVS (pulmonary venous oxygen saturation): a three-level factor with levels LOW, NORMAL and HIGH.}
+\item{ACO2 (arterial CO2): a three-level factor with levels LOW, NORMAL and HIGH.}
+\item{VALV (pulmonary alveoli ventilation): a four-level factor with levels ZERO, LOW, NORMAL and HIGH.}
+\item{VLNG (lung ventilation): a four-level factor with levels ZERO, LOW, NORMAL and HIGH.}
+\item{VTUB (ventilation tube): a four-level factor with levels ZERO, LOW, NORMAL and HIGH.}
+\item{VMCH (ventilation machine): a four-level factor with levels ZERO, LOW, NORMAL and HIGH.}
+\end{enumerate}
+
+\end{document}
+

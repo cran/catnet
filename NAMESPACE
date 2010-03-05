@@ -1,0 +1,38 @@
+
+importClassesFrom(methods, ANY, character, list, logical, matrix,
+                  missing, "NULL", numeric, oldClass, vector)
+importMethodsFrom(methods, coerce, initialize, show)
+importFrom(methods, "@<-", as, callGeneric, is, isVirtualClass, new,
+           slot, "slot<-", slotNames, validObject)
+importFrom(stats, as.dist, dhyper, phyper, runif)
+importFrom(tools, package.dependencies)
+importFrom(utils, CRAN.packages, modifyList)
+
+exportClasses(catNetwork, catNetworkEvaluate, catNetworkDistance, CPDAG)
+
+useDynLib(catnet)
+
+exportMethods(
+	cnNumNodes, cnNodes, 
+	cnSubNetwork, cnReorderNodes, 
+	cnEdges, cnMatEdges, 
+	cnParents, cnMatParents, 		
+	cnProb, cnSetProb, cnNodeMarginalProb, 
+	cnComplexity, cnOrder, 
+	cnPlot, cnDot,
+	cnSamples, cnSamplesPert, 
+	cnLoglik, 
+	cnFind, cnFindAIC, cnFindBIC, 
+	cnEvaluate, cnPredict, 
+	cnCompare, 
+	cnParHist, 
+	as.graph, as.igraph)
+
+export(
+	cnNew, cnRandomCatnet, cnCatnetFromGraph, cnCatnetFromSif, cnCatnetFromEdges, 
+	isDAG, dag2cpdag, 
+	cnNodeLoglik, cnPearsonTest, 
+	cnDiscretize, 
+	cnSearchOrder, cnSearchSA, cnSearchSAcluster,
+	cnSearchHist, cnSearchHistCluster)
+
