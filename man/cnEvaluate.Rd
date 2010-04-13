@@ -9,15 +9,16 @@ the function returns a list of networks, 'compatible' with the given network,
 that best fit the data and compare them.}
 
 \usage{
-cnEvaluate(object, data, perturbations=NULL, maxParentSet=0, maxComplexity=0)
+cnEvaluate(object, data, perturbations=NULL, maxParentSet=0, maxComplexity=0, echo=FALSE)
 }
 
 \arguments{
 \item{object}{a \code{catNetwork}}
 \item{data}{a \code{matrix} in row-nodes format or a \code{data.frame} in column-nodes format}
-\item{perturbations}{a binary \code{matrix} with the dimensions of \code{data}. A value of 1 marks the corresponding node in the \code{data} as perturbed. See \code{\link{cnSamplesPert}} for more details.}
+\item{perturbations}{a binary \code{matrix} with the dimensions of \code{data}. A value of 1 marks the corresponding node in the \code{data} as perturbed. See \code{\link{cnSamples}} for more details.}
 \item{maxParentSet}{an integer, the maximal allowed parents per node for the search}
 \item{maxComplexity}{an integer, the maximal network complexity for the search}
+\item{echo}{a \code{logical} that sets on/off some functional progress and debug information}
 }
 
 \value{A \code{catNetworkEvaluate} object.}
@@ -50,12 +51,12 @@ and finally, selecting a smaller network from this list.
   psamples <- cnSamples(object=cnet, numsamples=20, output="matrix")
   perturbations <- matrix(rep(0, length(psamples)), nrow = nrow(psamples))
   nets <- cnEvaluate(object=cnet, data=psamples, perturbations, 
-	maxParentSet =2, maxComplexity=36)
+	maxParentSet =2, maxComplexity=36, echo=TRUE)
   nets
   cnPlot(nets)
 }
 
-\seealso{,\code{\link{catNetworkEvaluate-class}}, \code{\link{cnSearchOrder}} }
+\seealso{\code{\link{cnSamples}},\code{\link{catNetworkEvaluate-class}}, \code{\link{cnSearchOrder}} }
 
 \keyword{methods}
 \keyword{graphs}

@@ -286,9 +286,9 @@ for(i = 0; i < g_pcache[nlookup]->nPool; i++) {
 
 SEXP RCatnetSearch::estimateCatnets(SEXP rSamples, SEXP rPerturbations, 
                        SEXP rMaxParents, SEXP rMaxComplexity, SEXP rOrder,
-                       SEXP rParentsPool, SEXP rFixedParentsPool, SEXP rUseCache) {
+                       SEXP rParentsPool, SEXP rFixedParentsPool, SEXP rUseCache, SEXP rEcho) {
 
-	int i, j, k, len, maxComplexity, numnets, inet;
+	int i, j, k, len, maxComplexity, numnets, inet, echo;
  	int *pRsamples, *pRperturbations, *pSamples, *pPerturbations, **parentsPool, **fixedParentsPool, *pPool;
 
 	RCatnet rcatnet;
@@ -305,6 +305,10 @@ SEXP RCatnetSearch::estimateCatnets(SEXP rSamples, SEXP rPerturbations,
 	PROTECT(rUseCache = AS_LOGICAL(rUseCache));
 	m_bUseCache = LOGICAL(rUseCache)[0];
 	//printf("bUseCache = %d\n", m_bUseCache);
+	UNPROTECT(1);
+
+	PROTECT(rEcho = AS_LOGICAL(rEcho));
+	echo = LOGICAL(rEcho)[0];
 	UNPROTECT(1);
 
 	dim = GET_DIM(rSamples);
@@ -332,7 +336,7 @@ SEXP RCatnetSearch::estimateCatnets(SEXP rSamples, SEXP rPerturbations,
 	m_pRorderInverse = (int*)CATNET_MALLOC(m_numNodes*sizeof(int));
 
 	if(length(rOrder) < m_numNodes) {
-		warning("Invalid nodeOrder parameter. Reset to default node order");
+		warning("Invalid nodeOrder parameter - reset to default node order.");
 		for(i = 0; i < m_numNodes; i++)
 			m_pRorder[i] = i + 1;
 	}
@@ -438,7 +442,7 @@ for(i = 0; i < m_numNodes; i++) {
 
 	UNPROTECT(4);
 
-	estimate(m_numNodes, m_numSamples, pSamples, pPerturbations, m_maxParentSet, maxComplexity, parentsPool, fixedParentsPool);
+	estimate(m_numNodes, m_numSamples, pSamples, pPerturbations, m_maxParentSet, maxComplexity, parentsPool, fixedParentsPool, echo);
 
 	if(pSamples)
 		CATNET_FREE(pSamples);

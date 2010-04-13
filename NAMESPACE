@@ -20,7 +20,7 @@ exportMethods(
 	cnProb, cnSetProb, cnNodeMarginalProb, 
 	cnComplexity, cnOrder, 
 	cnPlot, cnDot,
-	cnSamples, cnSamplesPert, 
+	cnSamples, 
 	cnLoglik, 
 	cnFind, cnFindAIC, cnFindBIC, 
 	cnEvaluate, cnPredict, 

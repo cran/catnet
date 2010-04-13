@@ -12,5 +12,6 @@
   else {
     Sys.setenv(R_CATNET_USE_IGRAPH=FALSE)
   }
+  set.seed(02081969)
 }
 

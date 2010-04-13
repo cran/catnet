@@ -145,7 +145,7 @@ public:
 	/* Each parentsPool[i] is numnodes long ! */
 	int estimate(int numnodes, int numsamples, int *psamples, int *perturbations, 
                int maxParentSet, int maxComplexity,    
-               int **parentsPool, int **fixedParentsPool) {
+               int **parentsPool, int **fixedParentsPool, int becho) {
 
 		int i, j, k, d, ncomb, ncombMaxLogLik, nnode;
 		int maxCategories, numsubsamples, complx;
@@ -296,6 +296,11 @@ public:
 		/* main loop of consequential non-empty-parenthood-node additions */
 		for(nnode = 1; nnode < numnodes; nnode++) {
 
+			if(becho) {
+				printf("processing node %d\n", nnode+1);
+				printf("    [#parents][#combinations] = ");
+			}
+
 			fixparsetsize = 0;
 			parsetsize = 0;
 			for(j = 0; j < nnode; j++) {
@@ -362,6 +367,9 @@ public:
 						}
 					}
 			
+					if(becho)
+						printf("[%d]%d  ", d, ncomblist);
+
 					fMaxLogLik = -FLT_MAX;
 					ncombMaxLogLik = -1;
 					probMaxNode.reset();
@@ -437,8 +445,10 @@ public:
 					}
 				} /* for k */
 
-        
 			} /* for d */
+
+			if(becho)
+				printf("\n");
 
 			for(j = 0; j < m_nCatnets; j++) {
 				if(m_pCatnets[j]) {

@@ -28,8 +28,7 @@
 \examples{
   cnet <- cnRandomCatnet(numnodes=10, maxParents=2, numCategories=2)
   psamples <- cnSamples(object=cnet, numsamples=100)
-  netlist <- cnEvaluate(object=cnet, data=psamples, 
-		perturbations=matrix(rep(0,10*100), nrow=10))
+  netlist <- cnEvaluate(object=cnet, data=psamples)
   bnet <- cnFind(object=netlist, complexity=cnComplexity(cnet))
   bnet
 }

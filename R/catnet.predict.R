@@ -1,18 +1,17 @@
-
 #########################################################################
 # Categorical Network Class Methods
 # Prediction
 
-nodePredict <- function(idroot, ppars, pcatlist, idx, problist, psample) {
+nodePredict <- function(idroot, ppars, idx, problist, psample) {
   if(is.null(ppars) || length(idx) < 1) {
     idcat <- which(problist == max(problist))
     ##cat(problist, ", ", idcat, "\n")
     if(length(idcat) < 1)
 	  stop("Probability list is broken")
     if(length(idcat) > 1) {
-	##warning("remi")
-	idcat <- idcat[1]
-	}
+      ##warning("remi")
+      idcat <- idcat[1]
+    }
     return(idcat)
   }
   idnode <- ppars[idx[1]]
@@ -22,7 +21,7 @@ nodePredict <- function(idroot, ppars, pcatlist, idx, problist, psample) {
   ##cat(idnode, ": ", cat, "\n")
   if(is.na(cat))
     stop("Insufficient sample")
-  return(nodePredict(idroot, ppars, pcatlist, idx[-1], problist[[cat]], psample))
+  return(nodePredict(idroot, ppars, idx[-1], problist[[cat]], psample))
 }
 
 samplePredict <- function(object, data) {
@@ -40,9 +39,10 @@ samplePredict <- function(object, data) {
       nnode <- nodeOrder[i]
       if(!is.na(ps[nnode]))
         next
-      ps[nnode] <- nodePredict(nnode, object@parents[[nnode]], object@categories,
+      ps[nnode] <- nodePredict(nnode, object@parents[[nnode]],
                                seq(1,length(object@parents[[nnode]])), object@probabilities[[nnode]], ps)
     }
+    
     data[,j] <- ps
   }
   return(data)
@@ -54,9 +54,11 @@ setMethod("cnPredict", c("catNetwork"),
 
             if(!is.matrix(data) && !is.data.frame(data))
               stop("data should be a matrix or data frame of node categories")
-
-	    if(is.data.frame(data))
+            asframe <- FALSE
+	    if(is.data.frame(data)) {
 	      data <- as.matrix(t(data))
+              asframe <- TRUE
+            }
 
             if(length(dim(data)) == 2 && dim(data)[1] != object@numnodes)
 	      stop("the number of nodes in 'object' and 'data' should be equal")
@@ -77,19 +79,41 @@ setMethod("cnPredict", c("catNetwork"),
               stop("The row names should correspond to the object nodes.")
 
             for(i in 1:dim(data)[1]) {
-              for(j in 1:dim(data)[2]) {
-                if(is.na(data[i,j]))
-                  next
-                if(is.numeric(data[i,j]))
-                  c <- as.integer(data[i,j])
-                else
+
+              noderow <- data[i, !is.na(data[i,])]
+              if(length(noderow) > 0 && is.integer(noderow) &&
+                 min(noderow) >= 1 &&
+                 max(noderow) <= length(object@categories[[i]])) {
+                for(j in 1:length(data[i,])) {
+                  if(is.na(data[i,j]))
+                    next
+                  data[i,j] <- as.integer(data[i,j])
+                }
+              }
+              else {                
+                for(j in 1:length(data[i,])) {
+                  if(is.na(data[i,j]))
+                    next                  
                   c <- which(object@categories[[i]] == data[i,j])
-                if(length(c) < 1 || c < 1 || c > length(object@categories[[i]]))
-                  stop("Sample data should be either indices or categorical values.")
-                data[i,j] <- c
+                  if(length(c) < 1 || c < 1 || c > length(object@categories[[i]]))
+                    stop("Sample data should be either indices or categorical values.")
+                  
+                  data[i,j] <- c
+                }
               }
             }
-            
-            samplePredict(object, data)
+
+            newdata <- samplePredict(object, data)
+
+            for(j in (1:dim(data)[2])) {
+              ps <- as.integer(newdata[,j])
+              for(i in 1:dim(data)[1])
+                ps[i] <- object@categories[[i]][as.integer(ps[i])]
+              newdata[,j] <- ps
+            }
+
+            if(asframe)
+              return(as.data.frame(t(newdata)))
+            return(newdata)
           })
 

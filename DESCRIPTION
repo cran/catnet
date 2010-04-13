@@ -1,6 +1,6 @@
 Package: catnet
-Title: catnet: Categorical Bayesian Network Inference
-Version: 1.00.0
+Title: Categorical Bayesian Network Inference
+Version: 1.02.0
 Author: Nikolay Balov, Peter Salzman
 Description: A package that handles discrete Bayesian network models
         and provides inference using the frequentist approach
@@ -13,8 +13,9 @@ Suggests: igraph, graph, snow
 Collate: catnet.class.R catnet.def.R graph2catnet.R catnet.dags.R
         catnet.probs.R catnet.joint.prob.R catnet.marginal.prob.R
         catnet.samples.R catnet.infer.R catnet.dist.R catnet.find.R
-        catnet.search.R catnet.predict.R catnet.chisq.R zzz.R
+        catnet.search.R catnet.predict.R catnet.chisq.R
+        catnet.class2search.R zzz.R
 LazyLoad: yes
 Repository: CRAN
-Date/Publication: 2010-03-08 10:34:48
-Packaged: 2010-03-05 16:14:51 UTC; root
+Date/Publication: 2010-04-13 16:23:47
+Packaged: 2010-04-13 14:59:22 UTC; root

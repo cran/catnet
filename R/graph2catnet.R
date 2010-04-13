@@ -64,10 +64,10 @@ edges2catnet <- function(.Object, nodes, edges, maxcats=2, cats=NULL, probs=NULL
   }  
   else {              
     poutlist <- NULL
-    poutlist <- lapply(seq(1,nn), function(parid, obj) {
-      setRandomProb(parid, obj@parents[[parid]], obj@categories,
-                    seq(1, length(obj@parents[[parid]])))
-    }, .Object)
+    poutlist <- lapply(seq(1,nn), function(parid) {
+      setRandomProb(parid, .Object@parents[[parid]], .Object@categories,
+                    seq(1, length(.Object@parents[[parid]])))
+    })
     .Object@probabilities <- poutlist
   }
 

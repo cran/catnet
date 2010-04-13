@@ -30,7 +30,7 @@ It is a procedure of fitting a network to data by keeping the graph structure un
 \examples{
   library(catnet)
   cnet <- cnRandomCatnet(numnodes=10, maxParents=3, numCategories=3)
-  psamples <- matrix(1+rbinom(10*100, 2, 0.4), nrow=10)
+  psamples <- matrix(as.integer(1+rbinom(10*100, 2, 0.4)), nrow=10)
   rownames(psamples) <- cnet@nodes
   newcnet <- cnSetProb(object=cnet, data=psamples)
 }

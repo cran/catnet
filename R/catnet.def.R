@@ -85,7 +85,7 @@ cnCatnetFromSif <- function(file, numCategories = 2) {
   return(object) 
 } 
  
-cnNew <- function(nodes, cats, parents, probs = 0) {              
+cnNew <- function(nodes, cats, parents, probs = NULL) {
  
   if(length(nodes) < 1) 
     stop("At least 1 node is needed") 
@@ -99,8 +99,14 @@ cnNew <- function(nodes, cats, parents, probs = 0) {
   maxCategories <- 0 
   for(cat in cats) if(!is.null(cat) && maxCategories < length(cat)) maxCategories <- length(cat) 
  
-  maxParents <- 0 
-  for(par in parents) if(!is.null(par) && maxParents < length(par)) maxParents <- length(par) 
+  maxParents <- 0
+  i <- 1
+  for(par in parents) {
+    if(!is.null(par) && maxParents < length(par))
+      maxParents <- length(par)
+    parents[[i]] <- as.integer(par)
+    i <- i + 1
+  }
  
   object <- new("catNetwork", length(nodes), maxParents, maxCategories) 
   object@nodes <- nodes 
@@ -110,10 +116,18 @@ cnNew <- function(nodes, cats, parents, probs = 0) {
     if(length(nodes) != length(probs)) 
       stop("Incompatible probability list") 
     object@probabilities <- probs 
-  } 
-  else 
-    object@probabilities <- vector("list", length(nodes)) 
- 
+  }
+  else {
+    object@probabilities <-
+      lapply(seq(1, object@numnodes), function(parid) {
+        if(length(object@parents[[parid]]) > 0)
+          setRandomProb(parid, object@parents[[parid]], object@categories,
+                      seq(1, length(object@parents[[parid]])))
+        else
+          setRandomProb(parid, object@parents[[parid]], object@categories, NULL)
+      })
+  }
+  
   if(!validCatNetwork(object, TRUE)) 
     stop("Incompatible parameters") 
    
@@ -396,7 +410,7 @@ setMethod("cnOrder", "list",
 	}) 
  
 setMethod("cnDot", "catNetwork", function(object, file="") { 
-  if(length(object@meta)>1) 
+  if(length(object@meta)>0) 
     str <- sprintf("\"%s, \\nComplexity %d, \\nLogLikelihood %5.3f\"[shape=plaintext]", 
                    as.character(object@meta), object@complexity, object@likelihood) 
   else 
@@ -479,7 +493,7 @@ setMethod("cnDot", "list", function(object, file="") {
     ## get the full path to the file 
     file <- paste(getwd(), "/", file, sep="") 
  
-    write(str, file=paste(file,".dot",sep="")) 
+    write(liststr, file=paste(file,".dot",sep="")) 
  
     dotviewer <- as.character(Sys.getenv("R_DOTVIEWER")) 
     if(dotviewer != "") { 
@@ -745,7 +759,7 @@ function(object, nodeIndices, indirectEdges = FALSE) {
     if(maxParents < length(parents[[j]])) 
       maxParents <- length(parents[[j]]) 
     if(maxCategories < length(categories[[j]])) 
-      maxCategories <- length(categories[[j]]) 
+      maxCategories <- length(categories[[j]])
   } 
    
   newnet <- new("catNetwork", numnodes, as.integer(maxParents), as.integer(maxCategories)) 
@@ -756,7 +770,10 @@ function(object, nodeIndices, indirectEdges = FALSE) {
     setDefaultProb(parid, parents[[parid]], categories, 1:length(obj@parents[[parid]])) 
   }, newnet) 
   newnet@probabilities <- problist 
-   
+  
+  pc <- sapply(1:newnet@numnodes, function(x) nodeComplexity(newnet, x)) 
+  newnet@complexity <- as.integer(sum(pc))
+      
   return(newnet) 
 }) 
  

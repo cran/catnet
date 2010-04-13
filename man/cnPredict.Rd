@@ -15,11 +15,10 @@ cnPredict(object, data)
 \item{data}{a data \code{matrix} or \code{data.frame}}
 }
 
-\details{If the \code{data} is a matrix of categorical values then the rows should represent the network nodes. Otherwise, the columns represent the nodes. 
-Indices are integers that range from 1 to the number of categories of the corresponding node. 
-
+\details{\code{Data} should be a matrix or data frame of categorical values or indices. If it is a matrix then the rows should represent \code{object}'s nodes; otherwise, the columns represent the nodes. \code{Data}'s values represent \code{object}'s categories either as characters or indices. 
+Indices should be integers in the range from 1 to the number of categories of the corresponding node. 
 Prediction is made for those data nodes that are marked as not-available (\code{NA}) and is based 
-on maximum probability criterion, thus the categorical value with the maximum probability is assigned.
+on maximum probability criterion. For each data instance, the nodes are traversed in their topological order in \code{object} and the categorical values with the maximum probability are assigned.
 }
 
 \value{An updated sample matrix}
@@ -29,7 +28,7 @@ on maximum probability criterion, thus the categorical value with the maximum pr
 \examples{
   cnet <- cnRandomCatnet(numnodes=10, maxParents=3, numCategories=3)
   ## generate a sample of size 2 and set nodes 8, 9 and 10 as not-available
-  psamples <- matrix(1+rbinom(10*2, 2, 0.4), nrow=10)
+  psamples <- matrix(as.integer(1+rbinom(10*2, 2, 0.4)), nrow=10)
   psamples[8, ] <- rep(NA, 2)
   psamples[9, ] <- rep(NA, 2)
   psamples[10, ] <- rep(NA, 2)

@@ -3,38 +3,43 @@
 # Categorical Network Class Methods
 # Random Sampling
 
-setMethod("cnSamples", c("catNetwork"),   
-	function(object, numsamples=1, output="frame") {
-	  if(!is.numeric(numsamples) && !is.integer(numsamples))
-            stop("numsamples should be integer")
-	  numsamples <- as.integer(numsamples)
-	  data <- sapply(1:numsamples, function(x) genRandomCats(object))
-	  data <- matrix(data, ncol=numsamples)
-          for(i in 1:object@numnodes) {
-            cats <- object@categories[[i]]
-            for(j in 1:numsamples) {
-              data[i, j] <- cats[as.integer(data[i,j])]
-            }
-          }
-	  rownames(data)<-object@nodes
-	  if(!missing(output) && output=="matrix")
-            return(data)
-          return(as.data.frame(t(data)))
-	})
+##setMethod("cnSamples", c("catNetwork"),   
+##	function(object, numsamples=1, output="frame", as.index=FALSE) {
+##	  if(!is.numeric(numsamples) && !is.integer(numsamples))
+##            stop("The number of samples should be integer")
+##	  numsamples <- as.integer(numsamples)
+##	  data <- sapply(1:numsamples, function(x) genRandomCats(object))
+##	  data <- matrix(data, ncol=numsamples)
+##          if(!as.index) {
+##            for(i in 1:object@numnodes) {
+##              cats <- object@categories[[i]]
+##              for(j in 1:numsamples) {
+##                data[i, j] <- cats[as.integer(data[i,j])]
+##              }
+##            }
+##          }
+##	  rownames(data)<-object@nodes
+##	  if(!missing(output) && output=="matrix")
+##            return(data)
+##          return(as.data.frame(t(data)))
+##	})
 
-setMethod("cnSamplesPert", c("catNetwork"),
-	function(object, perturbations, numsamples=1, output="frame") {
+setMethod("cnSamples", c("catNetwork"),
+	function(object, numsamples=1, perturbations=NULL, output="frame", as.index=FALSE) {
 	  if(!is.numeric(numsamples) && !is.integer(numsamples))
-            stop("numsamples should be integer")
+            stop("The number of samples should be integer")
 	  numsamples <- as.integer(numsamples)
-          if(is.null(perturbations))
-            stop("A perturbation matrix has to be specified")
-	  data <- sapply(1:numsamples, function(x) x<-genRandomCatsPert(object, perturbations))
+          if(!is.null(perturbations) && is.vector(perturbations))
+            data <- sapply(1:numsamples, function(x) x<-genRandomCatsPert(object, perturbations))
+          else
+            data <- sapply(1:numsamples, function(x) genRandomCats(object))
 	  data <- matrix(data, ncol=numsamples)
-          for(i in 1:object@numnodes) {
-            cats <- object@categories[[i]]
-            for(j in 1:numsamples) {
-              data[i, j] <- cats[as.integer(data[i,j])]
+          if(!as.index) {
+            for(i in 1:object@numnodes) {
+              cats <- object@categories[[i]]
+              for(j in 1:numsamples) {
+                data[i, j] <- cats[as.integer(data[i,j])]
+              }
             }
           }
 	  rownames(data)<-object@nodes
@@ -419,15 +424,13 @@ sampleLikelihood <- function(object, data) {
 
 
 setMethod("cnLoglik", c("catNetwork"), 
-          function(object, data) {
+          function(object, data, bysample=FALSE) {
 
             if(!is.matrix(data) && !is.data.frame(data))
               stop("'data' should be a matrix or data frame of categories")
 
-            r <- .categorizeSample(data, NULL, object)
-            data <- r$data
-            object@categories <- r$categories
-            object@maxCategories <- r$maxCategories
+            if(is.data.frame(data))
+              data <- as.matrix(t(data))
 
             if(length(dim(data)) == 2 && dim(data)[1] != object@numnodes)
               stop("The number of nodes in  the object and data should be equal")
@@ -438,7 +441,8 @@ setMethod("cnLoglik", c("catNetwork"),
             
             if(prod(tolower(rownames) == tolower(object@nodes)) == 0) {
               norder <- order(rownames)
-              data <- data[norder,]
+              ## keep thematrix format !!
+              data <- as.matrix(data[norder,])
               rownames <- rownames(data)
               norder <- order(object@nodes)
               object <- cnReorderNodes(object, norder)
@@ -446,6 +450,11 @@ setMethod("cnLoglik", c("catNetwork"),
             
             if(prod(tolower(rownames) == tolower(object@nodes)) == 0)
               stop("The row names should correspond to the object nodes.")
+
+            r <- .categorizeSample(data, NULL, object, ask=FALSE)
+            data <- r$data
+            if(object@maxCategories < r$maxCategories)
+              stop("Data has more categories than the object")
             
             ##if(missing(fast) || is.null(fast)) 
             fast <- TRUE
@@ -457,7 +466,9 @@ setMethod("cnLoglik", c("catNetwork"),
               loglik <- .Call("ccnLoglik", 
                               object, data, NULL, 
                               PACKAGE="catnet")
-              return(loglik)
+              if(bysample)
+                return(loglik)
+              return(sum(loglik))
             }
             else
               return(sampleLikelihood(object, data))

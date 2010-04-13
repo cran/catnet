@@ -96,8 +96,9 @@ setMethod("updateNetworkNode", "catNetwork",
             return(listnet)
           })
 
-.categorizeSample <- function(data, perturbations, object = NULL) {
-
+.categorizeSample <- function(data, perturbations = NULL, object = NULL, ask=TRUE) {
+  ## make sure data and object's nodes are the same
+  
   if(is.matrix(data)) {
     numnodes <- nrow(data)
     numsamples <- ncol(data)
@@ -107,52 +108,69 @@ setMethod("updateNetworkNode", "catNetwork",
     if(is.numeric(data)) {
       data <- matrix(as.integer(data), nrow=dim(data)[1])
     }
-    
+
     maxCategories <- 1
     categories <- vector("list", numnodes)
     for(i in 1:numnodes) {
-      cats <- NULL
-      for(c in data[i,]) {
-        if(is.na(c))
-          next
-        if(sum(cats==c)==0)
-          cats <- c(cats,c)
+
+      if(is.null(object)) {
+        cats <- NULL
+        for(c in data[i,]) {
+          if(is.na(c))
+            next
+          if(sum(cats==c)==0)
+            cats <- c(cats,c)
+        }
+        
+        if(!is.null(cats))
+          cats <- sort(cats)
       }
-      ## include a dummy
-      if(length(cats) <= 1)
-        cats <- c(cats, -1)
-      cats <- sort(cats)
+      else {
+        cats <- object@categories[[i]]
+      }
+    
       categories[[i]] <- cats
+      
       if(maxCategories < length(cats))
         maxCategories <- length(cats)
-      
-      for(j in 1:numsamples) {
-        c <- which(cats == data[i,j])
-        data[i,j] <- c
+
+      lencat <- length(cats)
+      if(is.integer(data[i,])) {
+        for(j in 1:numsamples) {
+          c <- as.integer(data[i,j])
+          if(is.na(c)) {
+            data[i,j] <- NA
+            next
+          }
+          if(c <= lencat)
+            data[i,j] <- c
+          else
+            stop("Wrong category in node ", i, ", sample ", j)
+        }
       }
+      else {
+        for(j in 1:numsamples) {
+          c <- data[i,j]
+          if(is.na(c)) {
+            data[i,j] <- NA
+            next
+          }
+          c <- which(cats == c)
+          if(length(c) == 1)
+            data[i,j] <- c
+          else
+            stop("Wrong category in node ", i, ", sample ", j)
+        }
+      }
+      
     }
 
     data <- matrix(as.integer(data), nrow=numnodes)
     dimnames(data) <- samplenames
 
-    if(!is.null(object) && object@numnodes == numnodes) {
-      ## make sure data and object's nodes have the same order
-      rnames <- rownames(data)
-      tsamp <- data
-      if(!is.null(rnames)) {
-        for(nnode in 1:object@numnodes) {
-          i <- which(object@nodes == rnames[nnode])
-          if(length(i) == 1) {
-            if(nnode != i)
-              data[i,] <- tsamp[nnode,]
-          }
-          else
-            stop("Object's nodes and sample nodes are different")
-        }
-        data <- matrix(as.integer(data), nrow=numnodes)
-        rownames(data) <- object@nodes
-      }
-    }
+    if(!is.null(perturbations) && !is.matrix(perturbations))
+      stop("Perturbations should be a matrix")
+    
   } ## is.matrix
   else {
     ## data is data.frame format
@@ -165,52 +183,84 @@ setMethod("updateNetworkNode", "catNetwork",
     maxCategories <- 1
     categories <- vector("list", numnodes)
     for(i in 1:numnodes) {
-      cats <- levels(fdata[,i])
-      lencat <- length(cats)
-      if(lencat > 0) {
-        data[i,] <- as.integer(fdata[,i])
+
+      if(is.null(object)) {
+        cats <- levels(fdata[,i])
+        lencat <- length(cats)
+        if(lencat > 0) {
+          data[i,] <- as.integer(fdata[,i])
+        }
+        else {
+          cats <- NULL
+          for(c in fdata[,i]) {
+            if(is.na(c))
+              next
+            if(sum(cats==c)==0)
+              cats <- c(cats,c)
+          }
+          if(!is.null(cats))
+            cats <- sort(cats)
+        }
       }
       else {
-        cats <- NULL
-        for(c in fdata[,i]) {
-          if(is.na(c))
-            next
-          if(sum(cats==c)==0)
-          cats <- c(cats,c)
-        }
-        cats <- sort(cats)
-        lencat <- length(cats)
+        cats <- object@categories[[i]]
+      }
+      
+      lencat <- length(cats)
+      if(is.integer(fdata[,i])) {
         for(j in 1:numsamples) {
-          c <- which(cats == fdata[j,i])
-          if(length(c) == 1)
+          c <- as.integer(fdata[j,i])
+          if(is.na(c)) {
+            data[i,j] <- NA
+            next
+          }
+          if(c <= lencat)
             data[i,j] <- c
+          else
+            stop("Wrong category in node ", i, ", sample ", j)
         }
       }
+      else {
+        for(j in 1:numsamples) {
+          c <- fdata[j,i]
+          if(is.na(c)) {
+            data[i,j] <- NA
+            next
+          }
+          c <- which(cats == c)
+          if(length(c) == 1)
+            data[i,j] <- c
+          else
+            stop("Wrong category in node ", i, ", sample ", j)
+        }
+      }
+
       categories[[i]] <- cats
-      
+
       if(maxCategories < lencat)
         maxCategories <- lencat
-      
-    }
+    } ## i
 
     rownames(data) <- colnames(fdata)
     colnames(data) <- rownames(fdata)
+
+    if(!is.null(perturbations)) {
+      if(!is.data.frame(perturbations))
+        stop("Perturbations should be a data frame")
+      perturbations <- as.matrix(t(perturbations))
+    }
   }
 
   if(length(rownames(data)) < numnodes)
     rownames(data) <- 1:numnodes
-
-  if(!is.null(perturbations) && !is.matrix(perturbations)) {
-    perturbations <- as.matrix(t(perturbations))
-  }
-
-  if(maxCategories*maxCategories > numsamples) {
-    cat("The small sample. Continue? ('y' or 'n')\n")
+  
+  if(ask && maxCategories*maxCategories > numsamples) {
+    cat("The sample is small. Continue? ('y' or 'n')\n")
     if(scan("", what="character", nmax=1, quiet=TRUE) != "y" ) 
       stop("Operation canceled")
   }
 
-  if(maxCategories > 16) {
+  if(ask && maxCategories > 16) {
     cat("The data seems to have too many categories. The operation can be very long and memory consuming. Continue? ('y' or 'n')\n")
     if(scan("", what="character", nmax=1, quiet=TRUE) != "y" ) 
       stop("Operation canceled")
@@ -275,7 +325,7 @@ optimalNetsForOrder <- function(
     bestnets <- .Call("ccnOptimalNetsForOrder", 
                       data, perturbations, 
                       maxParentSet, maxComplexity, nodeOrder,
-                      parentsPool, fixedParentsPool, useCache, 
+                      parentsPool, fixedParentsPool, useCache, echo, 
                       PACKAGE="catnet")
     if(length(nodenames) == numnodes && length(bestnets) > 0) {
       for(i in 1:length(bestnets))
@@ -485,13 +535,14 @@ findOptimalNetworks <- function(object, data, perturbations = NULL, maxParentSet
     stop(paste("No enough samples. At least ", object@maxCategories," has to be given.\n"))   
 
   t1 <- proc.time()
-  if(echo) {
-    cat("Proc time: ", t1,"\n")  
-  }
 
   nodidx <- cnOrder(object)
   ## reorder the nodes so object can be compared later
   object <- cnReorderNodes(object, nodidx)
+
+  if(echo) {
+    cat("estimating networks ...\n")
+  }
 
   bestnets <- optimalNetsForOrder(data, perturbations,
                                   object@categories, object@maxCategories,
@@ -499,6 +550,12 @@ findOptimalNetworks <- function(object, data, perturbations = NULL, maxParentSet
                                   parentsPool = NULL, fixedParentsPool = NULL, 
                                   fast, echo, useCache=FALSE)
 
+  if(echo) {
+    cat("comparing networks ...\n")
+  }
+  
+  out <- findNetworkDistances(object, numsamples, bestnets, extended = FALSE)
+  
   t2 <- proc.time()
   if(echo) {
     cat("Proc time: ", t2,"\n")
@@ -506,8 +563,6 @@ findOptimalNetworks <- function(object, data, perturbations = NULL, maxParentSet
     secs <- t2[1]-t1[1] - 60*mins
     cat("Time elapsed: ", mins, "min, ", secs, "sec\n")
   }
-  
-  out <- findNetworkDistances(object, numsamples, bestnets, extended = FALSE)
 
   out@time <- t2[1] - t1[1]
 
@@ -515,11 +570,11 @@ findOptimalNetworks <- function(object, data, perturbations = NULL, maxParentSet
 }
 
 setMethod("cnEvaluate", c("catNetwork"), 
-          function(object, data, perturbations = NULL, maxParentSet = 0, maxComplexity = 0) {
+          function(object, data, perturbations = NULL, maxParentSet = 0, maxComplexity = 0, echo=FALSE) {
 
 	    if(!is.matrix(data) && !is.data.frame(data))
               stop("data should be a matrix or data frame of node categories")
 
-            return(findOptimalNetworks(object, data, perturbations, maxParentSet, maxComplexity, fast = TRUE, echo = FALSE))
+            return(findOptimalNetworks(object, data, perturbations, maxParentSet, maxComplexity, fast = TRUE, echo))
             })
 

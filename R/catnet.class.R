@@ -1,4 +1,4 @@
-#########################################################################
+########################################################################
 # Categorical Network Class
 
 setClass("catNetwork",  
@@ -60,19 +60,19 @@ setGeneric("cnDot", function(object, file)
            standardGeneric("cnDot")
            )
 
-setGeneric("cnSamples", function(object, numsamples=1, output="frame")
+setGeneric("cnSamples", function(object, numsamples=1, perturbations=NULL, output="frame", as.index=FALSE)
            standardGeneric("cnSamples")
            )
 
-setGeneric("cnSamplesPert", function(object, perturbations, numsamples=1, output = "frame")
-           standardGeneric("cnSamplesPert")
-           )
+##setGeneric("cnSamplesPert", function(object, perturbations, numsamples=1, output = "frame", as.index=FALSE)
+##           standardGeneric("cnSamplesPert")
+##           )
 
 setGeneric("cnSetProb", function(object, data)
            standardGeneric("cnSetProb")
            )
 
-setGeneric("cnLoglik", function(object, data)
+setGeneric("cnLoglik", function(object, data, bysample=FALSE)
            standardGeneric("cnLoglik")
            )
 
@@ -80,7 +80,7 @@ setGeneric("cnPredict", function(object, data)
            standardGeneric("cnPredict")
            )
            
-setGeneric("cnEvaluate", function(object, data, perturbations=NULL, maxParentSet = 0, maxComplexity=0)
+setGeneric("cnEvaluate", function(object, data, perturbations=NULL, maxParentSet = 0, maxComplexity=0, echo=FALSE)
            standardGeneric("cnEvaluate")
            )
 
@@ -133,7 +133,7 @@ setGeneric("cnCompare",
            )
 
 setGeneric("cnSubNetwork", 
-          function(object, nodeIndices, indirectEdges)
+          function(object, nodeIndices, indirectEdges = FALSE)
            standardGeneric("cnSubNetwork")
            )
 

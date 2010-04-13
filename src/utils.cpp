@@ -12,17 +12,27 @@ extern size_t g_memcounter;
 void * CATNET_MALLOC(size_t nsize) { 
 	if(nsize <= 0)
 		return 0;
-	return malloc(nsize);
-	/*g_memcounter += nsize;
-	char str[128];
-	sprintf(str, "+%d    %d\n", (int)nsize, (int)g_memcounter);
-	printf(str);
-	void *pMem = malloc(sizeof(int) + nsize);
-	if(pMem) {
-		*(int*)pMem = nsize;
-		pMem = (void*)((int*)pMem + 1);
+	void *pMem;
+	pMem = malloc(nsize);
+	if(!pMem) {
+		error("Insufficient memory");
+		return 0;
 	}
-	return pMem;*/
+	return pMem;
+	// memmonitor
+	g_memcounter += nsize;
+	pMem = malloc(sizeof(int) + nsize);
+	if(!pMem) {
+		error("Insufficient memory");
+		return 0;
+	}
+	*(int*)pMem = nsize;
+	pMem = (void*)((int*)pMem + 1);
+	//char str[128];
+	//sprintf(str, "+%d    %d        %p\n", (int)nsize, (int)g_memcounter, pMem);
+	//fprintf(g_hf,str);
+	//printf(str);
+	return pMem;
 }
 
 void CATNET_FREE(void *pMem) {
@@ -30,12 +40,17 @@ void CATNET_FREE(void *pMem) {
 		return;
 	free(pMem);
 	return;
-	/*pMem = (void*)((int*)pMem-1);
+	// memmonitor
+	pMem = (void*)((int*)pMem-1);
 	size_t nsize = *((int*)pMem);
 	g_memcounter -= nsize;
-	char str[128];
-	sprintf(str, "-%d    %d\n", (int)nsize, (int)g_memcounter);
-	printf(str);
-	free(pMem);*/
+	//char str[128];
+	//sprintf(str, "-%d    %d\n", (int)nsize, (int)g_memcounter);
+	//printf(str);
+	free(pMem);
 }
 
+void CATNET_MEM_ERR() {
+	// generate R-errorx
+	error("Insufficient memory");
+}

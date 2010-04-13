@@ -6,7 +6,7 @@
 \description{Creates a new \code{catNetwork} with specified nodes, categories, parent sets and probability structure.}
 
 \usage{
-cnNew(nodes, cats, parents, probs=0)
+cnNew(nodes, cats, parents, probs=NULL)
 }
 
 \arguments{

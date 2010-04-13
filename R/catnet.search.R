@@ -1,4 +1,4 @@
-#########################################################################
+########################################################################
 # Categorical Network Class Methods
 # Searching
 
@@ -102,7 +102,8 @@ cnDiscretize <- function(data, numCategories) {
 cnSearchOrder <- function(data, perturbations = NULL,
                           maxParentSet = 2, maxComplexity = 0,
                           nodeOrder = NULL,  
-                          parentsPool = NULL, fixedParentsPool = NULL, echo = FALSE) {
+                          parentsPool = NULL, fixedParentsPool = NULL, 
+                          echo = FALSE) {
 
   if(!is.matrix(data) && !is.data.frame(data))
     stop("data should be a matrix or data frame")
@@ -135,7 +136,7 @@ cnSearchOrder <- function(data, perturbations = NULL,
     maxComplexity <- as.integer(numnodes * exp(log(maxCategories)*maxParentSet) * (maxCategories-1))
   minComplexity <- sum(sapply(categories, function(cat) (length(cat)-1)))
   if(maxComplexity < minComplexity) {
-    warning("set maxComplexity to ", minComplexity)
+    cat("set maxComplexity to ", minComplexity, "\n")
     maxComplexity <- minComplexity
   }
   
@@ -163,14 +164,14 @@ cnSearchOrder <- function(data, perturbations = NULL,
     bestnets <- .Call("ccnOptimalNetsForOrder", 
                       data, perturbations, 
                       maxParentSet, maxComplexity, nodeOrder,
-                      parentsPool, fixedParentsPool, FALSE, 
+                      parentsPool, fixedParentsPool, FALSE, echo, 
                       PACKAGE="catnet")
     if(length(nodenames) == numnodes && length(bestnets) > 0) {
-      for(i in 1:length(bestnets))
+      for(i in 1:length(bestnets)) {
         if(is.null(bestnets[[i]]))
           stop("Failed to find a network")
-        else
-          bestnets[[i]]@nodes <- nodenames[nodeOrder]
+        bestnets[[i]]@nodes <- nodenames[nodeOrder]
+      }
     }
   }
   
@@ -178,9 +179,9 @@ cnSearchOrder <- function(data, perturbations = NULL,
 
   eval@nets <- bestnets
   for(i in 1:length(bestnets)) {
-    bnet <- eval@nets[[i]]
-    eval@complexity[i] <- bnet@complexity
-    eval@loglik[i] <- bnet@likelihood
+    eval@complexity[i] <- bestnets[[i]]@complexity
+    eval@loglik[i] <- bestnets[[i]]@likelihood
+    eval@nets[[i]]@categories <- categories[nodeOrder]
   }
 
   t2 <- proc.time()
@@ -463,6 +464,12 @@ cnSearchSA <- function(data, perturbations, maxParentSet, maxComplexity = 0,
                     maxIter, orderShuffles, stopDiff,
                     fast=TRUE, echo,
                     saved.seed)
+
+  for(i in 1:length(eval@nets)) {
+    if(is.null(eval@nets[[i]]))
+      next
+    eval@nets[[i]]@categories <- categories
+  }
   
   return(eval)
 }
@@ -637,6 +644,12 @@ cnSearchSAcluster <- function(data, perturbations,
 
   stopCluster(cl)
 
+  for(i in 1:length(maxeval@nets)) {
+    if(is.null(maxeval@nets[[i]]))
+      next
+    maxeval@nets[[i]]@categories <- categories
+  }
+  
   t2 <- proc.time()
   maxeval@time <- t2[3] - t1[3]
   
