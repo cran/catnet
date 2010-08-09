@@ -1,4 +1,23 @@
 /*
+ *  catnet : categorical Bayesian network inference
+ *  Copyright (C) 2009--2010  Nikolay Balov
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, a copy is available at
+ *  http://www.gnu.org/licenses/gpl-2.0.html
+ */
+
+/*
  * rcatnet.cpp
  *
  *  Created on: Sep 21, 2009
@@ -157,8 +176,9 @@ SEXP RCatnet::genRcatnet(const char * objectName = (const char*)"catNetwork") {
 
 	PROTECT(strnames = allocVector(STRSXP, m_numNodes));
 	for(node = 0; node < m_numNodes; node++) {
-		if(m_nodeNames && m_nodeNames[node])
+		if(m_nodeNames && m_nodeNames[node]) {
 			SET_STRING_ELT(strnames, node, mkChar(m_nodeNames[node]));
+		}
 		else {
 			sprintf(str, "N%d", node+1);
 			SET_STRING_ELT(strnames, node, mkChar(str));
@@ -212,6 +232,8 @@ SEXP RCatnet::genRcatnet(const char * objectName = (const char*)"catNetwork") {
 				sprintf(str, "C%d", i+1);
 			SET_STRING_ELT(pcats, i, mkChar(str));
 		}
+//if(node >= m_numNodes-1)
+//printf("node %s = %d\n", m_nodeNames[node], m_numCategories[node]);
 		SET_VECTOR_ELT(plist, node, pcats);
 		UNPROTECT(1);
 	}

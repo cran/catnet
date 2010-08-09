@@ -304,39 +304,6 @@ labelEdges <- function(object) {
   return(label)
 }
 
-parHisto <- function(objectlist, norder = NULL) {
-  n <- objectlist[[1]]@numnodes
-  if(is.null(norder))
-    norder <- seq(1, n)
-  
-  i <- 1
-  nnets <- length(objectlist)
-  for(object in objectlist) {
-    if(!is(object, "catNetwork"))
-      next
-    if(object@numnodes != n)
-      stop("Networks should have the same number of nodes.")
-    mpar <- matParents(object, norder)
-    if(i==1)
-      mhisto <- mpar
-    else
-      mhisto <- mhisto + mpar
-
-    i <- i + 1
-  }
- 
-  return(mhisto)
-}
-          
-##setMethod("cnParHist", "list", 
-##          function(objectlist) {
-##            if(!is(objectlist, "list"))
-##              stop("A list of catNetworks should be specified.")
-##            if(length(objectlist)==0 || !is(objectlist[[1]], "catNetwork"))
-##              stop("At least one catNetworks should be specified.")
-##            return(parHisto(objectlist))
-##          })
-
 setMethod("dag2cpdag", "catNetwork",   
 	function(object) {
           labels <- labelEdges(object)

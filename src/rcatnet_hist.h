@@ -18,17 +18,16 @@
  */
 
 /*
- * rcatnet.h
+ * rcatnet_hist.h
  *
  *  Created on: Sep 21, 2009
  *      Author: nbalov
  */
 
-#ifndef RCATNET_SEARCH_H
-#define RCATNET_SEARCH_H
+#ifndef RCATNET_SEARCH_HIST_H
+#define RCATNET_SEARCH_HIST_H
 
 #include "catnet_search.h"
-#include "catnet_search2.h"
 
 #include <R.h>
 #include <Rmath.h>
@@ -36,21 +35,31 @@
 
 #define MAX_NODE_NAME	16
 
-class RCatnetSearch : public CATNET_SEARCH2<char, MAX_NODE_NAME, double> {
+class RCatnetSearchHist {
 protected:
-	int m_maxParentSet, *m_pRorder, *m_pRorderInverse;
+	int m_nDrives;
+	CATNET_SEARCH<char, MAX_NODE_NAME, double> **m_pDrives;
+	int m_numNodes, m_numSamples, m_maxParentSet;
 	int m_bUseCache;
-public:
-	SEARCH_PARAMETERS *m_pSearchParams;
+
+	int **m_pTestOrder, **m_pTestOrderInverse;
+
+	void _release();
+	int *_genOrder(const int *porder, int norder, int shuffles, int bjump);
 
 public:
-	RCatnetSearch();
-	~RCatnetSearch();
+	SEARCH_PARAMETERS **m_pSearchParams;
 
-	SEXP estimateCatnets(SEXP rSamples, SEXP rPerturbations,
-                       SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, SEXP rOrder,
-                       SEXP rParentsPool, SEXP rFixedParentsPool, SEXP rMatEdgeLiks, SEXP rUseCache, SEXP rEcho);
+public:
+	RCatnetSearchHist();
+	~RCatnetSearchHist();
+
+	SEXP search(SEXP rSamples, SEXP rPerturbations, 
+			SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, 
+			SEXP rParentsPool, SEXP rFixedParentsPool, 
+			SEXP rModel, SEXP rMaxIter,
+			SEXP rThreads, SEXP rUseCache, SEXP rEcho);
 
 };
 
-#endif /* RCATNET_SEARCH_H */
+#endif /* RCATNET_SEARCH_HIST_H */

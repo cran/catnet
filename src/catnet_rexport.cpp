@@ -1,4 +1,23 @@
 /*
+ *  catnet : categorical Bayesian network inference
+ *  Copyright (C) 2009--2010  Nikolay Balov
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, a copy is available at
+ *  http://www.gnu.org/licenses/gpl-2.0.html
+ */
+
+/*
  * rcatnet.cpp
  *
  *  Created on: Sep 21, 2009
@@ -6,10 +25,10 @@
  */
 
 #include "utils.h"
-#include "catnet_class.h"
 #include "rcatnet.h"
 #include "rcatnet_search.h"
-#include "rcatnet_class2search.h"
+#include "rcatnet_sa.h"
+#include "rcatnet_hist.h"
 
 extern "C" {
 
@@ -255,11 +274,9 @@ SEXP showCatnet(SEXP cnet)
 }
 
 SEXP catnetOptimalNetsForOrder(SEXP rSamples, SEXP rPerturbations, 
-                              SEXP rMaxParents, SEXP rMaxComplexity, SEXP rOrder, 
-                              SEXP rParentsPool, SEXP rFixedParentsPool, SEXP rUseCache, SEXP rEcho) {
-
-  //clock_t lt = clock();
-  //printf("Call estimateCatnets %ld\n", lt);
+                              SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, SEXP rOrder, 
+                              SEXP rParentsPool, SEXP rFixedParentsPool, SEXP rMatEdgeLiks, 
+                              SEXP rUseCache, SEXP rEcho) {
 
 	//if(!isMatrix(rSamples))
 	//	error("Data is not a matrix");
@@ -267,6 +284,8 @@ SEXP catnetOptimalNetsForOrder(SEXP rSamples, SEXP rPerturbations,
 		error("Perturbations should be a matrix");
 	if(!isInteger(AS_INTEGER(rMaxParents)))
 		error("maxParents should be an integer");
+	if(!isNull(rParentSizes) && !isVector(rParentSizes))
+		error("ParentSizes should be a vector");
 	if(!isInteger(AS_INTEGER(rMaxComplexity)))
 		error("maxComplexity should be an integer");
 	if(!isVector(rOrder))
@@ -275,6 +294,8 @@ SEXP catnetOptimalNetsForOrder(SEXP rSamples, SEXP rPerturbations,
 		error("ParentsPool should be a list");
 	if(!isNull(rFixedParentsPool) && !isVector(rFixedParentsPool))
 		error("FixedParentsPool should be a list");
+	if(!isNull(rMatEdgeLiks) && !isMatrix(rMatEdgeLiks))
+		error("rMatEdgeLiks should be a matrix");
 	if(!isNull(rUseCache) && !isLogical(rUseCache))
 		error("UseCache should be logical");
 	if(!isNull(rEcho) && !isLogical(rEcho))
@@ -282,12 +303,12 @@ SEXP catnetOptimalNetsForOrder(SEXP rSamples, SEXP rPerturbations,
 
 	RCatnetSearch * pengine = new RCatnetSearch;
 	SEXP res = pengine -> estimateCatnets(rSamples, rPerturbations, 
-						rMaxParents, rMaxComplexity, rOrder, 
-	                                        rParentsPool, rFixedParentsPool, rUseCache, rEcho);
+						rMaxParents, rParentSizes, 
+						rMaxComplexity, rOrder, 
+				                rParentsPool, rFixedParentsPool, rMatEdgeLiks, 
+						rUseCache, rEcho);
 	delete pengine;
 
-	//lt = clock();
-	//printf("Exit estimateCatnets %ld\n", lt);
 	//char str[128];
 	//sprintf(str, "Mem Balance  %d\n", (int)g_memcounter);
 	//printf(str);
@@ -295,37 +316,103 @@ SEXP catnetOptimalNetsForOrder(SEXP rSamples, SEXP rPerturbations,
 	return res;
 }
 
-SEXP catnetOptimalClass2NetsForOrder(SEXP rSamples1, SEXP rPerturbations1,
-				SEXP rSamples2, SEXP rPerturbations2,
-				SEXP rMaxParents, SEXP rMaxComplexity, SEXP rOrder,
-				SEXP rParentsPool, SEXP rFixedParentsPool, SEXP rUseCache, SEXP rEcho) {
+SEXP catnetOptimalNetsSA(SEXP rNodeNames, SEXP rSamples, SEXP rPerturbations, 
+			SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, 
+			SEXP rParentsPool, SEXP rFixedParentsPool, SEXP rMatEdgeLiks, 
+			SEXP rModel, SEXP rStartOrder,
+			SEXP rTempStart, SEXP rTempCoolFact, SEXP rTempCheckOrders, 
+			SEXP rMaxIter, SEXP rOrderShuffles, SEXP rStopDiff, 
+			SEXP rThreads, SEXP rUseCache, SEXP rEcho) {
 
 	//if(!isMatrix(rSamples))
 	//	error("Data is not a matrix");
-	if(!isNull(rPerturbations1) && !isMatrix(rPerturbations1))
-		error("Perturbations should be a matrix");
-	if(!isNull(rPerturbations2) && !isMatrix(rPerturbations2))
+	if(!isNull(rPerturbations) && !isMatrix(rPerturbations))
 		error("Perturbations should be a matrix");
 	if(!isInteger(AS_INTEGER(rMaxParents)))
 		error("maxParents should be an integer");
+	if(!isNull(rParentSizes) && !isVector(rParentSizes))
+		error("ParentSizes should be a vector");
 	if(!isInteger(AS_INTEGER(rMaxComplexity)))
 		error("maxComplexity should be an integer");
-	if(!isVector(rOrder))
-		error("Order should be a vector");
+	if(!isVector(rStartOrder))
+		error("startOrder should be a vector");
 	if(!isNull(rParentsPool) && !isVector(rParentsPool))
 		error("ParentsPool should be a list");
 	if(!isNull(rFixedParentsPool) && !isVector(rFixedParentsPool))
 		error("FixedParentsPool should be a list");
+	if(!isNull(rMatEdgeLiks) && !isMatrix(rMatEdgeLiks))
+		error("rMatEdgeLiks should be a matrix");
+	if(!isNumeric(AS_NUMERIC(rTempStart)))
+		error("tempStart should be numerical");
+	if(!isNumeric(AS_NUMERIC(rTempCoolFact)))
+		error("coolFact should be numerical");
+	if(!isNumeric(AS_NUMERIC(rTempCheckOrders)))
+		error("tempCheckOrders should be numerical");
+	if(!isInteger(AS_INTEGER(rMaxIter)))
+		error("maxIter should be an integer");
+	if(!isNumeric(AS_NUMERIC(rStopDiff)))
+		error("stopDiff should be numerical");
+	if(!isNumeric(AS_NUMERIC(rOrderShuffles)))
+		error("orderShuffles should be numerical");
+	if(!isInteger(AS_INTEGER(rThreads)))
+		error("Threads should be an integer");
 	if(!isNull(rUseCache) && !isLogical(rUseCache))
 		error("UseCache should be logical");
 	if(!isNull(rEcho) && !isLogical(rEcho))
 		error("Echo should be logical");
 
-	RCatnetClass2Search * pengine = new RCatnetClass2Search;
-	SEXP res = pengine -> estimateCatnets(rSamples1, rPerturbations1, 
-						rSamples2, rPerturbations2, 
-						rMaxParents, rMaxComplexity, rOrder, 
-	                                        rParentsPool, rFixedParentsPool, rUseCache, rEcho);
+	RCatnetSearchSA * pengine = new RCatnetSearchSA;
+	SEXP res = pengine -> search(rNodeNames, rSamples, rPerturbations, 
+			rMaxParents, rParentSizes, rMaxComplexity, 
+			rParentsPool, rFixedParentsPool, rMatEdgeLiks,  
+			rModel, rStartOrder,
+			rTempStart, rTempCoolFact, rTempCheckOrders, 
+			rMaxIter, rOrderShuffles, rStopDiff, 
+			rThreads, rUseCache, rEcho);
+	delete pengine;
+
+	//char str[128];
+	//sprintf(str, "Mem Balance %d\n", (int)g_memcounter);
+	//printf(str);
+
+	return res;
+}
+
+SEXP catnetParHistogram(SEXP rSamples, SEXP rPerturbations, 
+			SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, 
+			SEXP rParentsPool, SEXP rFixedParentsPool, 
+			SEXP rModel, SEXP rMaxIter,
+			SEXP rThreads, SEXP rUseCache, SEXP rEcho)
+{
+	//if(!isMatrix(rSamples))
+	//	error("Data is not a matrix");
+	if(!isNull(rPerturbations) && !isMatrix(rPerturbations))
+		error("Perturbations should be a matrix");
+	if(!isInteger(AS_INTEGER(rMaxParents)))
+		error("maxParents should be an integer");
+	if(!isNull(rParentSizes) && !isVector(rParentSizes))
+		error("ParentSizes should be a vector");
+	if(!isInteger(AS_INTEGER(rMaxComplexity)))
+		error("maxComplexity should be an integer");
+	if(!isNull(rParentsPool) && !isVector(rParentsPool))
+		error("ParentsPool should be a list");
+	if(!isNull(rFixedParentsPool) && !isVector(rFixedParentsPool))
+		error("FixedParentsPool should be a list");
+	if(!isInteger(AS_INTEGER(rMaxIter)))
+		error("maxIter should be an integer");
+	if(!isInteger(AS_INTEGER(rThreads)))
+		error("Threads should be an integer");
+	if(!isNull(rUseCache) && !isLogical(rUseCache))
+		error("UseCache should be logical");
+	if(!isNull(rEcho) && !isLogical(rEcho))
+		error("Echo should be logical");
+
+	RCatnetSearchHist * pengine = new RCatnetSearchHist;
+	SEXP res = pengine -> search(rSamples, rPerturbations, 
+			rMaxParents, rParentSizes, rMaxComplexity, 
+			rParentsPool, rFixedParentsPool, 
+			rModel, rMaxIter, 
+			rThreads, rUseCache, rEcho);
 	delete pengine;
 
 	//char str[128];
@@ -473,5 +560,136 @@ SEXP catnetLoglik(SEXP cnet, SEXP rSamples, SEXP rPerturbations) {
 	return rvec;
 
 }
+
+SEXP catnetNodeLoglik(SEXP cnet, SEXP rNode, SEXP rSamples, SEXP rPerturbations) {
+
+	int *pSamples, *pPerturbations;
+	int numsamples, numnodes, j, nnode;
+	double floglik, *pvec;
+	SEXP dim, rvec = R_NilValue;
+
+	if(!isMatrix(rSamples))
+		error("Data is not a matrix");
+	if(!isNull(rPerturbations) && !isMatrix(rPerturbations))
+		error("Perturbations is not a vector");
+	if(!isInteger(AS_INTEGER(rNode)))
+		error("Node should be an integer");
+
+	////////////////////////////////////////
+	// Danger Ahead
+	// We don's check that sample nodes actually correspond to the cnet's nodes
+	// Missmatch of categories possible
+
+	PROTECT(cnet);
+	RCatnet *rnet = new RCatnet(cnet);
+	UNPROTECT(1);
+
+	PROTECT(rNode = AS_INTEGER(rNode));
+	nnode = INTEGER_POINTER(rNode)[0];
+	UNPROTECT(1);
+
+	PROTECT(rSamples = AS_INTEGER(rSamples));
+	pSamples = INTEGER(rSamples);
+
+	dim = GET_DIM(rSamples);
+	numnodes = INTEGER(dim)[0];
+	numsamples = INTEGER(dim)[1];
+
+	// pSamples are assumed positive indices
+	for(j = 0; j < numnodes*numsamples; j++) {
+		pSamples[j]--;
+	}
+	nnode--;
+
+	pPerturbations = 0;
+	if(!isNull(rPerturbations)) {
+		PROTECT(rPerturbations = AS_INTEGER(rPerturbations));
+		pPerturbations = INTEGER(rPerturbations);
+		UNPROTECT(1);
+	}
+
+	floglik = rnet->sampleNodeLoglik(nnode, pSamples, numsamples);
+
+	UNPROTECT(1);
+
+	delete rnet;
+
+	if(floglik) {
+		PROTECT(rvec = NEW_NUMERIC(1));
+		pvec = NUMERIC_POINTER(rvec);
+		pvec[0] =  floglik;
+		UNPROTECT(1);
+	}
+
+	return rvec;
+
+}
+
+SEXP catnetNodeLoglikError(SEXP cnet, SEXP rNode, SEXP rSamples, SEXP rPerturbations) {
+
+	int *pSamples, *pPerturbations;
+	int numsamples, numnodes, j, nnode, nerrors;
+	double *floglik, *pvec;
+	SEXP dim, rvec = R_NilValue;
+
+	if(!isMatrix(rSamples))
+		error("Data is not a matrix");
+	if(!isNull(rPerturbations) && !isMatrix(rPerturbations))
+		error("Perturbations is not a vector");
+	if(!isInteger(AS_INTEGER(rNode)))
+		error("Node should be an integer");
+
+	////////////////////////////////////////
+	// Danger Ahead
+	// We don's check that sample nodes actually correspond to the cnet's nodes
+	// Missmatch of categories possible
+
+	PROTECT(cnet);
+	RCatnet *rnet = new RCatnet(cnet);
+	UNPROTECT(1);
+
+	PROTECT(rNode = AS_INTEGER(rNode));
+	nnode = INTEGER_POINTER(rNode)[0];
+	UNPROTECT(1);
+
+	PROTECT(rSamples = AS_INTEGER(rSamples));
+	pSamples = INTEGER(rSamples);
+
+	dim = GET_DIM(rSamples);
+	numnodes = INTEGER(dim)[0];
+	numsamples = INTEGER(dim)[1];
+
+	// pSamples are assumed positive indices
+	for(j = 0; j < numnodes*numsamples; j++) {
+		pSamples[j]--;
+	}
+	nnode--;
+
+	pPerturbations = 0;
+	if(!isNull(rPerturbations)) {
+		PROTECT(rPerturbations = AS_INTEGER(rPerturbations));
+		pPerturbations = INTEGER(rPerturbations);
+		UNPROTECT(1);
+	}
+
+	nerrors = 0;
+	floglik = rnet->findNodeSampleProbError(nnode, pSamples, numsamples, nerrors);
+
+	UNPROTECT(1);
+
+	delete rnet;
+
+	if(floglik) {
+		PROTECT(rvec = NEW_NUMERIC(nerrors));
+		pvec = NUMERIC_POINTER(rvec);
+		for(j = 0; j < nerrors; j++)
+			pvec[j] =  floglik[j];
+		UNPROTECT(1);
+	}
+
+	return rvec;
+
+}
+
 
 } // extern "C"

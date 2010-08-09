@@ -52,11 +52,11 @@ setGeneric("cnMatParents",
            standardGeneric("cnMatParents")
            )
 
-setGeneric("cnProb", function(object, which, file)
+setGeneric("cnProb", function(object, which)
            standardGeneric("cnProb")
            )
 
-setGeneric("cnDot", function(object, file)
+setGeneric("cnDot", function(object, file=NULL, format="ps")
            standardGeneric("cnDot")
            )
 
@@ -64,16 +64,20 @@ setGeneric("cnSamples", function(object, numsamples=1, perturbations=NULL, outpu
            standardGeneric("cnSamples")
            )
 
-##setGeneric("cnSamplesPert", function(object, perturbations, numsamples=1, output = "frame", as.index=FALSE)
-##           standardGeneric("cnSamplesPert")
-##           )
-
 setGeneric("cnSetProb", function(object, data)
            standardGeneric("cnSetProb")
            )
 
 setGeneric("cnLoglik", function(object, data, bysample=FALSE)
            standardGeneric("cnLoglik")
+           )
+
+setGeneric("cnNodeLoglik", function(object, node, data, perturbations=NULL)
+           standardGeneric("cnNodeLoglik")
+           )
+
+setGeneric("cnNodeLoglikError", function(object, node, data, perturbations=NULL)
+           standardGeneric("cnNodeLoglikError")
            )
 
 setGeneric("cnPredict", function(object, data)
@@ -147,9 +151,14 @@ setGeneric("cnOrder",
            standardGeneric("cnOrder")
            )
 
+setGeneric("cnCluster", 
+          function(object)
+           standardGeneric("cnCluster")
+           )
+
 # draw a graph
 setGeneric("cnPlot", 
-          function(object, file)
+          function(object, file=NULL)
            standardGeneric("cnPlot")
            )
 
@@ -191,6 +200,9 @@ setClass("catNetworkDistance",
                         tp = "numeric",
                         fp = "numeric",
                         fn = "numeric",
+                        sp = "numeric",
+                        sn = "numeric",
+                        fscore = "numeric",
                         skel.tp = "numeric",
                         skel.fp = "numeric",
                         skel.fn = "numeric",
@@ -211,9 +223,12 @@ setClass("catNetworkEvaluate",
                         loglik = "vector", 
                         hamm = "vector",
                         hammexp = "vector",
-                        tp = "numeric",
+                        tp = "vector",
                         fp = "vector",
                         fn = "vector",
+                        sp = "vector",
+                        sn = "vector",
+                        fscore = "vector",
                         skel.tp = "vector",
                         skel.fp = "vector",
                         skel.fn = "vector",

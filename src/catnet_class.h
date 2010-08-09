@@ -1,4 +1,23 @@
 /*
+ *  catnet : categorical Bayesian network inference
+ *  Copyright (C) 2009--2010  Nikolay Balov
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, a copy is available at
+ *  http://www.gnu.org/licenses/gpl-2.0.html
+ */
+
+/*
  * catnet_class.h
  *
  *  Created on: Sep 18, 2009
@@ -86,6 +105,7 @@ public:
 			CATNET_FREE(m_catIndices);
 		if (m_pProbLists)
 			CATNET_FREE(m_pProbLists);
+
 		_reset();
 	}
 
@@ -109,7 +129,7 @@ public:
 
 		_release();
 
-		int i, j, *nodeparcats;
+		int i, j, *nodeparcats, nodenamelen;
 
 		if (nnodes < 1 || maxpars < 0)
 			return;
@@ -133,13 +153,9 @@ public:
 				m_nodeNames[i] = 0;
 				if (!nodes[i])
 					continue;
-				m_nodeNames[i] = (t_node*) CATNET_MALLOC(t_node_size * sizeof(t_node));
-				if(strlen(nodes[i]) < t_node_size)
-					strcpy(m_nodeNames[i], nodes[i]);
-				else {
-					memcpy(m_nodeNames[i], nodes[i], (t_node_size-1) * sizeof(t_node));
-					m_nodeNames[i][t_node_size-1] = 0;
-				}
+				nodenamelen = strlen(nodes[i]);
+				m_nodeNames[i] = (t_node*) CATNET_MALLOC((nodenamelen+1) * sizeof(t_node));
+				strcpy(m_nodeNames[i], nodes[i]);
 			}
 		}
 		else {
@@ -173,29 +189,49 @@ public:
 				m_pProbLists[i] = new PROB_LIST<t_prob>(m_numCategories[i], m_maxCategories, m_numParents[i], nodeparcats);
 			}
 		}
-
+		
 		CATNET_FREE(nodeparcats);
 
+	}
+
+	void setNodeNames(char **pnames, const int *porder) {
+		int i;
+		const char *str;
+		if (!porder || !pnames) 
+			return;
+		if(!m_nodeNames) {
+			m_nodeNames = (t_node**) CATNET_MALLOC(m_numNodes * sizeof(t_node*));
+			memset(m_nodeNames, 0, m_numNodes * sizeof(t_node*));
+		}
+		for (i = 0; i < m_numNodes; i++) {
+			m_nodeNames[i] = 0;
+			if (porder[i] < 1 || porder[i] > m_numNodes)
+				break;
+			str = pnames[porder[i]-1];
+			if(m_nodeNames[i])
+				CATNET_FREE(m_nodeNames[i]);
+			m_nodeNames[i] = (t_node*) CATNET_MALLOC((strlen(str)+1) * sizeof(char));
+			strcpy((char*)m_nodeNames[i], str);
+		}
 	}
 
 	void setNodesOrder(const int *porder) {
 		int i;
 		char str[256];
-
-		// reset node names only
 		if (!porder) 
 			return;
-		if(!m_nodeNames)
-			m_nodeNames = (t_node**) CATNET_MALLOC(m_numNodes * sizeof(t_node*));	
+		if(!m_nodeNames) {
+			m_nodeNames = (t_node**) CATNET_MALLOC(m_numNodes * sizeof(t_node*));
+			memset(m_nodeNames, 0, m_numNodes * sizeof(t_node*));
+		}
 		for (i = 0; i < m_numNodes; i++) {
 			m_nodeNames[i] = 0;
 			if (porder[i] < 1 || porder[i] > m_numNodes)
 				break;
 			sprintf(str, "N%d", (int)porder[i]);
-			if(t_node_size <= strlen(str))
-				m_nodeNames[i] = (t_node*) CATNET_MALLOC((strlen(str)+1) * sizeof(t_node));
-			else
-				m_nodeNames[i] = (t_node*) CATNET_MALLOC(t_node_size * sizeof(t_node));
+			if(m_nodeNames[i])
+				CATNET_FREE(m_nodeNames[i]);
+			m_nodeNames[i] = (t_node*) CATNET_MALLOC((strlen(str)+1) * sizeof(char));
 			strcpy((char*)m_nodeNames[i], str);
 		}
 	}
@@ -310,14 +346,24 @@ public:
 			parcats[i] = m_numCategories[parents[i]];	
 		m_pProbLists[node] = new PROB_LIST<t_prob>(m_numCategories[node], m_maxCategories, m_numParents[node], parcats);
 		CATNET_FREE(parcats);
-
+		             
 		if(m_maxParents < numparents)
 			m_maxParents = numparents;
+
+		/* need to be calculated next time */
+		m_complexity = 0;
+		m_loglik = 0;
 
 		return m_numParents[node];
 	}
 
 	int complexity() {
+		if(m_complexity < m_numNodes)
+			return findComplexity();
+		return m_complexity;
+	}
+
+	int findComplexity() {
 		int i, j, c;
 		m_complexity = 0;
 		for (i = 0; i < m_numNodes; i++) {
@@ -333,20 +379,36 @@ public:
 		return m_complexity;
 	}
 
-	t_prob getLoglik() {
-		return m_loglik;
+	int nodeComplexity(int nnode) {
+		int j, c;
+		if(nnode < 0 || nnode >= m_numNodes)
+			return(0);
+		if (!m_parents || !m_parents[nnode])
+			return(m_numCategories[nnode]-1);
+		c = (m_numCategories[nnode]-1);
+		for (j = 0; j < m_numParents[nnode]; j++)
+			c *= m_numCategories[m_parents[nnode][j]];
+		return c;
 	}
 
 	t_prob loglik() {
-		int i;
-		m_loglik = 0;
-		for (i = 0; i < m_numNodes; i++) {
-			if(m_pProbLists[i])
-				m_loglik += m_pProbLists[i]->loglik;
-		}
+		if(m_loglik == 0)
+			return findLoglik();
 		return m_loglik;
 	}
 
+	t_prob findLoglik() {
+		int i;
+		if(!m_pProbLists)
+			return -FLT_MAX;
+		m_loglik = 0;
+		for (i = 0; i < m_numNodes; i++) {
+			if(m_pProbLists[i])
+				m_loglik += (m_pProbLists[i]->loglik + m_pProbLists[i]->priorlik);
+		}
+		return m_loglik;
+	}
+	
 	const PROB_LIST<t_prob>** probLists() {
 		return (const PROB_LIST<t_prob>**)m_pProbLists;
 	}
@@ -370,6 +432,12 @@ public:
 		return m_pProbLists[nnode];
 	}
 
+	void setNodePriorProb(int nnode, t_prob pprior) {
+		if(!m_pProbLists || nnode < 0 || nnode >= m_numNodes || !m_pProbLists[nnode])
+			return;
+		m_pProbLists[nnode]->priorlik = pprior;
+	}
+
 	t_prob nodeSampleLoglik(int nnode, int *pnodepars, int nodepars,
 			int *psamples, int nsamples) {
 		int j, ipar;
@@ -389,10 +457,10 @@ public:
 			pnodeprob = m_pProbLists[nnode]->find_slot(0, pnodesample, 0);
 			samp = psamples[j * m_numNodes + nnode];
 			if (samp >= 0 && samp < m_numCategories[nnode] && pnodeprob[samp] > 0)
-				floglik += log(pnodeprob[samp]);
+				floglik += (t_prob)log((double)pnodeprob[samp]);
 		}
 		CATNET_FREE(pnodesample);
-		return floglik;
+		return(floglik);
 	}
 
 	t_prob sampleLoglik(int *psamples, int nsamples) {
@@ -419,8 +487,9 @@ public:
 				pnodeprob = m_pProbLists[i]->find_slot(0, pnodesample, 0);
 				samp = psamples[j * m_numNodes + i];
 				if (pnodeprob && samp >= 0 && samp < m_numCategories[i] && pnodeprob[samp] > 0)
-					m_loglik += log(pnodeprob[samp]);
+					m_loglik += (t_prob)log((double)pnodeprob[samp]);
 			}
+			//m_loglik += nsamples*m_pProbLists[i]->priorlik;
 		}
 		CATNET_FREE(pnodesample);
 		return m_loglik;
@@ -441,12 +510,12 @@ public:
 			ploglik[j] = 0;
 
 		pnodesample = (int*) CATNET_MALLOC(m_maxParents * sizeof(int));
-		m_loglik = 0;
 		for (i = 0; i < m_numNodes; i++) {
 			if(!m_pProbLists[i])
 				continue;
 			pnodepars = m_parents[i];
 			nodepars = m_numParents[i];
+			//ploglik[j] = m_pProbLists[i]->priorlik;
 			for (j = 0; j < nsamples; j++) {
 				for (ipar = 0; ipar < nodepars; ipar++) {
 					pnodesample[ipar] = psamples[j * m_numNodes + pnodepars[ipar]];
@@ -454,11 +523,44 @@ public:
 				pnodeprob = m_pProbLists[i]->find_slot(0, pnodesample, 0);
 				samp = psamples[j * m_numNodes + i];
 				if (pnodeprob && samp >= 0 && samp < m_numCategories[i] && pnodeprob[samp] > 0)
-					ploglik[j] += log(pnodeprob[samp]);
+					ploglik[j] += (t_prob)log((double)pnodeprob[samp]);
 			}
 		}
 		CATNET_FREE(pnodesample);
 		return ploglik;
+	}
+
+	t_prob sampleNodeLoglik(int nnode, int *psamples, int nsamples) {
+		int j, ipar;
+		/* psamples have categories in the range [1, m_maxCategories] */
+		t_prob *pnodeprob, loglik;
+		int nodepars;
+		int *pnodepars, *pnodesample=0, samp;
+
+		if(!psamples || nsamples < 1 || nnode < 0 || nnode >= m_numNodes)
+			return 0;
+
+		if(!m_pProbLists || !m_pProbLists[nnode])
+			return 0;
+
+		loglik = 0;
+
+		pnodesample = (int*) CATNET_MALLOC(m_maxParents * sizeof(int));	
+		pnodepars = m_parents[nnode];
+		nodepars = m_numParents[nnode];
+		
+		for (j = 0; j < nsamples; j++) {
+			for (ipar = 0; ipar < nodepars; ipar++) {
+				pnodesample[ipar] = psamples[j * m_numNodes + pnodepars[ipar]];
+			}
+			pnodeprob = m_pProbLists[nnode]->find_slot(0, pnodesample, 0);
+			samp = psamples[j * m_numNodes + nnode];
+			if (pnodeprob && samp >= 0 && samp < m_numCategories[nnode] && pnodeprob[samp] > 0)
+				loglik += (t_prob)log((double)pnodeprob[samp]);
+		}
+		CATNET_FREE(pnodesample);
+
+		return(loglik);
 	}
 
 	// sets sample conditional probability and returns its log-likelihood
@@ -467,7 +569,6 @@ public:
 		/* psamples have categories in the range [1, m_maxCategories] */
 		t_prob *pnodeprob, floglik;
 		int *pnodesample, *pnodepars, samp;
-		pnodesample = (int*) CATNET_MALLOC(m_maxParents * sizeof(int));
 
 		if (!m_pProbLists || !psamples || nsamples < 1)
 			return 0;
@@ -478,8 +579,9 @@ public:
 		}
 		else
 			m_pProbLists[nnode]->set_zero();
-		pnodepars = m_parents[nnode];
 
+		pnodesample = (int*) CATNET_MALLOC(m_maxParents * sizeof(int));
+		pnodepars = m_parents[nnode];
 		for (j = 0; j < nsamples; j++) {
 			for (i = 0; i < m_numParents[nnode]; i++) {
 				if (pnodepars[i] < 0 || pnodepars[i] >= m_numNodes)
@@ -500,7 +602,125 @@ public:
 		if(bNormalize)
 			m_pProbLists[nnode] -> normalize();
 
+		/* need to be calculated next time */
+		m_loglik = 0;
+
 		return(floglik);
+	}
+
+	t_prob *findNodeSampleProbError(int nnode, int *psamples, int nsamples, int &nerrors) {
+		int i, j, k, cx, cy, *ny, nerr;
+		/* psamples have categories in the range [1, m_maxCategories] */
+		t_prob *pnodeprob, floglik, *My, h, hath, *perror, dd, delta, faux, perr1, perr2;
+		int *pnodesample, *pnodepars, samp;
+
+		if(!psamples || nsamples < 1 || nnode < 0 || nnode >= m_numNodes)
+			return 0;
+
+		if(!m_pProbLists || !m_pProbLists[nnode])
+			return 0;
+
+		PROB_LIST<t_prob> *pProbList = new PROB_LIST<t_prob>;
+		*pProbList = *m_pProbLists[nnode];
+		pProbList->set_zero();
+
+		pnodesample = (int*) CATNET_MALLOC(m_maxParents * sizeof(int));
+		pnodepars = m_parents[nnode];
+
+		for (j = 0; j < nsamples; j++) {
+			for (i = 0; i < m_numParents[nnode]; i++) {
+				if (pnodepars[i] < 0 || pnodepars[i] >= m_numNodes)
+					break;
+				pnodesample[i] = psamples[j * m_numNodes + pnodepars[i]];
+			}
+			pnodeprob = pProbList->find_slot(0, pnodesample, 0);
+			samp = psamples[j * m_numNodes + nnode];
+			if (pnodeprob && samp >= 0 && samp < m_numCategories[nnode])
+				pnodeprob[samp]++;
+		}
+
+		CATNET_FREE(pnodesample);
+
+		// the number of parent configurations
+		cx = pProbList->numCats;
+		cy = pProbList->nProbSize / pProbList->numCats;
+		// number of samples per parent configuration
+		ny = (int*)CATNET_MALLOC(cy*sizeof(int));
+		// maximum entropy per configuration
+		My = (t_prob*)CATNET_MALLOC(cy*sizeof(t_prob));
+
+printf("probSize = %d, numCats = %d, cx = %d,  cy = %d, nsamples = %d\n", m_pProbLists[nnode]->nProbSize, m_pProbLists[nnode]->numCats, cx, cy, nsamples);
+
+		// entropies
+		h = hath = 0;
+
+		k = 0;
+		for(j = 0; j < cy; j++) {
+			ny[j] = 0;
+			My[j] = 0;
+			perr1 = 0;
+			perr2 = 0;
+			for (i = 0; i < cx; i++) {
+				floglik = m_pProbLists[nnode]->pProbs[k + i];
+				if(floglik > 0) 
+					floglik *= (t_prob)log((double)floglik);
+				perr1 += floglik;
+
+				ny[j] += pProbList->pProbs[k + i];
+			}
+			if(ny[j] <= 0)
+				continue;
+			for (i = 0; i < cx; i++) {
+				pProbList->pProbs[k + i] /= ny[j];
+				floglik = pProbList->pProbs[k + i];
+				if(floglik > 0) 
+					floglik *= (t_prob)log((double)floglik);
+				perr2 += floglik;
+				My[j] += floglik;
+			}
+			if(My[j] < 0) My[j] = -My[j];
+
+			h += (ny[j]*perr1/nsamples);
+			hath += (ny[j]*perr2/nsamples);
+
+			k += cx;
+printf("ny[%d] = %d,  My[%d] = %f\n", j, ny[j], j, My[j]);
+		}
+
+		delta = (h - hath);
+		if(delta < 0) delta = -delta;
+		h = -h;
+		hath = -hath;
+
+		printf("h = %f, hath = %f, delta = %f\n", h, hath, delta);
+		
+		nerrors = 10;//(int)(2*abs(h) / delta) + 1;
+		perror = (t_prob*)CATNET_MALLOC(nerrors*sizeof(t_prob));
+
+		for(nerr = 0; nerr < nerrors; nerr++) { 
+			perror[nerr] = 0;
+			dd = delta + (t_prob)(4*nerr*nerr)*h/(t_prob)(nerrors*nerrors);
+			faux = 4*cy*cy/(nsamples*dd*dd);
+
+			perr1 = perr2 = 0;
+			k = 0;
+			for(j = 0; j < cy; j++) {
+				for (i = 0; i < cx; i++) {
+					perr1 += _gamma_upper_bound(m_pProbLists[nnode]->pProbs[k + i], ny[j], (dd)/(2*cx));
+				}
+				perr2 += faux*My[j]*My[j]*ny[j]*(nsamples-ny[j])/(nsamples*nsamples);
+				k += cx;
+			}
+printf("dd = %f,  faux = %f, perr1 = %f, perr2 = %f\n", dd, faux, perr1, perr2);
+
+			perror[nerr] = perr1 + perr2;
+		}
+
+		CATNET_FREE(ny);
+		CATNET_FREE(My);
+		delete pProbList;
+
+		return(perror);
 	}
 
 	int normalizeProbabilities() {

@@ -1,6 +1,5 @@
-\name{cnNodeLoglik}
-\alias{cnNodeLoglik}
-\alias{cnNodeLoglik,catNetwork-method}
+\name{cnNodeSampleLoglik}
+\alias{cnNodeSampleLoglik}
 
 \title{Node Log-likelihood}
 
@@ -9,12 +8,12 @@ with respect to a specified parent set.
 }
 
 \usage{
-cnNodeLoglik(object, node, data, perturbations=NULL)
+cnNodeSampleLoglik(node, parents, data, perturbations=NULL)
 }
 
 \arguments{
-\item{object}{a \code{catNetwork} object}
 \item{node}{an \code{integer} or a \code{list} of \code{integer}s, node indices in the \code{data}}
+\item{parents}{an \code{integer} or a \code{list} of \code{integer}s, vector of parent indices for the \code{node}s}
 \item{data}{a \code{matrix} or \code{data.frame} of categories}
 \item{perturbations}{an optional perturbation \code{matrix} or \code{data.frame}}
 }
@@ -27,7 +26,7 @@ cnNodeLoglik(object, node, data, perturbations=NULL)
   library(catnet)
   cnet <- cnRandomCatnet(numnodes=10, maxParents=3, numCategories=2)
   psamples <- cnSamples(object=cnet, numsamples=100)
-  cnNodeLoglik(cnet, node=5, data=psamples)
+  cnNodeSampleLoglik(node=5, parents=c(1,2), data=psamples)
 }
 
 \seealso{\code{\link{cnLoglik}} }

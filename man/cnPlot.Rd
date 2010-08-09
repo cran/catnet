@@ -1,8 +1,7 @@
 \name{cnPlot-method}
 \alias{cnPlot}
-\alias{cnPlot,catNetwork,missing-method}
-\alias{cnPlot,catNetworkEvaluate,ANY-method}
-\alias{cnPlot,catNetwork,ANY-method}
+\alias{cnPlot,catNetwork-method}
+\alias{cnPlot,catNetworkEvaluate-method}
 
 \title{Plot Network}
 
@@ -10,7 +9,7 @@
 some diagnostic plots associated with a \code{catNetworkEvaluate}}
 
 \usage{
-cnPlot(object, file)
+cnPlot(object, file=NULL)
 }
 
 \arguments{

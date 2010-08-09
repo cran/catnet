@@ -102,9 +102,10 @@ cnNew <- function(nodes, cats, parents, probs = NULL) {
   maxParents <- 0
   i <- 1
   for(par in parents) {
-    if(!is.null(par) && maxParents < length(par))
+    if(!is.null(par) && maxParents < length(par)) {
       maxParents <- length(par)
-    parents[[i]] <- as.integer(par)
+      parents[[i]] <- as.integer(par)
+    }
     i <- i + 1
   }
  
@@ -127,6 +128,12 @@ cnNew <- function(nodes, cats, parents, probs = NULL) {
           setRandomProb(parid, object@parents[[parid]], object@categories, NULL)
       })
   }
+
+  object@nodeComplexity <- sapply(1:object@numnodes, function(x) nodeComplexity(object, x)) 
+  object@complexity <- as.integer(sum(object@nodeComplexity)) 
+   
+  object@likelihood <- 0 
+  object@nodeLikelihood <- NA
   
   if(!validCatNetwork(object, TRUE)) 
     stop("Incompatible parameters") 
@@ -293,6 +300,14 @@ setMethod("cnParents", c("catNetwork", "missing"),
             which <- seq(1:object@numnodes) 
             cnParents(object, which) 
           }) 
+
+setMethod("cnParents", c("catNetwork", "character"),  
+          function(object, which) { 
+            id <- which(object@nodes == which)
+            if(length(id) < 1)
+              return(NULL)
+            cnParents(object, id) 
+          })
  
 setMethod("cnParents", c("catNetwork", "vector"),  
           function(object, which) { 
@@ -302,11 +317,13 @@ setMethod("cnParents", c("catNetwork", "vector"),
               if(is.null(object@parents[[n]])) 
                 return(NULL) 
               as.character(object@nodes[object@parents[[n]]]) 
-            }) 
-            pnames <- object@nodes[which] 
-            plist <- setNames(plist, pnames) 
+            })
             if(length(plist)==0) 
-              return(plist) 
+              return(plist)            
+            if(!is.list(plist))
+              return(as.vector(plist))
+            pnames <- object@nodes[which]
+            plist <- setNames(plist, pnames) 
             i <- 1 
             while(i<=length(plist)) 
               if(is.null(plist[[i]])) 
@@ -338,8 +355,8 @@ setMethod("cnMatParents", c("catNetwork", "missing"),
             n <- object@numnodes 
             nodeorder <- seq(1,n) 
             return(matParents(object, nodeorder)) 
-          }) 
- 
+          })
+
 setMethod("cnMatParents", c("catNetwork", "vector"),  
           function(object, nodeorder) { 
             n <- object@numnodes 
@@ -350,7 +367,8 @@ setMethod("cnMatParents", c("catNetwork", "vector"),
  
 listProbSet <- function(idroot, ppars, pcatlist, idx, problist, strin) { 
   if(is.null(ppars) || length(idx) < 1) { 
-    if(length(pcatlist[[idroot]]) != length(problist)) { 
+    if(length(pcatlist[[idroot]]) != length(problist)) {
+      ##cat(idroot, ",   ", length(pcatlist[[idroot]]), ", ", length(problist), "\n")
       warning("Wrong probability slot") 
       return("") 
     } 
@@ -369,14 +387,22 @@ listProbSet <- function(idroot, ppars, pcatlist, idx, problist, strin) {
 } 
  
  
-setMethod("cnProb", c("catNetwork", "missing", "missing"),  
+setMethod("cnProb", c("catNetwork", "missing"),  
           function(object) { 
             which <- seq(1:object@numnodes) 
-            cnProb(object, which, "") 
+            cnProb(object, which) 
           }) 
- 
-setMethod("cnProb", c("catNetwork", "vector", "character"),  
-          function(object, which, file) { 
+
+setMethod("cnProb", c("catNetwork", "character"),  
+          function(object, which) {
+            id <- which(object@nodes == which)
+            if(length(id) < 1)
+              return(NULL)
+            cnProb(object, id) 
+          })
+
+setMethod("cnProb", c("catNetwork", "vector"),  
+          function(object, which) { 
             if(is.null(which)) 
               which <- seq(1, object@numnodes) 
             str <- sapply(which, function(n) { 
@@ -393,10 +419,7 @@ setMethod("cnProb", c("catNetwork", "vector", "character"),
                                 object@probabilities[[n]], ""), 
                     collapse="", sep="") 
             }) 
-            if(!is.null(file) && file != "") 
-              write(str, file=file) 
-            else 
-              cat(str) 
+            cat(str)
           }) 
  
 setMethod("cnOrder", "catNetwork",    
@@ -409,159 +432,8 @@ setMethod("cnOrder", "list",
           cnOrderNodes(object) 
 	}) 
  
-setMethod("cnDot", "catNetwork", function(object, file="") { 
-  if(length(object@meta)>0) 
-    str <- sprintf("\"%s, \\nComplexity %d, \\nLogLikelihood %5.3f\"[shape=plaintext]", 
-                   as.character(object@meta), object@complexity, object@likelihood) 
-  else 
-    str <- sprintf("\"catNetwork with \\nComplexity %d, \\nLogLikelihood %5.3f\"[shape=plaintext]", 
-                   object@complexity, object@likelihood) 
-  strout <- sapply(seq(1, length(object@parents)), function(n) { 
-    if(is.null(object@parents[[n]])) 
-      return("") 
-    else{ 
-      #cat(n, length(object@parents[[n]]), "\n") 
-      paste(sapply(object@parents[[n]], function(j) { 
-        #cat(j) 
-        if(length(object@parents[[j]]) > 0 && length(which(object@parents[[j]] == n)) > 0) { 
-          ## double-edge in both directions 
-          paste("\"", object@nodes[j], "\" -> \"", object@nodes[n], "\" [dir=both, style=dashed];\n", collapse="", sep="") 
-        } 
-        else 
-          paste("\"", object@nodes[j], "\" -> \"", object@nodes[n], "\";\n", collapse="", sep="") 
-      }), collapse="", sep="") 
-    } 
-  }) 
-  strout <- paste(str, paste(strout, collapse="", sep="")) 
-  str <- paste("digraph G {\n", strout, "}\n", collapse="", sep="") 
-  if(!missing(file) && !is.null(file)) { 
- 
-    ## get the full path to the file 
-    file <- paste(getwd(), "/", file, sep="") 
- 
-    write(str, file=paste(file,".dot",sep="")) 
- 
-    dotviewer <- as.character(Sys.getenv("R_DOTVIEWER")) 
-    if(dotviewer != "") { 
-      strdotcall<-paste(dotviewer, " -Tpdf \"", file, ".dot\"", " -o \"", file, ".pdf\"", sep="") 
-      try(system(strdotcall, intern=TRUE, ignore.stderr=TRUE), silent = TRUE) 
- 
-      pdfviewer <- as.character(Sys.getenv("R_PDFVIEWER")) 
-      if(pdfviewer != "") { 
-        strevincecall<-paste(pdfviewer, " \"", file, ".pdf\"", sep="") 
-        try(system(strevincecall, intern=FALSE, wait=FALSE, ignore.stderr=TRUE), silent = TRUE) 
-      } 
-    } 
-  } 
-  else 
-    cat(str) 
-  }) 
- 
- 
-setMethod("cnDot", "list", function(object, file="") { 
-  if(!is.list(object)) 
-    return("") 
-  objectlist <- object 
-  liststr <- "" 
-  i <- 1 
-  for(object in objectlist) { 
-    if(!is(object, "catNetwork")) 
-      next 
-    str <- sprintf("\"%s, \\nComplexity %d, \\nLogLikelihood %5.3f\"[shape=plaintext]", 
-                   as.character(object@meta), object@complexity, object@likelihood) 
-    strout <- sapply(seq(1, length(object@parents)), function(n) { 
-      if(is.null(object@parents[[n]])) 
-        return("") 
-      else{ 
-        paste(sapply(object@parents[[n]], function(j) { 
-          if(length(object@parents[[j]]) > 0 && length(which(object@parents[[j]] == n)) > 0) { 
-            ## double-edge in both directions 
-            paste("\"", object@nodes[j], "\" -> \"", object@nodes[n], "\" [dir=both, style=dashed];\n", collapse="", sep="") 
-          } 
-          else 
-            paste("\"", object@nodes[j], "\" -> \"", object@nodes[n], "\";\n", collapse="", sep="") 
-        }), collapse="", sep="") 
-      } 
-    }) 
-    strout <- paste(str, paste(strout, collapse="", sep="")) 
-    str <- paste("digraph ", sprintf("G%d", i), "{\n", strout, "};\n", collapse="", sep="") 
-    liststr <- paste(liststr, str, "", sep="") 
-    i <- i + 1 
-  } 
-  if(!missing(file) && !is.null(file)) { 
- 
-    ## get the full path to the file 
-    file <- paste(getwd(), "/", file, sep="") 
- 
-    write(liststr, file=paste(file,".dot",sep="")) 
- 
-    dotviewer <- as.character(Sys.getenv("R_DOTVIEWER")) 
-    if(dotviewer != "") { 
-      strdotcall<-paste(dotviewer, " -Tps \"", file, ".dot\"", " -o \"", file, ".ps\"", sep="") 
-      try(system(strdotcall, intern=TRUE, ignore.stderr=TRUE), silent = TRUE) 
-     
-      ##if(.Platform$OS.type == "unix") { 
-      pdfviewer <- as.character(Sys.getenv("R_PDFVIEWER")) 
-      if(pdfviewer != "") { 
-        strevincecall<-paste(pdfviewer, " \"", file, ".ps\"", sep="") 
-        try(system(strevincecall, intern=TRUE, ignore.stderr=TRUE), silent = TRUE) 
-      } 
-    } 
-  } 
-  else 
-    cat(liststr) 
-}) 
- 
-setMethod("cnDot", "matrix", function(object, file="") { 
-  if(!is(object, "matrix")) 
-    stop("Specify a valid square matrix.") 
-  medges <- as.matrix(object) 
-  if(dim(medges)[1] != dim(medges)[2] || dim(medges)[1] < 2) 
-    stop("Specify a valid square matrix.") 
-  rnames <- rownames(medges) 
-  if(is.null(rnames)) 
-    rnames <- 1:dim(medges)[1] 
-  nnodes <- dim(medges)[1] 
-  strout <- "" 
-  for(row in 1:nnodes) { 
-    for(col in 1:nnodes) { 
-      if(medges[row,col] <= 0) 
-        next 
-      if(medges[col,row] > 0)  
-        ## double-edge in both directions 
-        strout <- paste(strout, rnames[row], " -> ", rnames[col], " [dir=both, style=dashed];\n", collapse="", sep="") 
-      else 
-        strout <- paste(strout, rnames[row], " -> ", rnames[col], ";\n", collapse="", sep="") 
-    } 
-  } 
-   
-  str <- paste("digraph G {\n", strout, "}\n", collapse="", sep="") 
-  if(!missing(file) && !is.null(file)) { 
- 
-    ## get the full path to the file 
-    file <- paste(getwd(), "/", file, sep="") 
- 
-    write(str, file=paste(file,".dot",sep="")) 
- 
-    dotviewer <- as.character(Sys.getenv("R_DOTVIEWER")) 
-    if(dotviewer != "") { 
-      strdotcall<-paste(dotviewer, " -Tps \"", file, ".dot\"", " -o \"", file, ".ps\"", sep="") 
-      try(system(strdotcall, intern=TRUE, ignore.stderr=TRUE), silent = TRUE) 
-     
-      pdfviewer <- as.character(Sys.getenv("R_PDFVIEWER")) 
-      if(pdfviewer != "") { 
-        strevincecall<-paste(pdfviewer, " \"", file, ".ps\"", sep="")
-        try(system(strevincecall, intern=TRUE, ignore.stderr=TRUE)) 
-      } 
-    } 
-  } 
-  else 
-    cat(str) 
-  }) 
- 
- 
 validCatNetwork <- function(obj, quietly=FALSE) {   
-  res = TRUE 
+  res = TRUE
   onodes <- obj@nodes   
   nnodes <- length(onodes)   
   opars <- obj@parents   
@@ -630,11 +502,11 @@ validCatNetwork <- function(obj, quietly=FALSE) {
       return(res)   
     }   
   } 
-   
+ 
   # update 
   obj@maxParents <- omaxpars   
   obj@maxCategories <- omaxcats 
- 
+
   if(!isDAG(onodes, opars)) {   
     if(!quietly)   
       cat("Wrong network: not a DAG.\n")   
@@ -668,53 +540,7 @@ setMethod("cnComplexity", signature("catNetwork"), function(object, node) {
   } 
   else 
     return(as.integer(nodeComplexity(object, as.integer(node))))   
-  }) 
- 
-setMethod("cnPlot", signature("catNetwork", "missing"), 
-          function(object, file) { 
-            return(cnPlot(object, NULL)) 
-  }) 
- 
-setMethod("cnPlot", "catNetwork", 
-          function(object, file = NULL) { 
-	    err <- FALSE 
-	    ##try(err <- require(Rgraphviz), TRUE) 
-            ##if(err) { 
-            ##  plot(as.graph(object)) 
-            ##} 
-            ##else 
-            err <- as.logical(Sys.getenv("R_CATNET_USE_IGRAPH"))
-            if(err) { 
-              err <- FALSE 
-              try(err <- require(igraph), TRUE)
-              if(err) { 
-                medges <- cnMatEdges(object) 
-                if(is.null(medges)) 
-                  err <- FALSE 
-                else { 
-                  igr <- graph.edgelist(medges)
-                  nodenames <- get.vertex.attribute(igr, "name")
-
-                  caps <- capabilities()
-                  id <- which(names(caps)=="tcltk")
-                  usetcltk <- FALSE
-                  if(length(id)>0)
-                    usetcltk <- caps[id]
-                  if(usetcltk)
-                    tkplot(igr, vertex.label=nodenames)
-                  else
-                    plot(igr, vertex.label=nodenames) 
-                } 
-              }
-            }
-            if(!err) { 
-              if(is.null(file) || file == "") 
-                return(cnDot(object, "unknown")) 
-              else 
-                return(cnDot(object, file)) 
-            } 
-          }) 
- 
+  })  
  
 setMethod("cnSubNetwork", "catNetwork",  
 function(object, nodeIndices, indirectEdges = FALSE) { 
@@ -839,11 +665,13 @@ function(object, nodeIndices) {
   probabilities <- vector("list", object@numnodes) 
  
   for(i in 1:object@numnodes) { 
-    if(length(object@parents[[nodeIndices[i]]]) > 0) 
-      parents[[i]] <- nodeIndicesInvert[object@parents[[nodeIndices[i]]]] 
+    if(length(object@parents[[nodeIndices[i]]]) > 0) {
+      parents[[i]] <- nodeIndicesInvert[object@parents[[nodeIndices[i]]]]
+      names(parents[[i]]) <- newnodes[parents[[i]]]
+    }
     categories[[i]] <- object@categories[[nodeIndices[i]]] 
-  } 
-   
+  }
+
   for(i in 1:object@numnodes) { 
     ##probabilities[[nodeIndices[i]]] <- reorderNodeProb(i, object@parents[[i]], object@categories, 
     ##                                      catvec=NULL, 
@@ -860,3 +688,39 @@ function(object, nodeIndices) {
    
   return(object) 
 }) 
+
+setMethod("cnCluster", "catNetwork", 
+function(object) {
+  cl <- vector("list", object@numnodes)
+  nodecl <- rep(0, object@numnodes)
+  icl <- 1
+  cl[[1]] <- 1
+  nodecl[1] <- 1
+  for(j in 2:object@numnodes) {
+    for(k in 1:(j-1)) {
+      if(sum(object@parents[[j]] == k) > 0) {
+        cl[[nodecl[k]]] <- c(cl[[nodecl[k]]], j)
+        nodecl[j] <- nodecl[k]
+      }
+    }
+    if(nodecl[j] < 1) {
+      icl <- icl + 1
+      cl[[icl]] <- j
+      nodecl[j] <- icl
+    }
+  }
+
+  flag <- sapply(1:icl, function(j) if(length(cl[[j]]) > 1) return(1) else return(0))
+  cl1 <- cl
+  cl <- vector("list",sum(flag))
+  j <- 1
+  for(i in 1:icl) {
+    if(length(cl1[[i]]) > 1) {
+      cl[[j]] <- cl1[[i]]
+      names(cl[[j]]) <- object@nodes[cl[[j]]]
+      j <- j + 1
+    }
+  }
+
+  return(cl)
+})

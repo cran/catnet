@@ -46,7 +46,6 @@ On UNIX platform the user may use code like this one
 
 	......................
 
-	Sys.setenv(R_DOTVIEWER="/usr/bin/evince")
 
   	Sys.setenv(R_DOTVIEWER="/usr/bin/dot")
 

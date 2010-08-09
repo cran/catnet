@@ -1,11 +1,12 @@
 \name{cnParents-method}
 \alias{cnParents}
 \alias{cnParents,catNetwork,missing-method}
+\alias{cnParents,catNetwork,character-method}
 \alias{cnParents,catNetwork,vector-method}
 
-\title{Network Parents}
+\title{Network Parent Structure}
 
-\description{Returns the list of parents of a \code{catNetwork} object.}
+\description{Returns the list of parents of selected nodes of a \code{catNetwork} object. If \code{which} is not specified, the parents of all nodes are listed.}
 
 \usage{
 cnParents(object, which)
@@ -16,7 +17,7 @@ cnParents(object, which)
 \item{which}{a vector of node indices}
 }
 
-\value{A list of parents for nodes with indices \code{which}, or all node parents if \code{which} is not specified.}
+\value{A list of named nodes.}
 
 \author{N. Balov, P. Salzman}
 

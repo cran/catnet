@@ -1,4 +1,23 @@
 /*
+ *  catnet : categorical Bayesian network inference
+ *  Copyright (C) 2009--2010  Nikolay Balov
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, a copy is available at
+ *  http://www.gnu.org/licenses/gpl-2.0.html
+ */
+
+/*
  * problist.h
  *
  *  Created on: Nov 16, 2009
@@ -17,6 +36,7 @@ struct PROB_LIST {
 	int *numParCats;
 	int *pBlockSize;
 	t_prob loglik;
+	t_prob priorlik;
 
 	void reset() {
 		if (numParCats)
@@ -32,6 +52,7 @@ struct PROB_LIST {
 		pProbs = 0;
 		nProbSize = 0;
 		loglik = 0;
+		priorlik = 0;
 	}
 
 
@@ -43,6 +64,7 @@ struct PROB_LIST {
 		pProbs = 0;
 		nProbSize = 0;
 		loglik = 0;
+		priorlik = 0;
 	}
 
 	PROB_LIST<t_prob>& operator =(const PROB_LIST<t_prob> &plist) {
@@ -74,6 +96,7 @@ struct PROB_LIST {
 				pProbs[i] = plist.pProbs[i];
 		}
 		loglik = plist.loglik;
+		priorlik = plist.priorlik;
 		return *this;
 	}
 
@@ -89,6 +112,7 @@ struct PROB_LIST {
 		pProbs = 0;
 		nProbSize = 0;
 		loglik = 0;
+		priorlik = 0;
 		if (numPars > 0) {
 			numParCats = (int*) CATNET_MALLOC(numPars * sizeof(int));
 			if (parcats)
@@ -130,6 +154,7 @@ struct PROB_LIST {
 		if (pProbs)
 			memset(pProbs, 0, nProbSize * sizeof(t_prob));
 		loglik = 0;
+		priorlik = 0;
 	}
 
 	void normalize() {
@@ -175,8 +200,8 @@ struct PROB_LIST {
 				/////////////////////////////////////////////////////////////////
 				// The next condition determines whether parent sets with  
 				// non-sample-populated slots should be abandoned
-				//loglik = -FLT_MAX;
-				//break;
+				// loglik = -FLT_MAX;
+				// break;
 				/////////////////////////////////////////////////////////////////
 			}
 			else {
@@ -189,7 +214,7 @@ struct PROB_LIST {
 			}
 			k += numCats;
 		}
-		return loglik; 
+		return(loglik + priorlik); 
 	}
 
 	t_prob *find_slot(t_prob* prob, int *pcats, int parid) {
@@ -197,8 +222,8 @@ struct PROB_LIST {
 			prob = pProbs;
 		if (parid >= numPars || pcats == 0)
 			return prob;
-		int parcat = pcats[parid];
-		if (parcat < 0 && parcat >= numParCats[parid])
+		int parcat = (int)pcats[parid];
+		if (parcat < 0 || parcat >= numParCats[parid])
 			return 0;
 		if (parid == numPars - 1)
 			return prob + parcat * pBlockSize[parid];

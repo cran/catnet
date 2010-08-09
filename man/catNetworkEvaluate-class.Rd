@@ -19,6 +19,9 @@
 	\item{\code{tp}:}{an \code{integer} vector, the number of true positives directed edges.}
         \item{\code{fp}:}{an \code{integer} vector, the number of false positives directed edges.}
 	\item{\code{fn}:}{an \code{integer} vector, the number of false negatives directed edges.}
+	\item{\code{sp}:}{a \code{numeric} vector, the specificity.}
+	\item{\code{sn}:}{a \code{numeric} vector, the sensitivity.}
+	\item{\code{fscore}:}{a \code{numeric} vector, the F-score.}
 	\item{\code{skel.tp}:}{an \code{integer} vector, the number of true positives undirected edges.}
         \item{\code{skel.fp}:}{an \code{integer} vector, the number of false positives undirected edges.}
 	\item{\code{skel.fn}:}{an \code{integer} vector, the number of false negatives undirected edges.}

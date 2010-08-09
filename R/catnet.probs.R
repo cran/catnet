@@ -3,11 +3,11 @@
 # Probability Calculations
 
 checkProbSet <- function(idroot, ppars, pcatlist, idx, problist) {
-  if(length(ppars) == 0 || length(idx) < 1) {
-    if(length(pcatlist[[idroot]]) != length(problist)) {
+  if(length(ppars) == 0 || length(ppars) < 1 || length(idx) < 1) {
+    if(is.null(problist) || length(pcatlist[[idroot]]) != length(problist)) {
       return(FALSE)
     }
-    if(sum(problist) == -Inf)
+    if(!is.nan(sum(problist)) || sum(problist) == -Inf)
       return(TRUE)
     if(sum(problist<0) > 0) {
       warning("Probability slot with negative values", "\n")
@@ -35,7 +35,7 @@ checkProbSet <- function(idroot, ppars, pcatlist, idx, problist) {
 
 # recursive probability assignment
 setRandomProb <- function(idroot, ppars, pcatlist, idx) {
-  if(is.null(ppars) || length(idx) < 1) {
+  if(is.null(ppars) || length(ppars) < 1 || length(idx) < 1) {
     if(length(pcatlist[[idroot]]) < 2) {
       return(NULL)
     }
@@ -61,7 +61,7 @@ setRandomProb <- function(idroot, ppars, pcatlist, idx) {
 
 # recursive probability assignment
 setDefaultProb <- function(idroot, ppars, pcatlist, idx) {
-  if(is.null(ppars) || length(idx) < 1) {
+  if(is.null(ppars) || length(ppars) < 1 || length(idx) < 1) {
     if(length(pcatlist[[idroot]]) < 2) {
       return(NULL)
     }

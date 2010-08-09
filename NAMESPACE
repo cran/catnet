@@ -21,18 +21,20 @@ exportMethods(
 	cnComplexity, cnOrder, 
 	cnPlot, cnDot,
 	cnSamples, 
-	cnLoglik, 
+	cnLoglik, cnNodeLoglik, 
 	cnFind, cnFindAIC, cnFindBIC, 
 	cnEvaluate, cnPredict, 
 	cnCompare, 
 	cnParHist, 
+	cnCluster, 
 	as.graph, as.igraph)
 
 export(
 	cnNew, cnRandomCatnet, cnCatnetFromGraph, cnCatnetFromSif, cnCatnetFromEdges, 
 	isDAG, dag2cpdag, 
-	cnNodeLoglik, cnPearsonTest, 
+	cnNodeSampleLoglik, 
+	cnPearsonTest, 
 	cnDiscretize, 
-	cnSearchOrder, cnSearchSA, cnSearchSAcluster,
-	cnSearchHist, cnSearchHistCluster)
+	cnSearchOrder, cnSearchSA,
+	cnSearchHist)
 

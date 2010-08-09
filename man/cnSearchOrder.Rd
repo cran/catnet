@@ -8,18 +8,22 @@ with a given node order. It returns a list of  networks, with complexities up to
 
 \usage{
 cnSearchOrder(data, perturbations=NULL, 
-	maxParentSet=2, maxComplexity=0, nodeOrder=NULL, 
-	parentsPool=NULL, fixedParentsPool=NULL, echo=FALSE)
+	maxParentSet=0, parentSizes=NULL, maxComplexity=0, 
+	nodeOrder=NULL, 
+	parentsPool=NULL, fixedParentsPool=NULL, edgeProb=NULL,
+	echo=FALSE)
 }
 
 \arguments{
 \item{data}{a \code{matrix} in row-nodes format or a \code{data.frame} in column-nodes format}
 \item{perturbations}{a binary matrix with the dimensions of \code{data}. A value 1 marks that the node in the corresponding sample as perturbed}
-\item{maxParentSet}{an integer, the maximal number of parents per node with default value 2}
-\item{maxComplexity}{an integer, the maximal network complexity for the search}
-\item{nodeOrder}{a vector of node order; the search is among the networks with this topological order}
-\item{parentsPool}{a list of parent sets to choose from}
-\item{fixedParentsPool}{a list of parent sets to choose from}
+\item{maxParentSet}{an \code{integer}, maximal number of parents for all nodes}
+\item{parentSizes}{an \code{integer} vector, maximal number of parents per node}
+\item{maxComplexity}{an \code{integer}, the maximal network complexity for the search}
+\item{nodeOrder}{a \code{vector} specifying a node order; the search is among the networks consistent with this topological order}
+\item{parentsPool}{a \code{list} of parent sets to choose from}
+\item{fixedParentsPool}{a \code{list} of parent sets to choose from}
+\item{edgeProb}{a square \code{matrix} of length the number of nodes specifying prior edge probabilities}
 \item{echo}{a \code{logical} that sets on/off some functional progress and debug information}
 }
 
@@ -31,9 +35,12 @@ The number of node categories are obtained from the sample. The function returns
 specified range. The networks in the list are the Maximum Likelihood estimates in the class of networks having the given topological order of the nodes and complexity.
 When \code{maxComplexity} is not given, thus zero, its value is reset to the maximum possible complexity for the given parent set size. When \code{nodeOrder} is not given or \code{NULL}, the order of the nodes in the data is taken, \code{1,2,...}. 
 
-Parameters \code{parentsPool} and \code{fixedParentsPool} allow the user to put some exclusion/inclusion 
-constrains on the possible parenthood of the nodes. They should be given as lists of index vectors, 
-one for each node in the data sample.
+The parameters \code{parentsPool} and \code{fixedParentsPool} allow the user to put some exclusion/inclusion constrains on the possible parenthood of the nodes. They should be given as lists of index vectors, one for each node. 
+
+The rows in \code{edgeProb} correspond to the nodes in the sample. The [i,j]-th element in \code{edgeProb} specifies 
+a prior probability for the j-th node to be a parent of the i-th one. 
+In calculating the prior probability of a network all edges are assumed independent Bernoulli random variables. 
+The elements of \code{edgeProb} are cropped in the range [0,1], such that the zero probabilities effectively exclude the corresponding edges, while the ones force them. 
 }
 
 \value{A \code{catNetworkEvaluate} object}

@@ -9,6 +9,9 @@ setMethod("initialize", "catNetworkDistance",
             .Object@tp <- tp
             .Object@fp <- fp
             .Object@fn <- fn
+            .Object@sp <- 0
+            .Object@sn <- 0
+            .Object@fscore <- 0
             .Object@skel.tp <- 0
             .Object@skel.fp <- 0
             .Object@skel.fn <- 0
@@ -28,6 +31,7 @@ setMethod("show", "catNetworkDistance",
                   TP = %d, 
                   FP = %d, 
 	          FN = %d,
+             F-score = %f, 
 \n Hamming:
              (FP+FN) = %d, 
                  exp = %d,
@@ -44,6 +48,7 @@ setMethod("show", "catNetworkDistance",
                   object@tp, 
                   object@fp,
                   object@fn,
+                  object@fscore, 
                   object@hamm,
                   object@hammexp,
                   object@skel.tp, 
@@ -62,21 +67,24 @@ setMethod("initialize", "catNetworkEvaluate",
             .Object@numnodes <- nnodes
             .Object@numsamples <- numsamples
             .Object@nets <- vector("list", nnets)
-            .Object@complexity <- rep(0, nnets)
-            .Object@loglik <- rep(0, nnets)
-            .Object@KLdist <- rep(0, nnets)
-            .Object@hamm <- rep(0, nnets)
-            .Object@hammexp <- rep(0, nnets)
-            .Object@tp <- rep(0, nnets)
-            .Object@fp <- rep(0, nnets)
-            .Object@fn <- rep(0, nnets)
-            .Object@skel.tp <- rep(0, nnets)
-            .Object@skel.fp <- rep(0, nnets)
-            .Object@skel.fn <- rep(0, nnets)
-            .Object@order.fp <- rep(0, nnets)
-            .Object@order.fn <- rep(0, nnets)
-            .Object@markov.fp <- rep(0, nnets)
-            .Object@markov.fn <- rep(0, nnets)
+            .Object@complexity <- rep(-1, nnets)
+            .Object@loglik <- rep(-1, nnets)
+            .Object@KLdist <- rep(-1, nnets)
+            .Object@hamm <- rep(-1, nnets)
+            .Object@hammexp <- rep(-1, nnets)
+            .Object@tp <- rep(-1, nnets)
+            .Object@fp <- rep(-1, nnets)
+            .Object@fn <- rep(-1, nnets)
+            .Object@sp <- rep(-1, nnets)
+            .Object@sn <- rep(-1, nnets)
+            .Object@fscore <- rep(-1, nnets)
+            .Object@skel.tp <- rep(-1, nnets)
+            .Object@skel.fp <- rep(-1, nnets)
+            .Object@skel.fn <- rep(-1, nnets)
+            .Object@order.fp <- rep(-1, nnets)
+            .Object@order.fn <- rep(-1, nnets)
+            .Object@markov.fp <- rep(-1, nnets)
+            .Object@markov.fn <- rep(-1, nnets)
             .Object@time <- 0
             return(.Object)
             })
@@ -100,7 +108,12 @@ setMethod("show", "catNetworkEvaluate",
 setMethod("cnPlot", "catNetworkEvaluate",
           function(object, file) {
 
-            if(length(object@hammexp) > 0 && !is.na(object@hammexp[1])) {
+            if(length(object@loglik) > 0 && (length(object@tp) == 0 || object@tp[1] == -1)) {
+              par(mfrow=c(1,1))
+              plot(object@complexity, object@loglik, xlab="complexity", ylab="log(likelihood)", lty=1, 
+                   main=paste(object@numsamples, " samples, ", object@numnodes, " nodes.", sep=""))
+            }            
+            else if(length(object@hammexp) > 0 && !is.na(object@hammexp[1])) {
               par(mfrow=c(3,2))
               plot(object@complexity, object@loglik, xlab="complexity", ylab="log(likelihood)", lty=1, 
                    main=paste(object@numsamples, " samples, ", object@numnodes, " nodes.", sep=""))
@@ -194,6 +207,11 @@ setMethod("cnCompare", c("catNetwork","catNetworkEvaluate"),
   out@tp <- sum(mpartrue==1 & mpar==1)
   out@fn <- sum(mpartrue == 1 & mpar == 0)
   out@fp <- sum(mpartrue == 0 & mpar == 1)
+
+  tn <- sum(mpartrue==0 & mpar==0)
+  out@sp <- tn/(tn+out@fp)
+  out@sn <- out@tp/(out@tp+out@fn)
+  out@fscore <- 2*out@sp*out@sn/(out@sp+out@sn)
 
   out@skel.tp <- sum((t(mpartrue)+mpartrue)==1 & (t(mpar)+mpar)==1)/2
   out@skel.fn <- sum((t(mpartrue)+mpartrue) == 1 & (t(mpar)+mpar) == 0)/2
@@ -308,6 +326,11 @@ findNetworkDistances <- function(object, numsamples, nets, extended = TRUE) {
     out@fn[i] <- sum(mpartrue == 1 & mpar == 0)
     out@fp[i] <- sum(mpartrue == 0 & mpar == 1)
 
+    tn <- sum(mpartrue==0 & mpar==0)
+    out@sp[i] <- tn/(tn+out@fp[i])
+    out@sn[i] <- out@tp[i]/(out@tp[i]+out@fn[i])
+    out@fscore[i] <- 2*out@sp[i]*out@sn[i]/(out@sp[i]+out@sn[i])
+    
     out@skel.tp[i] <- sum((t(mpartrue)+mpartrue)==1 & (t(mpar)+mpar)==1)/2
     out@skel.fn[i] <- sum((t(mpartrue)+mpartrue) == 1 & (t(mpar)+mpar) == 0)/2
     out@skel.fp[i] <- sum((t(mpartrue)+mpartrue) == 0 & (t(mpar)+mpar) == 1)/2
