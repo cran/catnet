@@ -209,6 +209,7 @@ cnSearchOrder <- function(data, perturbations = NULL,
     cat("set maxComplexity to ", minComplexity, "\n")
     maxComplexity <- minComplexity
   }
+  maxComplexity <- as.integer(maxComplexity)
   
   if(is.null(perturbations)) {
     dims <- dim(data)
@@ -316,10 +317,10 @@ cnSearchOrder <- function(data, perturbations = NULL,
                    as.integer(maxComplexity),
                    parentsPool, fixedParentsPool, edgeProb, 
                    selectMode, as.integer(startorder),
-                   tempStart, tempCoolFact, tempCheckOrders, 
-                   maxIter, orderShuffles, stopDiff,
+                   tempStart, tempCoolFact, as.integer(tempCheckOrders), 
+                   as.integer(maxIter), orderShuffles, stopDiff,
                    ## threads
-                   numThreads,
+                   as.integer(numThreads),
                    ## cache
                    TRUE, 
                    echo, 
@@ -609,7 +610,7 @@ cnSearchSA <- function(data, perturbations,
 
   nodenames <- rownames(data)
   if(length(nodenames) < numnodes)
-    nodenames <- seq(1,numnodes)
+    nodenames <- seq(1, numnodes)
 
   if(is.null(perturbations)) {
     dims <- dim(data)
@@ -647,17 +648,17 @@ cnSearchSA <- function(data, perturbations,
 
   saved.seed <- .Random.seed
   eval <- .searchSA(eval,
-                    numnodes, numsamples,
+                    as.integer(numnodes), as.integer(numsamples),
                     data, perturbations, 
-                    categories, maxCategories,
-                    maxParentSet, parentSizes, 
-                    maxComplexity,
-                    optorder,  
+                    categories, as.integer(maxCategories),
+                    as.integer(maxParentSet), parentSizes, 
+                    as.integer(maxComplexity),
+                    as.integer(optorder),  
                     parentsPool, fixedParentsPool, edgeProb, 
                     selectMode, 
-                    tempStart, tempCoolFact, tempCheckOrders, 
-                    maxIter, orderShuffles, stopDiff,
-                    numThreads, echo, saved.seed)
+                    tempStart, tempCoolFact, as.integer(tempCheckOrders), 
+                    as.integer(maxIter), orderShuffles, stopDiff,
+                    as.integer(numThreads), echo, saved.seed)
   
   t2 <- proc.time()
   eval@time <- eval@time + as.numeric(t2[3] - t1[3])

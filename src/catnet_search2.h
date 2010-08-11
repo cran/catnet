@@ -474,6 +474,7 @@ for(i = 0; i < numnodes; i++) {
 						}
 
 						/*prior*/
+						priorLogLik = 0;
 						if(matEdgeLiks) {
 							tempLogLik = 1;
 							memset(bernoulibuff, 0, numnodes*sizeof(int));

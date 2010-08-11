@@ -378,7 +378,7 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 			}
 		}
 
-		m_pDrives[n] -> _start_thread(CatnetSearchHistThreadProc, m_pSearchParams[n]);
+		m_pDrives[n] -> _start_thread(CatnetSearchHistThreadProc, (void*)m_pSearchParams[n]);
 
 		} // for(n = 0; n < m_nDrives; n++)
 

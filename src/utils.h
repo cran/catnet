@@ -27,6 +27,8 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
+#include "thread.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory.h>

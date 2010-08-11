@@ -1,6 +1,6 @@
 /*
  *  catnet : categorical Bayesian network inference
- *  Copyright (C) 2009--2010  Nikolay Balov
+ *  Copyright (C) 1999--2010  Nikolay Balov
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@
 #if defined(WIN32) || defined(WIN64)
 
 #define _OBJC_NO_COM 
+#define NOGDI
 #include <windows.h>
 #include <process.h>
 
@@ -40,7 +41,7 @@ typedef CRITICAL_SECTION MUTEX;
 typedef HANDLE EVENT;
 
 typedef unsigned (__stdcall * THREAD_PROC)(void*);
-#define THREAD_PROC_DEFINE(proc_name, proc_param) UINT STDCALL proc_name(LPVOID proc_param) 
+#define THREAD_PROC_DEFINE(proc_name, proc_param) unsigned __stdcall proc_name(void *proc_param) 
 
 #define CREATE_EVENT(event)			(event = CreateEvent(NULL, TRUE, FALSE, NULL))
 #define DESTROY_EVENT(event)			CloseHandle(event)

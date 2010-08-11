@@ -91,7 +91,7 @@ int c_thread::_join_thread() {
 
 int c_thread::_start_thread(THREAD_PROC ThreadProc, LPVOID lpParam) {
 
-	int res;
+	void *res = 0;
 	UINT nId;
 	if(m_hThread && WaitForSingleObject(m_hThread, 0) != WAIT_OBJECT_0) {
 		return ERR_THREAD;
@@ -101,7 +101,7 @@ int c_thread::_start_thread(THREAD_PROC ThreadProc, LPVOID lpParam) {
 	__TRY_FINALLY {
 		_lock();
 		m_hThread = (HANDLE)_beginthreadex(NULL, 0, ThreadProc, lpParam, 0, &nId);
-		res = (int)m_hThread;
+		res = m_hThread;
 	}
 	__FINALLY {
 		_unlock();
