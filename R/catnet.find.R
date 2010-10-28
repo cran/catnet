@@ -48,13 +48,16 @@ setMethod("cnFind", "list",
 
 setMethod("cnFindAIC", "catNetworkEvaluate", function(object) {
   objectlist <- object@nets
+  if(length(objectlist) < 1)
+    return(NULL)
   liststr <- ""
-  maxobj <- NULL
+  maxobj <- objectlist[[1]]
+  numsamples <- object@numsamples
   maxaic <- -Inf
   for(object in objectlist) {
     if(!is(object, "catNetwork"))
       next
-    curaic <- object@likelihood - object@complexity
+    curaic <- numsamples*object@likelihood - object@complexity
     if(maxaic < curaic) {
       maxaic <- curaic
       maxobj <- object
@@ -63,15 +66,20 @@ setMethod("cnFindAIC", "catNetworkEvaluate", function(object) {
   return(maxobj)
 })
 
-setMethod("cnFindAIC", "list", function(object) {
+setMethod("cnFindAIC", "list", function(object, numsamples) {
+  if(length(object) < 1)
+    return(NULL)
+  numsamples <- as.integer(numsamples)
+  if(numsamples < 1)
+    stop("numsamples should be greater than 0")
   objectlist <- object
   liststr <- ""
-  maxobj <- NULL
+  maxobj <- objectlist[[1]]
   maxaic <- -Inf
   for(object in objectlist) {
     if(!is(object, "catNetwork"))
       next
-    curaic <- object@likelihood - object@complexity
+    curaic <- numsamples*object@likelihood - object@complexity
     if(maxaic < curaic) {
       maxaic <- curaic
       maxobj <- object
@@ -80,16 +88,18 @@ setMethod("cnFindAIC", "list", function(object) {
   return(maxobj)
 })
 
-setMethod("cnFindBIC", "catNetworkEvaluate", function(object, numsamples) {
+setMethod("cnFindBIC", "catNetworkEvaluate", function(object) {
   objectlist <- object@nets
+  if(length(objectlist) < 1)
+    return(NULL)
   liststr <- ""
-  maxobj <- NULL
+  maxobj <- objectlist[[1]]
   maxbic <- -Inf
   numsamples <- object@numsamples
   for(object in objectlist) {
     if(!is(object, "catNetwork"))
       next
-    curbic <- object@likelihood - 0.5*object@complexity*log(numsamples)
+    curbic <- numsamples*object@likelihood - 0.5*object@complexity*log(numsamples)
     if(maxbic < curbic) {
       maxbic <- curbic
       maxobj <- object
@@ -99,14 +109,19 @@ setMethod("cnFindBIC", "catNetworkEvaluate", function(object, numsamples) {
 })
 
 setMethod("cnFindBIC", "list", function(object, numsamples) {
+  if(length(object) < 1)
+    return(NULL)
+  numsamples <- as.integer(numsamples)
+  if(numsamples < 1)
+    stop("numsamples should be greater than 0")
   objectlist <- object
   liststr <- ""
-  maxobj <- NULL
+  maxobj <- objectlist[[1]]
   maxbic <- -Inf
   for(object in objectlist) {
     if(!is(object, "catNetwork"))
       next
-    curbic <- object@likelihood - 0.5*object@complexity*log(numsamples)
+    curbic <- numsamples*object@likelihood - 0.5*object@complexity*log(numsamples)
     if(maxbic < curbic) {
       maxbic <- curbic
       maxobj <- object

@@ -3,7 +3,6 @@
 
 \alias{alarm}
 \alias{alarmnet}
-\alias{alarmseed}
 
 \title{The ALARM network}
 

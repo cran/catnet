@@ -24,17 +24,22 @@ exportMethods(
 	cnLoglik, cnNodeLoglik, 
 	cnFind, cnFindAIC, cnFindBIC, 
 	cnEvaluate, cnPredict, 
+	cnKLComplexity, 
 	cnCompare, 
 	cnParHist, 
-	cnCluster, 
+	cnCluster, cnClusterSep, 
 	as.graph, as.igraph)
 
 export(
 	cnNew, cnRandomCatnet, cnCatnetFromGraph, cnCatnetFromSif, cnCatnetFromEdges, 
 	isDAG, dag2cpdag, 
-	cnNodeSampleLoglik, 
-	cnPearsonTest, 
+	cnNodeSampleLoglik, cnNodeSampleProb, 
 	cnDiscretize, 
 	cnSearchOrder, cnSearchSA,
-	cnSearchHist)
+	cnSearchHist,
+	cnEntropy, cnEntropyOrder, 
+	cnEdgeDistanceKL, cnEdgeDistancePearson, 
+	cnClusterMI, 
+	cnPearsonTest,
+	cnSetSeed)
 

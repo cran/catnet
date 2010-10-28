@@ -6,6 +6,7 @@ maxpars <- 3
 cn <- cnRandomCatnet(numnodes, maxpars, numcats)
 
 ps <- cnSamples(cn, 500)
+
 ## finds a node with descendants and reduce its number of categories
 mpars <- cnMatParents(cn)
 for(j in 1:numnodes)
@@ -21,7 +22,7 @@ res1 <- cnSearchOrder(data=ps, perturbations = NULL,
                       maxParentSet = maxpars, parentSizes = NULL, 
                       maxComplexity = 0,
                       nodeOrder = cnOrder(cn),  
-                      parentsPool = NULL, fixedParentsPool = NULL,
+                      parentsPool = NULL, fixedParents = NULL,
                       edgeProb = NULL, 
                       echo = FALSE)
 res1
@@ -36,7 +37,7 @@ res2 <- cnSearchOrder(data=ps, perturbations = NULL,
                       maxParentSet = maxpars, parentSizes = NULL, 
                       maxComplexity = 0,
                       nodeOrder = cnOrder(cn),  
-                      parentsPool = NULL, fixedParentsPool = NULL,
+                      parentsPool = NULL, fixedParents = NULL,
                       edgeProb = matliks, 
                       echo = TRUE)
 res2
@@ -49,7 +50,7 @@ cnCompare(anet1, anet2)
 sares <- cnSearchSA(data=ps, perturbations=NULL,
                     maxParentSet=maxpars, parentSizes = NULL, 
                     maxComplexity = 0,
-                    parentsPool = NULL, fixedParentsPool = NULL, edgeProb = matliks, 
+                    parentsPool = NULL, fixedParents = NULL, edgeProb = matliks, 
                     selectMode = "BIC", 
                     tempStart = 1, tempCoolFact = 0.9, tempCheckOrders = 20, 
                     maxIter = 100, orderShuffles = -1, stopDiff = 1,
@@ -62,7 +63,7 @@ cnCompare(cn, anet3)
 sares2 <- cnSearchSA(data=ps, perturbations=NULL,
                     maxParentSet=maxpars, parentSizes = NULL, 
                     maxComplexity = 0,
-                    parentsPool = NULL, fixedParentsPool = NULL, edgeProb = matliks, 
+                    parentsPool = NULL, fixedParents = NULL, edgeProb = matliks, 
                     selectMode = "BIC", 
                     tempStart = 1, tempCoolFact = 0.9, tempCheckOrders = 20, 
                     maxIter = 100, orderShuffles = -1, stopDiff = 1,
@@ -75,7 +76,7 @@ cnCompare(cn, anet4)
 mm <- cnSearchHist(data=ps, perturbations=NULL,  
                          maxParentSet=maxpars, parentSizes = NULL,
                          maxComplexity=0,
-                         parentsPool = NULL, fixedParentsPool = NULL,
+                         parentsPool = NULL, fixedParents = NULL,
                          selectMode = "BIC", 
                          maxIter = 60, numThreads = 2, echo=TRUE)
 matliks <- 0.5 + mm/ (4*max(mm))
@@ -88,7 +89,7 @@ cnDot(mmt, "mmt")
 sares3 <- cnSearchSA(data=ps, perturbations=NULL,
                     maxParentSet=maxpars, parentSizes = NULL, 
                     maxComplexity = 0,
-                    parentsPool = NULL, fixedParentsPool = NULL, edgeProb = matliks, 
+                    parentsPool = NULL, fixedParents = NULL, edgeProb = matliks, 
                     selectMode = "BIC", 
                     tempStart = 1, tempCoolFact = 0.9, tempCheckOrders = 20, 
                     maxIter = 100, orderShuffles = -1, stopDiff = 1,
@@ -97,3 +98,18 @@ sares3 <- cnSearchSA(data=ps, perturbations=NULL,
                     echo=TRUE)
 anet5 <- cnFind(sares3, cnComplexity(cn))
 cnCompare(cn, anet5)
+
+####################################################################################
+## effectivelly nil network
+
+library(catnet)
+cnet <- cnNew(nodes = c("a", "b", "c"), cats = list(c("1", "2"),
+     c("1", "2"), c("1", "2")),
+              parents = list(NULL, c(1), c(1,
+     2)),
+              probs = list(c(0.5, 0.5), list(c(0.5, 0.5), c(0.5, 0.5)),
+     list(list(c(0.5, 0.5), c(0.5, 0.5)), list(c(0.5, 0.5), c(0.5,
+         0.5)))))
+cnet
+cnComplexity(cnet)
+cnKLComplexity(cnet)

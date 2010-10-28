@@ -226,6 +226,10 @@ setMethod("cnMarginalKLdist", signature("catNetwork", "catNetwork"),
 
 setMethod("cnNodeMarginalProb", signature("catNetwork"), 
           function(object, node) {
+            if(is.character(node))
+              node <- which(object@nodes == node)
+            if(node < 1 || node > object@numnodes)
+              stop("Invalid node ", node)
             vmarg <- .Call("ccnMarginalProb", 
                            object, node, 
                            PACKAGE="catnet")

@@ -96,149 +96,6 @@ setMethod("updateNetworkNode", "catNetwork",
             return(listnet)
           })
 
-.categorizeSample <- function(data, perturbations = NULL, object = NULL, ask=TRUE) {
-  ## make sure data and object's nodes are the same
-  
-  if(is.matrix(data)) {
-    numnodes <- nrow(data)
-    numsamples <- ncol(data)
-
-    ## save row/column names
-    samplenames <- dimnames(data)
-    ##if(is.numeric(data)) {
-    ##  data <- matrix(as.integer(data), nrow=dim(data)[1])
-    ##}
-    
-    maxCategories <- 1
-    categories <- vector("list", numnodes)
-    for(i in 1:numnodes) {
-
-      if(is.null(object)) {
-        if(is.numeric(data[i,])) {
-          data[i,] <- as.integer(data[i,])
-          cats <- min(data[i,]):max(data[i,])
-        }
-        else {
-          cats <- levels(as.factor(data[i,]))
-          ##cat(i," factors: ", cats, "\n")
-        }
-        if(!is.null(cats))
-          cats <- sort(cats)
-        else
-          stop("Wrong categories for node ", i)
-      }
-      else {
-        cats <- object@categories[[i]]
-      }
-    
-      lencat <- length(cats)
-      
-      if(is.numeric(data[i,])) {
-        if(!is.integer(data[i,]))
-          data[i,] <- as.integer(data[i,])
-        data[i,data[i,]<1] <- 1
-        data[i,data[i,]>lencat] <- lencat
-      }
-      else {
-        data[i,] <- as.integer(sapply(data[i,], function(x) which(cats==x)))
-      }
-      
-      categories[[i]] <- cats
-      
-      if(maxCategories < lencat)
-        maxCategories <- lencat
-    }
-    
-    data <- matrix(as.integer(data), nrow=numnodes)
-    dimnames(data) <- samplenames
-    
-    if(!is.null(perturbations) && !is.matrix(perturbations))
-      stop("Perturbations should be a matrix")
-    
-  } ## is.matrix
-  else {
-    ## data is data.frame format
-    numnodes <- ncol(data)
-    numsamples <- nrow(data)
-    
-    fdata <- data
-    data <- matrix(rep(NA, numnodes*numsamples), nrow=numnodes)
-    
-    maxCategories <- 1
-    categories <- vector("list", numnodes)
-    for(i in 1:numnodes) {
-
-      if(is.null(object)) {
-        if(is.numeric(fdata[i,])) {
-          fdata[,i] <- as.integer(fdata[,i])
-          cats <- min(fdata[,i]):max(fdata[,i])
-        }
-        else {
-          cats <- levels(as.factor(fdata[,i]))
-        }
-        if(!is.null(cats))
-          cats <- sort(cats)
-        else
-          stop("Wrong categories for node ", i)
-      }
-      else {
-        cats <- object@categories[[i]]
-      }
-
-      lencat <- length(cats)
-      
-      if(is.numeric(fdata[,i])) {
-        ## fdata is actually indices
-        data[i,] <- as.integer(fdata[,i])
-        data[i, data[i,]<1] <- 1
-        data[i, data[i,]>lencat] <- lencat
-      }
-      else {
-        data[i,] <- as.integer(sapply(fdata[,i], function(x) which(cats==x)))
-      }
-
-      categories[[i]] <- cats
-      
-      if(maxCategories < lencat)
-        maxCategories <- lencat
-    } ## i
-
-    rownames(data) <- colnames(fdata)
-    colnames(data) <- rownames(fdata)
-
-    if(!is.null(perturbations)) {
-      if(!is.data.frame(perturbations))
-        stop("Perturbations should be a data frame")
-      perturbations <- as.matrix(t(perturbations))
-    }
-  }
-
-  if(length(rownames(data)) < numnodes)
-    rownames(data) <- 1:numnodes
-  
-  if(ask && maxCategories*maxCategories > numsamples) {
-    cat("The sample is small. Continue? ('y' or 'n')\n")
-    if(scan("", what="character", nmax=1, quiet=TRUE) != "y" ) 
-      stop("Operation canceled")
-  }
-
-  if(ask && maxCategories > 16) {
-    cat("The data seems to have too many categories. The operation can be very long and memory consuming. Continue? ('y' or 'n')\n")
-    if(scan("", what="character", nmax=1, quiet=TRUE) != "y" ) 
-      stop("Operation canceled")
-  }
-
-  if(!is.null(perturbations)) {
-    dims <- dim(data)
-    pertdims <- dim(perturbations)
-    if(dims[1] != pertdims[1] ||
-       dims[2] != pertdims[2])
-      stop("Incompatible perturbation dimensions.\n")
-  }
-  
-  return(list(data=data, categories=categories, maxCategories=maxCategories, perturbations=perturbations))
-}
-
 # lists all (k=parsize)-combinations from a parent set (parset)
 combinationSets <- function(outlist, curlist, parset, allowedset, parsize) {
   if(parsize < 1)
@@ -278,7 +135,7 @@ optimalNetsForOrder <- function(
                                 data, perturbations, 
                                 categories, maxCategories, 
                                 maxParentSet, parentSizes, 
-                                maxComplexity, nodeOrder,
+                                maxComplexity, nodeOrder, catIndices = NULL, 
                                 parentsPool = NULL, fixedParentsPool = NULL,  
                                 fast = FALSE, echo=TRUE, useCache=TRUE) {
     
@@ -295,7 +152,7 @@ optimalNetsForOrder <- function(
                       data, perturbations, 
                       maxParentSet, parentSizes, 
                       maxComplexity,
-                      nodeOrder,
+                      nodeOrder, catIndices, 
                       parentsPool, fixedParentsPool, NULL, useCache, echo, 
                       PACKAGE="catnet")
     if(length(nodenames) == numnodes && length(bestnets) > 0) {
@@ -493,7 +350,8 @@ findOptimalNetworks <- function(object, data, perturbations = NULL, maxParentSet
   
   r <- .categorizeSample(data, perturbations, object)
   data <- r$data
-
+  perturbations <- r$perturbations
+  
   numnodes <- nrow(data)
   numsamples <- ncol(data)
   
@@ -501,19 +359,16 @@ findOptimalNetworks <- function(object, data, perturbations = NULL, maxParentSet
   if(length(nodenames) < numnodes)
     nodenames <- seq(1,numnodes)
   
-  if(is.null(perturbations)) {
-    dims <- dim(data)
-    perturbations <- matrix(rep(0, dims[1]*dims[2]), dims[1], dims[2])
-  }
   if(maxParentSet <= 0)
     maxParentSet <- object@maxParents
   if(maxComplexity < numnodes)
     maxComplexity <- cnComplexity(object)
 
   nodidx <- cnOrder(object)
-  ## reorder the nodes so object can be compared later
-  object <- cnReorderNodes(object, nodidx)
 
+  ## specify object's categories for the search
+  catIndices <- lapply(1:numnodes, function(i) 1:length(object@categories[[i]]))
+  
   if(echo) {
     cat("estimating networks ...\n")
   }
@@ -521,26 +376,43 @@ findOptimalNetworks <- function(object, data, perturbations = NULL, maxParentSet
   bestnets <- optimalNetsForOrder(data, perturbations,
                                   object@categories, object@maxCategories,
                                   maxParentSet, parentSizes = NULL, 
-                                  maxComplexity, nodidx, 
+                                  maxComplexity, nodidx, catIndices, 
                                   parentsPool = NULL, fixedParentsPool = NULL, 
                                   fast, echo, useCache=FALSE)
 
+  ## bestnets are ordered according to the object
+  ## must set their categorical values
+  ## reorder object's categories first so that it matches bestnets' order
+  
+  for(i in 1:length(bestnets)) {
+    if(!is(bestnets[[i]], "catNetwork"))
+      next
+    bestnets[[i]]@categories <- object@categories[nodidx]
+    ## reorder eval@nets[[nn]]'s nodes to match the object's nodes
+    enetnodes <- bestnets[[i]]@nodes
+    ##cat(enetnodes,"\n")
+    if(length(nodenames) == numnodes) {
+      ord <- sapply(nodenames, function(c) {
+        id <- which(enetnodes==c)
+        if(length(id)>0)
+          return(id[1])
+	stop("nodes do not match")
+        })
+      if(sum(ord != 1:numnodes) > 0) {
+        bestnets[[i]] <- cnReorderNodes(bestnets[[i]], ord)
+      }
+    }
+  }
+  
   if(echo) {
     cat("comparing networks ...\n")
   }
 
-  ## bestnets are ordered according to the object
-  ## must set their categorical values
-  for(i in 1:length(bestnets)) {
-    if(is(bestnets[[i]], "catNetwork"))
-      bestnets[[i]]@categories <- object@categories
-  }
-
   out <- findNetworkDistances(object, numsamples, bestnets, extended = FALSE)
-  
+
   t2 <- proc.time()
   if(echo) {
-    cat("Proc time: ", t2,"\n")
+    ##cat("Proc time: ", t2,"\n")
     mins <- floor((t2[1]-t1[1])/60)
     secs <- t2[1]-t1[1] - 60*mins
     cat("Time elapsed: ", mins, "min, ", secs, "sec\n")

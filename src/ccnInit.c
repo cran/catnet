@@ -20,18 +20,24 @@
 
 #include "catnet_rexport.h"
 
+int g_setseed = -1;
 size_t g_memcounter = 0;
 
 static const R_CallMethodDef R_CallDef[] = {
-	{"ccnOptimalNetsForOrder", (DL_FUNC)&catnetOptimalNetsForOrder, 11},
-	{"ccnOptimalNetsSA", (DL_FUNC)&catnetOptimalNetsSA, 20},
-	{"ccnParHistogram", (DL_FUNC)&catnetParHistogram, 12},
+	{"ccnOptimalNetsForOrder", (DL_FUNC)&catnetOptimalNetsForOrder, 12},
+	{"ccnOptimalNetsSA", (DL_FUNC)&catnetOptimalNetsSA, 22},
+	{"ccnParHistogram", (DL_FUNC)&catnetParHistogram, 13},
 	{"ccnSetProb", (DL_FUNC)&catnetSetProb, 3},
 	{"ccnLoglik", (DL_FUNC)&catnetLoglik, 3},
 	{"ccnNodeLoglik", (DL_FUNC)&catnetNodeLoglik, 4},
+	{"ccnEntropyPairwise", (DL_FUNC)&catnetEntropyPairwise, 2},
+	{"ccnEntropyOrder", (DL_FUNC)&catnetEntropyOrder, 2},
+	{"ccnKLPairwise", (DL_FUNC)&catnetKLpairwise, 2},
+	{"ccnPearsonPairwise", (DL_FUNC)&catnetPearsonPairwise, 2},
 	{"ccnNodeLoglikError", (DL_FUNC)&catnetNodeLoglikError, 4},
 	{"ccnMarginalProb", (DL_FUNC)&catnetMarginalProb, 2},
 	{"ccnReleaseCache", (DL_FUNC)&catnetReleaseCache, 0},
+	{"ccnSetSeed", (DL_FUNC)&catnetSetSeed, 1},
 	{NULL, NULL, 0},
 };
 

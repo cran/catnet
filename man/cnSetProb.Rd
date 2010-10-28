@@ -8,22 +8,26 @@
 \description{The function sets the probability structure of a network from data according to the Maximum Likelihood criterion.}
 
 \usage{
-cnSetProb(object, data)
+cnSetProb(object, data, perturbations=NULL, nodeCats=NULL)
 }
 
 \arguments{
 \item{object}{a \code{catNetwork}}
 \item{data}{a data \code{matrix} or \code{data.frame}}
+\item{perturbations}{a binary matrix with the dimensions of \code{data}}
+\item{nodeCats}{a \code{list} of node categories}
 }
 
-\details{The \code{data} can be a \code{matrix} of indices with rows representing the network nodes, 
-or a \code{data.frame} in the alternative, node-column format. 
-The indices range from 1 to the number of categories of the corresponding node.
-The function changes the \code{probability} slot of the \code{object} and returns an updated \code{catNetwork}.
-It is a procedure of fitting a network to data by keeping the graph structure unchanged. 
+\details{
+The function generates a new probability table for \code{object} and returns an updated \code{catNetwork}.
+The graph structure of the \code{object} is kept unchanged. 
+
+The \code{data} can be a \code{matrix} in the node-rows format, 
+or a \code{data.frame} in the node-column format. 
+If given, the \code{nodeCats} is used as a list of categories. In that case, \code{nodeCats} should include the node categories presented in the data. 
 }
 
-\value{The updated \code{object}}
+\value{\code{catNetwork}}
 
 \author{N. Balov}
 

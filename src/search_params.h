@@ -36,6 +36,8 @@ struct SEARCH_PARAMETERS {
 	int m_numNodes;
 	int m_numSamples;
 	int *m_pSamples;
+	int *m_pNodeNumCats;
+	int **m_pNodeCats;
 	int *m_pPerturbations;
 	int m_maxParentSet;
 	int *m_pParentSizes;
@@ -45,13 +47,14 @@ struct SEARCH_PARAMETERS {
 	double *m_matEdgeLiks;
 	int m_echo;
 	MUTEX *m_pCacheMutex;
+	int m_seed;
 
 	void *m_pCaller;
 
 	SEARCH_PARAMETERS(int numNodes, int numSamples, int maxParentSet, int maxComplexity, int echo, 
-			int hasParentSizes = 0, int hasPerturbations = 0, 
+			int hasCats = 0, int hasParentSizes = 0, int hasPerturbations = 0, 
 			int hasParentsPool = 0, int hasFixedParentsPool = 0, int hasPairLiks = 0, 
-			MUTEX *pCacheMutex = 0, void *pCaller = 0) {
+			MUTEX *pCacheMutex = 0, void *pCaller = 0, int nSeed = 0) {
 		int i;
 		m_numNodes = numNodes;
 		m_numSamples = numSamples;
@@ -71,6 +74,15 @@ struct SEARCH_PARAMETERS {
 		}
 
 		m_pSamples = (int*)CATNET_MALLOC(m_numNodes*m_numSamples*sizeof(int));
+
+		m_pNodeNumCats = 0;
+		m_pNodeCats = 0;
+		if(hasCats) { 
+			m_pNodeNumCats = (int*)CATNET_MALLOC(m_numNodes*sizeof(int));
+			m_pNodeCats = (int**)CATNET_MALLOC(m_numNodes*sizeof(int*));
+			memset(m_pNodeNumCats, 0, m_numNodes*sizeof(int));
+			memset(m_pNodeCats, 0, m_numNodes*sizeof(int*));
+		}
 
 		m_pPerturbations = 0;
 		if(hasPerturbations)
@@ -97,6 +109,11 @@ struct SEARCH_PARAMETERS {
 			m_matEdgeLiks = (double*)CATNET_MALLOC(m_numNodes*m_numNodes*sizeof(double));
 		//printf("matEdgeLiks = malloc %d\n", m_numNodes*m_numNodes*sizeof(double));
 		}
+
+		m_seed = nSeed;
+		if(nSeed == 0) {
+			m_seed = rand();
+		}
 	}	
 
 	~SEARCH_PARAMETERS() {
@@ -107,6 +124,14 @@ struct SEARCH_PARAMETERS {
 			CATNET_FREE(m_pSamples);
 		if(m_pPerturbations)
 			CATNET_FREE(m_pPerturbations);
+		if(m_pNodeCats) {
+			for(i = 0; i < m_numNodes; i++)
+				if(m_pNodeCats[i])
+					CATNET_FREE(m_pNodeCats[i]);
+			CATNET_FREE(m_pNodeCats);
+		}
+		if(m_pNodeNumCats)
+			CATNET_FREE(m_pNodeNumCats);
 		if(m_parentsPool) {
 			for(i = 0; i < m_numNodes; i++)
 				if(m_parentsPool[i])

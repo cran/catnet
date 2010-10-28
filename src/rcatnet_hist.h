@@ -27,7 +27,7 @@
 #ifndef RCATNET_SEARCH_HIST_H
 #define RCATNET_SEARCH_HIST_H
 
-#include "catnet_search.h"
+#include "catnet_search2.h"
 
 #include <R.h>
 #include <Rmath.h>
@@ -38,7 +38,7 @@
 class RCatnetSearchHist {
 protected:
 	int m_nDrives;
-	CATNET_SEARCH<char, MAX_NODE_NAME, double> **m_pDrives;
+	CATNET_SEARCH2<char, MAX_NODE_NAME, double> **m_pDrives;
 	int m_numNodes, m_numSamples, m_maxParentSet;
 	int m_bUseCache;
 
@@ -55,7 +55,7 @@ public:
 	~RCatnetSearchHist();
 
 	SEXP search(SEXP rSamples, SEXP rPerturbations, 
-			SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, 
+			SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, SEXP rNodeCats, 
 			SEXP rParentsPool, SEXP rFixedParentsPool, 
 			SEXP rModel, SEXP rMaxIter,
 			SEXP rThreads, SEXP rUseCache, SEXP rEcho);

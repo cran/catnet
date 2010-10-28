@@ -116,9 +116,11 @@ typedef void * (*THREAD_PROC)(void*);
 
 #endif /* _POSIX_THREADS */
 
-#define ERR_OK		0
-#define ERR_THREAD	-1
-#define LPVOID		void*
+#define ERR_OK			0
+#define ERR_THREAD		-1
+#define ERR_START_THREAD	-2
+#define ERR_STOP_THREAD		-3
+#define LPVOID			void*
 
 class c_thread {
 

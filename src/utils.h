@@ -46,6 +46,13 @@
 #define CATNET_PI2	(2*(double)CATNET_PI)
 #endif
 
+#define CATNET_NAN	INT_MAX
+
+#define CATNET_ERR_OK		0
+#define CATNET_ERR_MEM		-10
+#define CATNET_ERR_PARAM	-20
+#define CATNET_ERR_PROC		-30
+
 void * CATNET_MALLOC(size_t nsize);
 void CATNET_FREE(void *pMem);
 
@@ -77,6 +84,41 @@ void _quick_sort(t_elem *plist, int nlist){
 	return;
 }
 
+template<class t_elem>
+void _order(t_elem *plist, int nlist, int *porder, int decreasing = 1){
+	if(!plist || !porder || nlist < 2)
+		return;
+	int j, i;
+	t_elem *paux = (t_elem*)malloc(nlist*sizeof(t_elem));
+	memcpy(paux, plist, nlist*sizeof(t_elem));
+
+	_quick_sort<t_elem>(plist, nlist);
+
+	for(j = 1; j < nlist; j++) 
+		porder[j] = - 1;
+	if(decreasing) {
+		for(j = nlist - 1; j >= 0; j--) {
+			for(i = 0; i < nlist; i++) {
+				if(paux[i] == plist[j]) {
+					porder[nlist-1-j] = i;
+					paux[i] = (t_elem)FLT_MAX;
+				}
+			}
+		}
+	}
+	else {
+		for(j = 0; j < nlist; j++) {
+			for(i = 0; i < nlist; i++) {
+				if(paux[i] == plist[j]) {
+					porder[j] = i;
+					paux[i] = (t_elem)FLT_MAX;
+				}
+			}
+		}
+	}
+	free(paux);
+	return;	
+}
 
 template<class t_elem>
 t_elem _gen_std_normal_var() {
@@ -90,6 +132,7 @@ t_elem _gen_std_normal_var() {
 
 template<class t_elem>
 int _gen_permutation(t_elem *psample, int nsample) {
+	/* psamples takes values in [1,nsample] */
 	int i, j;
 	if(nsample < 1 || !psample)
 		return -1;

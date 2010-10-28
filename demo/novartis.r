@@ -12,7 +12,7 @@ psamples <- as.data.frame(t(psamples))
 psamples <- cnDiscretize(psamples, 2)
 
 eval <- cnSearchSA(data=psamples, perturbations=NULL, maxParentSet=2, maxComplexity=150, 
-	parentsPool=NULL, fixedParentsPool=NULL, 
+	parentsPool=NULL, fixedParents=NULL, 
 	tempStart=1.0, tempCoolFact=0.75, tempCheckOrders=10, maxIter=100, echo=TRUE)
 eval
 

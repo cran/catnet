@@ -24,8 +24,8 @@ edges2catnet <- function(.Object, nodes, edges, maxcats=2, cats=NULL, probs=NULL
         if(length(parents) < k)  
           parents[[k]] <- c(i)  
         else  
-          parents[[k]] <- c(parents[[k]], i)  
-      }  
+          parents[[k]] <- c(parents[[k]], i) 
+      } 
       else {  
         stop("Invalid node in edge (", i, ", ", j, ")\n")  
       }  
@@ -42,18 +42,21 @@ edges2catnet <- function(.Object, nodes, edges, maxcats=2, cats=NULL, probs=NULL
 
   ## Categories  
   .Object@categories <- list(NULL)  
-  maxcats <- 0  
   if(length(cats) == nn) {  
+    maxcats <- 0  
     for(i in (1:nn)) {  
       if(maxcats < length(cats[i]))  
         maxcats <- length(cats[i])  
       .Object.categories[[i]] <- cats[i]  
     }  
   }  
-  else{  
-    maxcats <- 2
+  else{
+    if(maxcats < 2) {
+      maxcats <- 2
+      warning("Set maxCategories to 2")
+    }
     for(i in (1:nn)) {  
-      .Object@categories[[i]] <- c("0","1")  
+      .Object@categories[[i]] <- as.character(1:maxcats)
     }  
   }  
   .Object@maxCategories <- as.integer(maxcats)  

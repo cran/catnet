@@ -156,7 +156,7 @@ SEXP RCatnet::genRcatnet(const char * objectName = (const char*)"catNetwork") {
 
 	char str[256];
 	int node, i, *pslotcats, *pn;
-	double *pf;
+	double *pf, floglik;
 	SEXP plist, ppars, pcats, pnodeprobs, strnames, pint;
 
 	if(strcmp(objectName, "catNetwork") && strcmp(objectName, "catNetworkC") ) 
@@ -277,7 +277,11 @@ SEXP RCatnet::genRcatnet(const char * objectName = (const char*)"catNetwork") {
 	UNPROTECT(1);
 	
 	PROTECT(pint = NEW_NUMERIC(1));
-	NUMERIC_POINTER(pint)[0] = loglik();
+	floglik = loglik();
+	if(floglik > -FLT_MAX)
+		NUMERIC_POINTER(pint)[0] = floglik;
+	else
+		NUMERIC_POINTER(pint)[0] = R_NegInf;
 	SET_SLOT(cnet, install("likelihood"), pint);
 	UNPROTECT(1);
 
@@ -415,8 +419,8 @@ void gen_prob_vector(int node, SEXP parlist, int paridx, SEXP catlist, SEXP prob
 	if(paridx >= length(parlist)) {
 		pcats = VECTOR_ELT(catlist, node);
 		if (length(problist) != length(pcats)) {
-			printf("%d:  %d, %d\n", node, length(problist), length(pcats));
-			error("gen_prob_vector: length(problist) != length(pcats))\n");
+			printf("gen_prob_vector: %d:  %d, %d\n", node, length(problist), length(pcats));
+			error("Wrong probability table");
 			return;
 		}
 		newvec = (double*)CATNET_MALLOC((nvec + length(pcats))*sizeof(double));
@@ -436,7 +440,8 @@ void gen_prob_vector(int node, SEXP parlist, int paridx, SEXP catlist, SEXP prob
 	npar = INTEGER_POINTER(parlist)[paridx] - 1;
 	pcats = VECTOR_ELT(catlist, npar);
 	if (length(problist) != length(pcats)) {
-		printf("gen_prob_vector: length(problist) != length(pcats))\n");
+		printf("gen_prob_vector: %d:  %d, %d\n", node, length(problist), length(pcats));
+		error("Wrong probability table");
 		return;
 	}
 	for(j = 0; j < length(pcats); j++) {

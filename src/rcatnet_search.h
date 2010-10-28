@@ -48,7 +48,7 @@ public:
 	~RCatnetSearch();
 
 	SEXP estimateCatnets(SEXP rSamples, SEXP rPerturbations,
-                       SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, SEXP rOrder,
+                       SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, SEXP rOrder, SEXP rNodeCats, 
                        SEXP rParentsPool, SEXP rFixedParentsPool, SEXP rMatEdgeLiks, SEXP rUseCache, SEXP rEcho);
 
 };

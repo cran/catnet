@@ -18,7 +18,7 @@
  */
 
 /*
- * rcatnet.cpp
+ * catnet_rexport.cpp
  *
  *  Created on: Sep 21, 2009
  *      Author: nbalov
@@ -32,6 +32,7 @@
 
 extern "C" {
 
+extern int g_setseed;
 extern size_t g_memcounter;
 
 SEXP catnetReleaseCache()
@@ -274,7 +275,7 @@ SEXP showCatnet(SEXP cnet)
 }
 
 SEXP catnetOptimalNetsForOrder(SEXP rSamples, SEXP rPerturbations, 
-                              SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, SEXP rOrder, 
+                              SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, SEXP rOrder, SEXP rNodeCats, 
                               SEXP rParentsPool, SEXP rFixedParentsPool, SEXP rMatEdgeLiks, 
                               SEXP rUseCache, SEXP rEcho) {
 
@@ -290,6 +291,8 @@ SEXP catnetOptimalNetsForOrder(SEXP rSamples, SEXP rPerturbations,
 		error("maxComplexity should be an integer");
 	if(!isVector(rOrder))
 		error("Order should be a vector");
+	if(!isNull(rNodeCats) && !isVector(rNodeCats))
+		error("NodeCats should be a list");
 	if(!isNull(rParentsPool) && !isVector(rParentsPool))
 		error("ParentsPool should be a list");
 	if(!isNull(rFixedParentsPool) && !isVector(rFixedParentsPool))
@@ -304,7 +307,7 @@ SEXP catnetOptimalNetsForOrder(SEXP rSamples, SEXP rPerturbations,
 	RCatnetSearch * pengine = new RCatnetSearch;
 	SEXP res = pengine -> estimateCatnets(rSamples, rPerturbations, 
 						rMaxParents, rParentSizes, 
-						rMaxComplexity, rOrder, 
+						rMaxComplexity, rOrder, rNodeCats, 
 				                rParentsPool, rFixedParentsPool, rMatEdgeLiks, 
 						rUseCache, rEcho);
 	delete pengine;
@@ -317,8 +320,9 @@ SEXP catnetOptimalNetsForOrder(SEXP rSamples, SEXP rPerturbations,
 }
 
 SEXP catnetOptimalNetsSA(SEXP rNodeNames, SEXP rSamples, SEXP rPerturbations, 
-			SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, 
-			SEXP rParentsPool, SEXP rFixedParentsPool, SEXP rMatEdgeLiks, 
+			SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, SEXP rNodeCats, 
+			SEXP rParentsPool, SEXP rFixedParentsPool, 
+			SEXP rMatEdgeLiks, SEXP rDirProbs, 
 			SEXP rModel, SEXP rStartOrder,
 			SEXP rTempStart, SEXP rTempCoolFact, SEXP rTempCheckOrders, 
 			SEXP rMaxIter, SEXP rOrderShuffles, SEXP rStopDiff, 
@@ -336,12 +340,16 @@ SEXP catnetOptimalNetsSA(SEXP rNodeNames, SEXP rSamples, SEXP rPerturbations,
 		error("maxComplexity should be an integer");
 	if(!isVector(rStartOrder))
 		error("startOrder should be a vector");
+	if(!isNull(rNodeCats) && !isVector(rNodeCats))
+		error("NodeCats should be a list");
 	if(!isNull(rParentsPool) && !isVector(rParentsPool))
 		error("ParentsPool should be a list");
 	if(!isNull(rFixedParentsPool) && !isVector(rFixedParentsPool))
 		error("FixedParentsPool should be a list");
 	if(!isNull(rMatEdgeLiks) && !isMatrix(rMatEdgeLiks))
 		error("rMatEdgeLiks should be a matrix");
+	if(!isNull(rDirProbs) && !isMatrix(rDirProbs))
+		error("rDirProbs should be a matrix");
 	if(!isNumeric(AS_NUMERIC(rTempStart)))
 		error("tempStart should be numerical");
 	if(!isNumeric(AS_NUMERIC(rTempCoolFact)))
@@ -363,8 +371,9 @@ SEXP catnetOptimalNetsSA(SEXP rNodeNames, SEXP rSamples, SEXP rPerturbations,
 
 	RCatnetSearchSA * pengine = new RCatnetSearchSA;
 	SEXP res = pengine -> search(rNodeNames, rSamples, rPerturbations, 
-			rMaxParents, rParentSizes, rMaxComplexity, 
-			rParentsPool, rFixedParentsPool, rMatEdgeLiks,  
+			rMaxParents, rParentSizes, rMaxComplexity, rNodeCats, 
+			rParentsPool, rFixedParentsPool, 
+			rMatEdgeLiks, rDirProbs, 
 			rModel, rStartOrder,
 			rTempStart, rTempCoolFact, rTempCheckOrders, 
 			rMaxIter, rOrderShuffles, rStopDiff, 
@@ -379,7 +388,7 @@ SEXP catnetOptimalNetsSA(SEXP rNodeNames, SEXP rSamples, SEXP rPerturbations,
 }
 
 SEXP catnetParHistogram(SEXP rSamples, SEXP rPerturbations, 
-			SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, 
+			SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, SEXP rNodeCats, 
 			SEXP rParentsPool, SEXP rFixedParentsPool, 
 			SEXP rModel, SEXP rMaxIter,
 			SEXP rThreads, SEXP rUseCache, SEXP rEcho)
@@ -394,6 +403,8 @@ SEXP catnetParHistogram(SEXP rSamples, SEXP rPerturbations,
 		error("ParentSizes should be a vector");
 	if(!isInteger(AS_INTEGER(rMaxComplexity)))
 		error("maxComplexity should be an integer");
+	if(!isNull(rNodeCats) && !isVector(rNodeCats))
+		error("NodeCats should be a list");
 	if(!isNull(rParentsPool) && !isVector(rParentsPool))
 		error("ParentsPool should be a list");
 	if(!isNull(rFixedParentsPool) && !isVector(rFixedParentsPool))
@@ -409,7 +420,7 @@ SEXP catnetParHistogram(SEXP rSamples, SEXP rPerturbations,
 
 	RCatnetSearchHist * pengine = new RCatnetSearchHist;
 	SEXP res = pengine -> search(rSamples, rPerturbations, 
-			rMaxParents, rParentSizes, rMaxComplexity, 
+			rMaxParents, rParentSizes, rMaxComplexity, rNodeCats, 
 			rParentsPool, rFixedParentsPool, 
 			rModel, rMaxIter, 
 			rThreads, rUseCache, rEcho);
@@ -424,7 +435,7 @@ SEXP catnetParHistogram(SEXP rSamples, SEXP rPerturbations,
 
 SEXP catnetSetProb(SEXP cnet, SEXP rSamples, SEXP rPerturbations) {
 
-	int *pSamples, *pSubsamples, *pPerturbations;
+	int *pSamples, *psubSamples, *pPerturbations;
 	int nnode, numsamples, numnodes, numsubsamples, j;
 	SEXP dim;
 	SEXP pcnet = R_NilValue;
@@ -452,15 +463,18 @@ SEXP catnetSetProb(SEXP cnet, SEXP rSamples, SEXP rPerturbations) {
 
 	// pSamples are assumed positive indices
 	for(j = 0; j < numnodes*numsamples; j++) {
-		pSamples[j]--;
+		if(R_IsNA(pSamples[j]) || pSamples[j] < 1)
+			pSamples[j] = CATNET_NAN;
+		else
+			pSamples[j]--;
 	}
 
-	pSubsamples = 0;
+	psubSamples = 0;
 	pPerturbations = 0;
 	if(!isNull(rPerturbations)) {
 		PROTECT(rPerturbations = AS_INTEGER(rPerturbations));
 		pPerturbations = INTEGER(rPerturbations);
-		pSubsamples = (int*)CATNET_MALLOC(numnodes*numsamples*sizeof(int));
+		psubSamples = (int*)CATNET_MALLOC(numnodes*numsamples*sizeof(int));
 	}
 
 	for(nnode = 0; nnode < numnodes; nnode++) {
@@ -468,12 +482,12 @@ SEXP catnetSetProb(SEXP cnet, SEXP rSamples, SEXP rPerturbations) {
 			numsubsamples = 0;
 			for(j = 0; j < numsamples; j++) {		
 				if(!pPerturbations[j * numnodes + nnode]) {
-					memcpy(pSubsamples + numsubsamples*numnodes, 
+					memcpy(psubSamples + numsubsamples*numnodes, 
 						pSamples + j*numnodes, numnodes*sizeof(int));
 					numsubsamples++;
 				}
 			}
-			rnet->setNodeSampleProb(nnode, pSubsamples, numsubsamples, 1);
+			rnet->setNodeSampleProb(nnode, psubSamples, numsubsamples, 1);
 		}
 		else {
 			rnet->setNodeSampleProb(nnode, pSamples, numsamples, 1);
@@ -485,8 +499,8 @@ SEXP catnetSetProb(SEXP cnet, SEXP rSamples, SEXP rPerturbations) {
 		UNPROTECT(1);
 	}
 
-	if(pSubsamples)
-		CATNET_FREE(pSubsamples);
+	if(psubSamples)
+		CATNET_FREE(psubSamples);
 	pcnet = rnet->genRcatnet((const char*)"catNetwork");
 	delete rnet;
 
@@ -506,9 +520,9 @@ SEXP catnetLoglik(SEXP cnet, SEXP rSamples, SEXP rPerturbations) {
 	SEXP dim, rvec = R_NilValue;
 
 	if(!isMatrix(rSamples))
-		error("Data is not a matrix");
+		error("Data should be a matrix");
 	if(!isNull(rPerturbations) && !isMatrix(rPerturbations))
-		error("Perturbations is not a vector");
+		error("Perturbations should be a matrix");
 
 	////////////////////////////////////////
 	// Danger Ahead
@@ -528,27 +542,39 @@ SEXP catnetLoglik(SEXP cnet, SEXP rSamples, SEXP rPerturbations) {
 
 	// pSamples are assumed positive indices
 	for(j = 0; j < numnodes*numsamples; j++) {
-		pSamples[j]--;
+//printf("%d  ", pSamples[j]);
+		if(R_IsNA(pSamples[j]) || pSamples[j] < 1)
+			pSamples[j] = CATNET_NAN;
+		else
+			pSamples[j]--;
 	}
-
+//printf("\n");
 	pPerturbations = 0;
 	if(!isNull(rPerturbations)) {
 		PROTECT(rPerturbations = AS_INTEGER(rPerturbations));
 		pPerturbations = INTEGER(rPerturbations);
+	}
+
+	floglik = rnet->sampleLoglikVector(pSamples, numsamples, pPerturbations);
+
+//for(j = 0; j < numsamples; j++)
+//printf("%f  ", floglik[j]);
+//printf("\n");
+	UNPROTECT(1);
+	delete rnet;
+	
+	if(pPerturbations) {
 		UNPROTECT(1);
 	}
 
-	floglik = rnet->sampleLoglikVector(pSamples, numsamples);
-
-	UNPROTECT(1);
-
-	delete rnet;
-
-	
 	if(floglik) {
-		PROTECT(rvec = NEW_NUMERIC(numsamples));
+		PROTECT(rvec = NEW_NUMERIC(numnodes));
 		pvec = NUMERIC_POINTER(rvec);
-		memcpy(pvec, floglik, numsamples*sizeof(double));
+		for(j = 0; j < numnodes; j++) {
+			pvec[j] =  R_NegInf;
+			if(floglik[j] > -FLT_MAX)
+				pvec[j] = floglik[j];
+		}
 		UNPROTECT(1);
 		CATNET_FREE(floglik);
 	}
@@ -564,14 +590,15 @@ SEXP catnetLoglik(SEXP cnet, SEXP rSamples, SEXP rPerturbations) {
 SEXP catnetNodeLoglik(SEXP cnet, SEXP rNode, SEXP rSamples, SEXP rPerturbations) {
 
 	int *pSamples, *pPerturbations;
+	int *psubSamples, numsubsamples;
 	int numsamples, numnodes, j, nnode;
 	double floglik, *pvec;
 	SEXP dim, rvec = R_NilValue;
 
 	if(!isMatrix(rSamples))
-		error("Data is not a matrix");
+		error("Data should be a matrix");
 	if(!isNull(rPerturbations) && !isMatrix(rPerturbations))
-		error("Perturbations is not a vector");
+		error("Perturbations should be a matrix");
 	if(!isInteger(AS_INTEGER(rNode)))
 		error("Node should be an integer");
 
@@ -597,29 +624,47 @@ SEXP catnetNodeLoglik(SEXP cnet, SEXP rNode, SEXP rSamples, SEXP rPerturbations)
 
 	// pSamples are assumed positive indices
 	for(j = 0; j < numnodes*numsamples; j++) {
-		pSamples[j]--;
+		if(R_IsNA(pSamples[j]) || pSamples[j] < 1)
+			pSamples[j] = CATNET_NAN;
+		else
+			pSamples[j]--;
 	}
 	nnode--;
 
+	psubSamples = 0;
 	pPerturbations = 0;
 	if(!isNull(rPerturbations)) {
 		PROTECT(rPerturbations = AS_INTEGER(rPerturbations));
 		pPerturbations = INTEGER(rPerturbations);
+		psubSamples = (int*)CATNET_MALLOC(numnodes*numsamples*sizeof(int));
+		numsubsamples = 0;
+		for(j = 0; j < numsamples; j++) {
+			if(!pPerturbations[j * numnodes + nnode]) {
+				memcpy(psubSamples + numsubsamples*numnodes, pSamples + j*numnodes, numnodes*sizeof(int));
+				numsubsamples++;
+			}
+		}
+		floglik = rnet->sampleNodeLoglik(nnode, psubSamples, numsubsamples);
 		UNPROTECT(1);
+		CATNET_FREE(psubSamples);
 	}
-
-	floglik = rnet->sampleNodeLoglik(nnode, pSamples, numsamples);
+	else
+		floglik = rnet->sampleNodeLoglik(nnode, pSamples, numsamples);
 
 	UNPROTECT(1);
 
 	delete rnet;
 
-	if(floglik) {
-		PROTECT(rvec = NEW_NUMERIC(1));
-		pvec = NUMERIC_POINTER(rvec);
+	PROTECT(rvec = NEW_NUMERIC(1));
+	pvec = NUMERIC_POINTER(rvec);
+	pvec[0] = R_NegInf;
+	if(floglik > -FLT_MAX)
 		pvec[0] =  floglik;
-		UNPROTECT(1);
-	}
+	UNPROTECT(1);
+
+	//char str[128];
+	//sprintf(str, "Mem Balance  %d\n", (int)g_memcounter);
+	//printf(str);
 
 	return rvec;
 
@@ -661,7 +706,10 @@ SEXP catnetNodeLoglikError(SEXP cnet, SEXP rNode, SEXP rSamples, SEXP rPerturbat
 
 	// pSamples are assumed positive indices
 	for(j = 0; j < numnodes*numsamples; j++) {
-		pSamples[j]--;
+		if(R_IsNA(pSamples[j]) || pSamples[j] < 1)
+			pSamples[j] = CATNET_NAN;
+		else
+			pSamples[j]--;
 	}
 	nnode--;
 
@@ -691,5 +739,21 @@ SEXP catnetNodeLoglikError(SEXP cnet, SEXP rNode, SEXP rSamples, SEXP rPerturbat
 
 }
 
+SEXP catnetSetSeed(SEXP rSeed)
+{
+	int nSeed;
+
+	if(!isInteger(AS_INTEGER(rSeed)))
+		error("The seed should be an integer");
+
+	PROTECT(rSeed = AS_INTEGER(rSeed));
+	nSeed = INTEGER_POINTER(rSeed)[0];
+	UNPROTECT(1);
+
+	g_setseed = nSeed;
+	srand(g_setseed);
+
+	return(R_NilValue);
+}
 
 } // extern "C"

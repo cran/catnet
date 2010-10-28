@@ -216,17 +216,30 @@ int c_thread::_wait_stop_event(int milliseconds) {
 }
 
 int c_thread::_join_thread() {
-	void *pstatus;
-	int res;
+	void *pstatus = NULL;
+	int res = 0;
+	_lock();
+	if (!m_hThread) {
+		_unlock();
+		return res;
+	}
+	_unlock();
 	res = pthread_join(m_hThread, &pstatus);
+	if(!res) {
+		_lock();
+		m_hThread = NULL;
+		_unlock();
+	}
 	return res;
 }
 
 int c_thread::_start_thread(THREAD_PROC ThreadProc, LPVOID lpParam) {
 	int res;
-	if (m_hThread)
-		return ERR_OK;
 	_lock();
+	if (m_hThread) {
+		_unlock();
+		return ERR_OK;
+	}
 	res = pthread_create(&m_hThread, &m_thread_attr, ThreadProc, lpParam);
 	_unlock();
 	return ((res != 0) ? ERR_OK : ERR_THREAD);
@@ -234,18 +247,23 @@ int c_thread::_start_thread(THREAD_PROC ThreadProc, LPVOID lpParam) {
 
 int c_thread::_stop_thread() {
 	int res = ERR_OK;
-	if (!m_hThread)
-		return res;
-	//pthread_mutex_lock(&m_stop_mutex);
-	pthread_cond_signal(&m_stop_event);
-	//pthread_mutex_unlock(&m_stop_mutex);
-	res = pthread_join(m_hThread, NULL);
 	_lock();
-	m_hThread = NULL;
+	if (!m_hThread) {
+		_unlock();
+		return res;
+	}
 	_unlock();
-	//if(res)
-	//	return ERR_THREAD;
-	return ERR_OK;
+	pthread_cond_signal(&m_stop_event);
+	res = _join_thread();
+	if(res) {
+		res = pthread_cancel(m_hThread);
+		_lock();
+		m_hThread = NULL;
+		_unlock();
+	}
+	if(!res)
+		return ERR_OK;
+	return ERR_STOP_THREAD;
 }
 
 int c_thread::_exit_thread(void* pexitcode) {

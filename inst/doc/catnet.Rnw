@@ -431,7 +431,7 @@ cnet2
 ## generate a 100-size sample from cnet2
 samples <- cnSamples(object=cnet2, numsamples=100, output="frame")
 netlist <- cnSearchOrder(data=samples, perturbations=NULL, maxParentSet=2, maxComplexity=20, 
-	nodeOrder, parentsPool=NULL, fixedParentsPool=NULL)
+	nodeOrder, parentsPool=NULL, fixedParents=NULL)
 ## find the recostructed network with the true complexity
 bnet <- cnFind(netlist, 20)
 bnet
@@ -443,11 +443,11 @@ The data is given as a matrix or data frame of characters and the function extra
 In many practical problems some prior information about the network structure is available which 
 the user may want to include in the search process. Such prior information can be obtained 
 from experts in the field of interest or to be based on preceding research. 
-In all of its search functions, \Rpackage{catnet} includes the parameters \Rfunction{parentsPool} and \Rfunction{fixedParentsPool}, that can be used for specifying edge constraints. 
+In all of its search functions, \Rpackage{catnet} includes the parameters \Rfunction{parentsPool} and \Rfunction{fixedParents}, that can be used for specifying edge constraints. 
 
 The first parameter, \Rfunction{parentsPool}, specifies a set of possible parents for each node and 
 in this way, some nodes can be excluded as potential parents. 
-Additionally, the \Rfunction{fixedParentsPool} parameter specifies edge inclusion rules - 
+Additionally, the \Rfunction{fixedParents} parameter specifies edge inclusion rules - 
 the user may assign mandatory parents to some nodes. These two parameters allow a variety of edge  constraints to be implemented. 
 
 In the next example, we generate a random network with 12 nodes and then search for 
@@ -470,7 +470,7 @@ fixparPool <- vector("list", nnodes)
 for(i in 3:nnodes) fixparPool[[i]] <- c(1,2)
 samples <- cnSamples(cnet, numsamples=200)
 eval <- cnSearchOrder(data=samples, perturbations=NULL, maxParentSet=2, maxComplexity=200, 
-	nodeOrder=norder, parentsPool=parPool, fixedParentsPool=fixparPool)
+	nodeOrder=norder, parentsPool=parPool, fixedParents=fixparPool)
 eval
 ## plot likelihood vs complexity for the resulting list of networks
 plot(eval@complexity, eval@loglik, xlab="Complexity", ylab = "Log-likelihood", 
@@ -537,7 +537,7 @@ set.seed(345)
 cnet6 <- cnRandomCatnet(numnodes=12, maxParents=5, numCategories=2)
 samples <- cnSamples(object=cnet6, numsamples=100, output="matrix")
 eval <- cnSearchOrder(data=samples, perturbations=NULL, maxParentSet=2, parentSizes=NULL, maxComplexity=0, 
-	nodeOrder=order(runif(1:dim(samples)[1])), parentsPool=NULL, fixedParentsPool=NULL, 
+	nodeOrder=order(runif(1:dim(samples)[1])), parentsPool=NULL, fixedParents=NULL, 
 	echo=FALSE)
 ## now select a network based on AIC and plot it
 anet <- cnFindAIC(object=eval)
@@ -654,7 +654,7 @@ The following example illustrates a typical call of \Rfunction{cnSearchSA}
 set.seed(345)
 netlist <- cnSearchSA(data=samples, perturbations=NULL, 
 	maxParentSet=2, parentSizes=NULL, maxComplexity=20, 
-	parentsPool=NULL, fixedParentsPool=NULL, 
+	parentsPool=NULL, fixedParents=NULL, 
 	tempStart=1, tempCoolFact = 0.9, tempCheckOrders = 4, maxIter = 40, 
 	orderShuffles = 1, stopDiff = 0.0001,
 	priorSearch=NULL)
@@ -713,7 +713,7 @@ res8 <- cnSearchOrder(data=ps, perturbations = NULL,
                       maxParentSet = maxpars, parentSizes = NULL, 
                       maxComplexity = 0,
                       nodeOrder = cnOrder(cnet8),  
-                      parentsPool = NULL, fixedParentsPool = NULL,
+                      parentsPool = NULL, fixedParents = NULL,
                       edgeProb = NULL, 
                       echo = FALSE)
 anet8 <- cnFind(res8, cnComplexity(cnet8))
@@ -723,7 +723,7 @@ edgeHisto <- 0.5 + mpars / 4
 res9 <- cnSearchSA(data=ps, perturbations=NULL,
                     maxParentSet=1, parentSizes = NULL, 
                     maxComplexity = 0,
-                    parentsPool = NULL, fixedParentsPool = NULL, edgeProb = edgeHisto, 
+                    parentsPool = NULL, fixedParents = NULL, edgeProb = edgeHisto, 
                     selectMode = "BIC", 
                     tempStart = 1, tempCoolFact = 0.9, tempCheckOrders = 20, 
                     maxIter = 100, orderShuffles = -1, stopDiff = 1,

@@ -16,7 +16,7 @@ subset <- seq(2, 1201, 12)
 psamples <- psamples[,subset]
 
 eval <- cnSearchSA(data=psamples, perturbations=NULL, maxParentSet=1, maxComplexity=250, 
-	parentsPool=NULL, fixedParentsPool=NULL, 
+	parentsPool=NULL, fixedParents=NULL, 
 	tempStart=100, tempCoolFact=0.75, tempCheckOrders=10, orderShuffles=4, stopDiff=0.000000001, maxIter=100, echo=TRUE)
 eval
 

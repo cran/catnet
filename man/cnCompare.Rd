@@ -1,6 +1,7 @@
 \name{cnCompare-method}
 \alias{cnCompare}
 \alias{cnCompare,catNetwork,catNetwork-method}
+\alias{cnCompare,catNetwork,matrix-method}
 \alias{cnCompare,catNetwork,list-method}
 \alias{cnCompare,catNetwork,catNetworkEvaluate-method}
 
@@ -14,7 +15,7 @@ cnCompare(object1, object2, extended = TRUE)
 
 \arguments{
 \item{object1}{a \code{catNetwork} object}
-\item{object2}{a \code{catNetwork} object or \code{list} of \code{catNetwork}s or \code{catNetworkEvaluate} object}
+\item{object2}{a \code{catNetwork} object, \code{matrix}, \code{list} of \code{catNetwork}s or \code{catNetworkEvaluate} object}
 \item{extended}{a \code{logical} parameter, specifying whether basic but quicker or extended comparison to be performed}
 }
 

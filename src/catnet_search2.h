@@ -19,6 +19,7 @@
 
 /*
  * catnet_search2.h
+ * includes soft edge constraints in addition to the original CATNET_SEARCH
  *
  *  Created on: Sep 25, 2009
  *      Author: nbalov
@@ -39,7 +40,6 @@ class CATNET_SEARCH2:  public c_thread, public c_cache {
 protected:
 	int m_nCatnets;
 	CATNET<t_node, t_node_size, t_prob> **m_pCatnets;
-
 	int m_numNodes, *m_pNodeNumCats, **m_pNodeCats, m_numSamples;
 
 public:
@@ -166,7 +166,7 @@ public:
 		_release();
 
 		if(numnodes < 1 || numsamples < 1 || !psamples)
-			return 0;
+			return CATNET_ERR_PARAM;
 		if(maxComplexity < numnodes)
 			maxComplexity = numnodes;
 		
@@ -184,40 +184,65 @@ public:
 printf("matEdgeLiks: \n");
 for(i = 0; i < numnodes; i++) {
 	for(j = 0; j < numnodes; j++)
-		if(matEdgeLiks[i*numnodes+j] > 0.5)
+		if(matEdgeLiks[i*numnodes+j] < 0.0000000001)
 			printf("[%d,%d] = %f\n", j, i, matEdgeLiks[i*numnodes+j]);
 	}
 }*/
-
-		for(i = 0; i < numnodes; i++) {
-			mincat = INT_MAX;
-			maxcat = -INT_MAX;
-			for(j = 0; j < numsamples; j++) {
-				if(psamples[j*numnodes + i] < mincat)
-					mincat = psamples[j*numnodes + i];
-				if(psamples[j*numnodes + i] > maxcat)
-					maxcat = psamples[j*numnodes + i];
+		if(pestim->m_pNodeNumCats && pestim->m_pNodeCats) {
+//printf("nodeCats are given:\n");
+			memcpy(m_pNodeNumCats, pestim->m_pNodeNumCats, numnodes*sizeof(int));
+			for(i = 0; i < numnodes; i++) {
+				m_pNodeCats[i] = (int*)CATNET_MALLOC(m_pNodeNumCats[i]*sizeof(int));
+				memcpy(m_pNodeCats[i], pestim->m_pNodeCats[i], m_pNodeNumCats[i]*sizeof(int));
+//printf("%d:  ", i);
+//for(j = 0; j < m_pNodeNumCats[i]; j++)
+//	printf("%d  ", m_pNodeCats[i][j]);
+//printf("\n");
 			}
-			m_pNodeNumCats[i] = maxcat - mincat + 1;
-			m_pNodeCats[i] = (int*)CATNET_MALLOC(m_pNodeNumCats[i]*sizeof(int));
-			for(j = 0; j < m_pNodeNumCats[i]; j++)
-				m_pNodeCats[i][j] = mincat + j;
 		}
-		for(i = 0; i < numnodes; i++) {
-			/* order m_pNodeNumCats[i] */
-			for(j = 0; j < m_pNodeNumCats[i]; j++) {
-				for(k = j + 1; k < m_pNodeNumCats[i]; k++) {
-					if(m_pNodeCats[i][j] > m_pNodeCats[i][k]) {
-						d = m_pNodeCats[i][j]; 
-						m_pNodeCats[i][j] = m_pNodeCats[i][k];
-						m_pNodeCats[i][k] = d;
+		else { 
+			for(i = 0; i < numnodes; i++) {
+				mincat = INT_MAX;
+				maxcat = -INT_MAX;
+				for(j = 0; j < numsamples; j++) {
+					if(psamples[j*numnodes + i] == CATNET_NAN)
+						continue;
+					if(psamples[j*numnodes + i] < mincat)
+						mincat = psamples[j*numnodes + i];
+					if(psamples[j*numnodes + i] > maxcat)
+						maxcat = psamples[j*numnodes + i];
+				}
+				m_pNodeNumCats[i] = maxcat - mincat + 1;
+				m_pNodeCats[i] = (int*)CATNET_MALLOC(m_pNodeNumCats[i]*sizeof(int));
+				for(j = 0; j < m_pNodeNumCats[i]; j++)
+					m_pNodeCats[i][j] = mincat + j;
+				/* order m_pNodeNumCats[i] */
+				for(j = 0; j < m_pNodeNumCats[i]; j++) {
+					for(k = j + 1; k < m_pNodeNumCats[i]; k++) {
+						if(m_pNodeCats[i][j] > m_pNodeCats[i][k]) {
+							d = m_pNodeCats[i][j]; 
+							m_pNodeCats[i][j] = m_pNodeCats[i][k];
+							m_pNodeCats[i][k] = d;
+						}
 					}
 				}
-			} 
+			}
+		}
+
+		for(i = 0; i < numnodes; i++) { 
 			for(j = 0; j < numsamples; j++) {
+				if(psamples[j*numnodes + i] == CATNET_NAN) {
+					// CATNET_NANs will be assigned m_pNodeNumCats[i]
+					psamples[j*numnodes + i] = m_pNodeNumCats[i];
+					continue;
+				}
 				for(d = 0; d < m_pNodeNumCats[i]; d++)
 					if(m_pNodeCats[i][d] == psamples[j*numnodes + i])
 						break;
+				if(d >= m_pNodeNumCats[i]) {
+					error("Incorrect categories");
+					return CATNET_ERR_PARAM;
+				}
 				psamples[j*numnodes + i] = d;
 			}
 			if(maxCategories < m_pNodeNumCats[i])
@@ -288,8 +313,8 @@ for(i = 0; i < numnodes; i++) {
 				}
 			}
 			// at this point m_pProbLists are not initialized
-			
 			// set sample probabilities and calculate log-likelihood
+			numsubsamples = numsamples;
 			if(perturbations) {
 				numsubsamples = 0;
 				for(j = 0; j < numsamples; j++) {
@@ -303,7 +328,7 @@ for(i = 0; i < numnodes; i++) {
 			else {
 				pNewNet->setNodeSampleProb(nnode, psamples, numsamples);
 			}
-			
+
 			priorLogLik = 0;
 			if(matEdgeLiks) {
 				tempLogLik = 1;
@@ -329,7 +354,6 @@ for(i = 0; i < numnodes; i++) {
 					priorLogLik = -FLT_MAX;
 				else {
 					priorLogLik += tempLogLik;
-					priorLogLik *= numsamples;
 				}
 				pNewNet -> setNodePriorProb(nnode, priorLogLik);
 			}
@@ -446,7 +470,7 @@ for(i = 0; i < numnodes; i++) {
 				           		pcomblist[k] = paux;
 						}
 					}
-			
+
 					if(becho)
 						printf("[%d]%d  ", d, ncomblist);
 
@@ -459,6 +483,7 @@ for(i = 0; i < numnodes; i++) {
 						baseCatnet.setParents(nnode, pcomblist[ncomb], d);
 			     
 						// add perturbation
+						numsubsamples = numsamples;
 						if(perturbations) {
 							numsubsamples = 0;
 							for(j = 0; j < numsamples; j++) {
@@ -468,9 +493,11 @@ for(i = 0; i < numnodes; i++) {
 								}
 							}
 							fLogLik = baseCatnet.setNodeSampleProb(nnode, psubsamples, numsubsamples);
+//printf("pert fLoglik[%d] = %f (%d)\n", nnode, fLogLik, numsubsamples);
 						}
 						else {
 							fLogLik = baseCatnet.setNodeSampleProb(nnode, psamples, numsamples);
+//printf("fLoglik[%d] = %f (%d)\n", nnode, fLogLik, numsamples);
 						}
 
 						/*prior*/
@@ -488,8 +515,9 @@ for(i = 0; i < numnodes; i++) {
 								priorLogLik = -FLT_MAX;
 							tempLogLik = 1;
 							for(i = 0; i < numnodes; i++) 
-								if(i != nnode && bernoulibuff[i] == 0)
+								if(i != nnode && bernoulibuff[i] == 0) {
 									tempLogLik *= (1 - (t_prob)matEdgeLiks[i*numnodes+nnode]);
+}
 							if(tempLogLik > 0)
 								tempLogLik = (t_prob)log((double)tempLogLik);
 							else 
@@ -498,7 +526,6 @@ for(i = 0; i < numnodes; i++) {
 								priorLogLik = -FLT_MAX;
 							else {
 								priorLogLik += tempLogLik;
-								priorLogLik *= numsamples;
 							}
 							fLogLik += priorLogLik;
 						}
@@ -571,6 +598,7 @@ for(i = 0; i < numnodes; i++) {
 			} /* for d */
 
 			else /*if(!bEqualCategories)*/ {
+
 			for(d = fixparsetsize + 1; d <= maxpars; d++) {
 				
 				if(_wait_stop_event(0/*millisecs*/) == 0)
@@ -623,6 +651,7 @@ for(i = 0; i < numnodes; i++) {
 						baseCatnet.setParents(nnode, idparset, d);
 			     
 						// add perturbation
+						numsubsamples = numsamples;
 						if(perturbations) {
 							numsubsamples = 0;
 							for(j = 0; j < numsamples; j++) {
@@ -662,10 +691,10 @@ for(i = 0; i < numnodes; i++) {
 								priorLogLik = -FLT_MAX;
 							else {
 								priorLogLik += tempLogLik;
-								priorLogLik *= numsamples;
 							}
 							fMaxLogLik += priorLogLik;
 						}
+
 						pProbNode = baseCatnet.getNodeProb(nnode);
 						if(pProbNode)
 							probMaxNode = *pProbNode;
@@ -681,7 +710,7 @@ for(i = 0; i < numnodes; i++) {
 									&probMaxNode, fMaxLogLik);
 					} /* if(!getCachedProb) */
 
-					/* find nnode-complexity for pcomblist[ncomb] parent set*/
+					/* find nnode-complexity for pcomblist[ncomb] parent set */
 					nodecomplx = m_pNodeNumCats[nnode]-1;
 					for(k = 0; k < d; k++)
 						nodecomplx *= m_pNodeNumCats[idparset[k]];
@@ -696,7 +725,6 @@ for(i = 0; i < numnodes; i++) {
 							continue;
 						tempLogLik = m_pCatnets[k]->loglik() - 
 							(pProbNode->loglik + pProbNode->priorlik) + fMaxLogLik;
-//printf("complx = %d, pProb = %p, tempLoglik = %f\n", complx, pProbNode, fMaxLogLik);
 						if(!pCurCatnetList[complx] && tempLogLik > -FLT_MAX) {
 							pCurCatnetList[complx] = new CATNET<t_node, t_node_size, t_prob>;
 						}
@@ -775,7 +803,7 @@ for(i = 0; i < numnodes; i++) {
 			CATNET_FREE(m_pNodeNumCats);
 		m_pNodeNumCats = 0;
 
-		return 0;
+		return CATNET_ERR_OK;
 	}
 
 };

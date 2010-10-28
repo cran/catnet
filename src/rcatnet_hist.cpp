@@ -31,8 +31,8 @@
 THREAD_PROC_DEFINE(CatnetSearchHistThreadProc, pParam) {
 	SEARCH_PARAMETERS *pSearchParams = (SEARCH_PARAMETERS*)pParam;
 	if(pSearchParams && pSearchParams->m_pCaller) {
-		CATNET_SEARCH<char, MAX_NODE_NAME, double> *pCaller = 
-			(CATNET_SEARCH<char, MAX_NODE_NAME, double>*)pSearchParams->m_pCaller;
+		CATNET_SEARCH2<char, MAX_NODE_NAME, double> *pCaller = 
+			(CATNET_SEARCH2<char, MAX_NODE_NAME, double>*)pSearchParams->m_pCaller;
 		pCaller->estimate(pSearchParams);
 		pCaller->_exit_thread((void*)0);
 	}
@@ -148,7 +148,7 @@ int *RCatnetSearchHist::_genOrder(const int *porder, int norder, int shuffles, i
 }
 
 SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations, 
-			SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, 
+			SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, SEXP rNodeCats, 
 			SEXP rParentsPool, SEXP rFixedParentsPool, 
 			SEXP rModel, SEXP rMaxIter, 
 			SEXP rThreads, SEXP rUseCache, SEXP rEcho) {
@@ -165,7 +165,7 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 	CATNET<char, MAX_NODE_NAME, double> **pCatnets, *pCurNet;
 	const int **pParents, *pNumParents;
 
-	SEXP dim, rparpool, rmat;
+	SEXP dim, rnodecat, rparpool, rmat;
 
 	_release();
 
@@ -189,6 +189,11 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 		m_nDrives = 1;
 
 	m_bUseCache = LOGICAL(rUseCache)[0];
+	if(m_bUseCache && m_nDrives > 8) {
+		// with many threads in parallel the cache is presumably inefficient - disable it!
+		m_bUseCache = 0;
+		warning("Cache is disabled, too many threads");
+	}
 
 	echo = LOGICAL(rEcho)[0];
 
@@ -224,10 +229,10 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 		m_pTestOrderInverse[n] = (int*)CATNET_MALLOC(m_numNodes*sizeof(int));
 	}
 
-	m_pDrives = (CATNET_SEARCH<char, MAX_NODE_NAME, double>**)CATNET_MALLOC(
-			m_nDrives*sizeof(CATNET_SEARCH<char, MAX_NODE_NAME, double>*));
+	m_pDrives = (CATNET_SEARCH2<char, MAX_NODE_NAME, double>**)CATNET_MALLOC(
+			m_nDrives*sizeof(CATNET_SEARCH2<char, MAX_NODE_NAME, double>*));
 	for(n = 0; n < m_nDrives; n++) {
-		m_pDrives[n] = new CATNET_SEARCH<char, MAX_NODE_NAME, double>();
+		m_pDrives[n] = new CATNET_SEARCH2<char, MAX_NODE_NAME, double>();
 	}
 
 	if(m_bUseCache) {
@@ -238,6 +243,8 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 		PROTECT(rParentSizes = AS_INTEGER(rParentSizes));
 	if(!isNull(rPerturbations))
 		PROTECT(rPerturbations = AS_INTEGER(rPerturbations));
+	if(!isNull(rNodeCats))
+		PROTECT(rNodeCats = AS_LIST(rNodeCats));
 	if(!isNull(rParentsPool) && length(rParentsPool) == m_numNodes)
 		PROTECT(rParentsPool = AS_LIST(rParentsPool));
 	if(!isNull(rFixedParentsPool) && length(rFixedParentsPool) == m_numNodes)
@@ -248,6 +255,7 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 		m_pSearchParams[n] = new SEARCH_PARAMETERS (
 			m_numNodes, m_numSamples, m_maxParentSet, maxComplexity, 
 			(m_nDrives < 2)?echo:0, 
+			!isNull(rNodeCats), 
 			!isNull(rParentSizes), !isNull(rPerturbations), 
 			!isNull(rParentsPool), !isNull(rFixedParentsPool), FALSE, 
 			m_bUseCache?&m_cache_mutex:0, m_pDrives[n]);
@@ -302,6 +310,8 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 		for(j = 0; j < m_numSamples; j++) {
 			for(i = 0; i < m_numNodes; i++) {
 				pSamples[j*m_numNodes + i] = pRsamples[j*m_numNodes + m_pTestOrder[n][i] - 1];
+				if(R_IsNA(pSamples[j*m_numNodes + i]) || pSamples[j*m_numNodes + i] < 1)
+					pSamples[j*m_numNodes + i] = CATNET_NAN;
 			}
 		}
 
@@ -314,10 +324,21 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 			}
 		}
 
+		if(!isNull(rNodeCats)) {
+			for(i = 0; i < m_numNodes; i++) {
+				rnodecat = AS_INTEGER(VECTOR_ELT(rNodeCats, (int)(m_pTestOrder[n][i] - 1)));
+				len = length(rnodecat);
+				if(isVector(rnodecat) && len > 0) {
+					m_pSearchParams[n]->m_pNodeNumCats[i] = len;
+					m_pSearchParams[n]->m_pNodeCats[i] = (int*)CATNET_MALLOC(len*sizeof(int));
+					for(j = 0; j < len; j++)
+						m_pSearchParams[n]->m_pNodeCats[i][j] = INTEGER(rnodecat)[j];
+				}
+			}
+		}
 
 		if(!isNull(rParentsPool) && length(rParentsPool) == m_numNodes) {
 			parentsPool = m_pSearchParams[n]->m_parentsPool;
-
 			for(i = 0; i < m_numNodes; i++) {
 				rparpool = AS_INTEGER(VECTOR_ELT(rParentsPool, (int)(m_pTestOrder[n][i] - 1)));
 				len = length(rparpool);
@@ -378,6 +399,8 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 			}
 		}
 
+		m_pSearchParams[n]->m_seed = rand();
+
 		m_pDrives[n] -> _start_thread(CatnetSearchHistThreadProc, (void*)m_pSearchParams[n]);
 
 		} // for(n = 0; n < m_nDrives; n++)
@@ -409,7 +432,7 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 					if(!pCatnets[nCurNet])
 						continue;
 					// net complexity = nCurNet + m_numNodes*(1 + maxCategories)
-					complx = pCatnets[nCurNet]->loglik() - pCatnets[nCurNet]->complexity();
+					complx = m_numSamples*pCatnets[nCurNet]->loglik() - pCatnets[nCurNet]->complexity();
 					if(complx > fLogLik) {
 						fLogLik = complx;
 						pCurNet = pCatnets[nCurNet];
@@ -422,7 +445,7 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 				for(nCurNet = 0; nCurNet < nCatnets; nCurNet++) {
 					if(!pCatnets[nCurNet])
 						continue;
-					complx = pCatnets[nCurNet]->loglik() - ftemp * pCatnets[nCurNet]->complexity();
+					complx = m_numSamples*pCatnets[nCurNet]->loglik() - ftemp * pCatnets[nCurNet]->complexity();
 					if(complx > fLogLik) {
 						fLogLik = complx;
 						pCurNet = pCatnets[nCurNet];
@@ -441,12 +464,15 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 					}
 			}
 			// if nothing has been found
-			if(!pCurNet)
+			if(!pCurNet) {
 				continue;
+			}
 
+			//printf("curnet %d  %f\n", pCurNet->complexity(), pCurNet->loglik());
 			fLogLik = pCurNet->loglik();
 
 			ftemp = (double)exp((double)fLogLik / (double)(m_numSamples*m_numNodes));
+
 			pNumParents = pCurNet->numParents();
 			pParents = pCurNet->parents();
 			for(j = 0; j < m_numNodes; j++) {
@@ -478,6 +504,8 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 	if(!isNull(rParentSizes) && length(rParentSizes) == m_numNodes) 
 		UNPROTECT(1);
 	if(!isNull(rPerturbations))
+		UNPROTECT(1);
+	if(!isNull(rNodeCats))
 		UNPROTECT(1);
 	if(!isNull(rParentsPool) && length(rParentsPool) == m_numNodes)
 		UNPROTECT(1);

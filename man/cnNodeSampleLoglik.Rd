@@ -1,5 +1,6 @@
 \name{cnNodeSampleLoglik}
 \alias{cnNodeSampleLoglik}
+\alias{cnNodeSampleProb}
 
 \title{Node Log-likelihood}
 
@@ -9,6 +10,7 @@ with respect to a specified parent set.
 
 \usage{
 cnNodeSampleLoglik(node, parents, data, perturbations=NULL)
+cnNodeSampleProb(node, parents, data, perturbations=NULL)
 }
 
 \arguments{

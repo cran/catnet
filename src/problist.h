@@ -173,7 +173,7 @@ struct PROB_LIST {
 					pProbs[k + i] *= pp;
 			}
 			else {
-				// set neutral probability
+				// set uniform probability
 				t_prob favg;
 				favg = (t_prob)1 / (t_prob)numCats;
 				pp = 0;
@@ -199,17 +199,15 @@ struct PROB_LIST {
 			if (pp <= 0) {
 				/////////////////////////////////////////////////////////////////
 				// The next condition determines whether parent sets with  
-				// non-sample-populated slots should be abandoned
+				// non-sample-populated slots should be skipped
 				// loglik = -FLT_MAX;
 				// break;
-				/////////////////////////////////////////////////////////////////
 			}
 			else {
 				pp = 1 / pp;
 				for (i = 0; i < numCats; i++) {
-					if(pProbs[k + i] > 0) {
+					if(pProbs[k + i] > 0)
 						loglik += pProbs[k + i] * log(pProbs[k + i] * pp);
-					}
 				}
 			}
 			k += numCats;

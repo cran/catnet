@@ -95,9 +95,10 @@ setMethod("cnPredict", c("catNetwork"),
                   if(is.na(data[i,j]))
                     next                  
                   c <- which(object@categories[[i]] == data[i,j])
-                  if(length(c) < 1 || c < 1 || c > length(object@categories[[i]]))
-                    stop("Sample data should be either indices or categorical values.")
-                  
+                  if(length(c) < 1 || c < 1 || c > length(object@categories[[i]])) {
+                    warning("Category ", data[i,j], " for node ", i, " sample ", j, " is illigal - reset to NA")
+                    c <- NA
+                  }
                   data[i,j] <- c
                 }
               }

@@ -1,4 +1,38 @@
 
+cnEdgeDistancePearson <- function(data, perturbations) {
+
+  if(!is.matrix(data) && !is.data.frame(data))
+    stop("'data' should be a matrix or data frame of categories")
+
+  if(is.null(perturbations)) {
+    warning("Perturbations are essential for estimating the pairwise causality")
+  }
+
+  if(is.data.frame(data)) {
+    data <- as.matrix(t(data))
+    if(!is.null(perturbations)) { 
+      if(!is.data.frame(perturbations))
+        stop("Perturbations should be a data frame")
+      perturbations <- as.matrix(t(perturbations))
+    }
+  }
+  
+  r <- .categorizeSample(data, perturbations, object=NULL, ask=FALSE)
+  data <- r$data
+  perturbations <- r$perturbations
+  numnodes <- dim(data)[1]
+  numsamples <- dim(data)[2]
+  nodenames <- rownames(data)
+  
+  mat <- .Call("ccnPearsonPairwise", 
+                  data, perturbations, 
+                  PACKAGE="catnet")
+  klmat <- matrix(mat, numnodes, numnodes)
+  rownames(klmat)<-nodenames
+  colnames(klmat)<-nodenames
+  return(klmat)
+}
+
 .nodeChisq <- function(idroot, ppars, pcatlist, idx, problist, freqlist) {
 
   if(is.null(ppars) || length(idx) < 1) {

@@ -2,6 +2,9 @@
 \alias{cnComplexity}
 \alias{cnComplexity,catNetwork-method}
 \alias{cnComplexity,catNetwork,integer-method}
+\alias{cnKLComplexity}
+\alias{cnKLComplexity,catNetwork-method}
+\alias{cnKLComplexity,catNetwork-method,integer-method}
 
 \title{Network Complexity}
 
@@ -9,6 +12,7 @@
 
 \usage{
 cnComplexity(object, node)
+cnKLComplexity(object, node)
 }
 
 \arguments{

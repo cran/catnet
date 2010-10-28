@@ -9,7 +9,7 @@ The frequency of node edges is obtained by fitting networks consistent to random
 \usage{
 cnSearchHist(data, perturbations, 
 	maxParentSet, parentSizes=NULL, maxComplexity=0, 
-	parentsPool=NULL, fixedParentsPool=NULL, 
+	nodeCats=NULL, parentsPool=NULL, fixedParents=NULL, 
 	selectMode = "BIC", 
 	maxIter=32, numThreads=2, echo=FALSE)
 }
@@ -20,8 +20,9 @@ cnSearchHist(data, perturbations,
 \item{maxParentSet}{an \code{integer}, the maximal number of parents per node}
 \item{parentSizes}{an \code{integer} vector, maximal number of parents per node}
 \item{maxComplexity}{an \code{integer}, the maximal network complexity for the search}
+\item{nodeCats}{a \code{list} of node categories}
 \item{parentsPool}{a list of parent sets to choose from}
-\item{fixedParentsPool}{a list of parent sets to choose from}
+\item{fixedParents}{a list of parent sets to choose from}
 \item{selectMode}{a \code{character}, optimization network selection criterion such as "AIC" and "BIC"}
 \item{maxIter}{an \code{integer}, the number of single order searches to be performed}	
 \item{numThreads}{an \code{integer} value, the number of parallel threads}

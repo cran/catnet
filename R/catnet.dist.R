@@ -108,12 +108,14 @@ setMethod("show", "catNetworkEvaluate",
 setMethod("cnPlot", "catNetworkEvaluate",
           function(object, file) {
 
-            if(length(object@loglik) > 0 && (length(object@tp) == 0 || object@tp[1] == -1)) {
+            if(length(object@loglik) > 0 && length(object@complexity) > 0 &&
+               (length(object@tp) == 0 || object@tp[1] == -1)) {
               par(mfrow=c(1,1))
               plot(object@complexity, object@loglik, xlab="complexity", ylab="log(likelihood)", lty=1, 
                    main=paste(object@numsamples, " samples, ", object@numnodes, " nodes.", sep=""))
             }            
-            else if(length(object@hammexp) > 0 && !is.na(object@hammexp[1])) {
+            else if(length(object@loglik) > 0 && length(object@complexity) > 0 &&
+                    length(object@hammexp) > 0 && !is.na(object@hammexp[1])) {
               par(mfrow=c(3,2))
               plot(object@complexity, object@loglik, xlab="complexity", ylab="log(likelihood)", lty=1, 
                    main=paste(object@numsamples, " samples, ", object@numnodes, " nodes.", sep=""))
@@ -136,7 +138,7 @@ setMethod("cnPlot", "catNetworkEvaluate",
                    xlab="complexity", ylab="FN", lty=1,
                    main="False Nagative Directed Edges")
             }
-            else{
+            else if(length(object@loglik) > 0 && length(object@complexity) > 0) {
               par(mfrow=c(2,2))
               xx <- object@complexity
               plot(xx, object@loglik, xlab="complexity", ylab="log(likelihood)", lty=1, 
@@ -147,9 +149,19 @@ setMethod("cnPlot", "catNetworkEvaluate",
               plot(xx, object@tp,
                    xlab="complexity", ylab="TP", lty=1,
                    main="True Positive Directed Edges")
-              plot(xx, object@skel.tp,
-                   xlab="complexity", ylab="skeleton TP", lty=1,
-                   main="True Positive Edges")
+              plot(xx, object@fp,
+                   xlab="complexity", ylab="FP", lty=1,
+                   main="False Positive Directed Edges")
+              ##plot(xx, object@skel.tp,
+              ##     xlab="complexity", ylab="skeleton TP", lty=1,
+              ##     main="True Positive Edges")
+            }
+            else if(length(object@nets) > 0) {
+              loglik <- sapply(object@nets, function(net) net@likelihood)
+              complx <- sapply(object@nets, function(net) net@complexity)
+              par(mfrow=c(1,1))
+              plot(complx, loglik, xlab="complexity", ylab="log(likelihood)", lty=1, 
+                   main=paste(object@numsamples, " samples, ", object@numnodes, " nodes.", sep=""))              
             }
             
             })
@@ -160,6 +172,11 @@ setMethod("cnProcTime", "catNetworkEvaluate",
         })
 
 setMethod("cnCompare", c("catNetwork","catNetwork"),
+          function(object1, object2, extended = TRUE) {
+            return(.compare(object1, object2, extended))
+          })
+
+setMethod("cnCompare", c("catNetwork","matrix"),
           function(object1, object2, extended = TRUE) {
             return(.compare(object1, object2, extended))
           })
@@ -176,41 +193,54 @@ setMethod("cnCompare", c("catNetwork","catNetworkEvaluate"),
 
 .compare <- function(object1 ,object2, extended = TRUE) {
 
-  if(!is(object1, "catNetwork") || !is(object2, "catNetwork"))
-    stop("No valid networks are specified.")
-
-   if(object1@numnodes != object2@numnodes)
-    stop("Only networks with the same number of nodes can be compared.")
-
-  if(prod(tolower(object1@nodes) == tolower(object2@nodes)) == 0) {
-    norder <- order(cnNodes(object1))
-    object1 <- cnReorderNodes(object1, norder)
-    norder <- order(cnNodes(object2))
-    object2 <- cnReorderNodes(object2, norder)
+  if(!is(object1, "catNetwork"))
+    stop("catNetwork should be specified")
+  numnodes <- object1@numnodes
+  
+  if(is(object2, "catNetwork")) {
+    if(object1@numnodes != object2@numnodes)
+      stop("Only networks with the same number of nodes can be compared")
+    if(prod(tolower(object1@nodes) == tolower(object2@nodes)) == 0) {
+      norder <- order(cnNodes(object1))
+      object1 <- cnReorderNodes(object1, norder)
+      norder <- order(cnNodes(object2))
+      object2 <- cnReorderNodes(object2, norder)
+    }
+    if(prod(tolower(object1@nodes) == tolower(object2@nodes)) == 0)
+      stop("Only networks with the same nodes can be compared")
+    numnodes2 <- object2@numnodes
+    mpartrue <- cnMatParents(object1)
+    mpar <- cnMatParents(object2)
   }
-
-  if(prod(tolower(object1@nodes) == tolower(object2@nodes)) == 0)
-    stop("Only networks with the same nodes can be compared.")
+  else if(is.matrix(object2) && dim(object2)[1] == dim(object2)[2]) {
+    numnodes2 <- dim(object2)[1]
+    if(numnodes != numnodes2)
+      stop("The number of nodes should be equal")
+    if(!is.null(rownames(object2)) &&
+       prod(tolower(object1@nodes) == tolower(rownames(object2))) == 0)
+      stop("Only objects with the same nodes can be compared")
+    mpartrue <- cnMatParents(object1)
+    mpar <- matrix(as.integer(object2 > 0), nrow=numnodes)
+  }
+  else
+    stop("No valid second object is specified")
   
   out <- new("catNetworkDistance")
 
   ## KL-distance
   ##out@KLdist <- cnMarginalKLdist(object1, object2)
 
-  numnodes <- object1@numnodes
-  if(numnodes != object2@numnodes)
-    stop("numnodes != object2@numnodes")
-  
-  mpartrue <- cnMatParents(object1)
-  mpar <- cnMatParents(object2)
-
   out@tp <- sum(mpartrue==1 & mpar==1)
   out@fn <- sum(mpartrue == 1 & mpar == 0)
   out@fp <- sum(mpartrue == 0 & mpar == 1)
 
   tn <- sum(mpartrue==0 & mpar==0)
-  out@sp <- tn/(tn+out@fp)
-  out@sn <- out@tp/(out@tp+out@fn)
+  out@sp <- 1
+  if(tn+out@fp>0)
+    out@sp <- tn/(tn+out@fp)
+  out@sn <- 1
+  if(out@tp+out@fn>0)
+    out@sn <- out@tp/(out@tp+out@fn)
   out@fscore <- 2*out@sp*out@sn/(out@sp+out@sn)
 
   out@skel.tp <- sum((t(mpartrue)+mpartrue)==1 & (t(mpar)+mpar)==1)/2
@@ -229,7 +259,7 @@ setMethod("cnCompare", c("catNetwork","catNetworkEvaluate"),
 
   if(!extended)
 	return(out)
-
+  
   m1 <- mpartrue
   sum1 <- m1
   m2 <- mpar
@@ -248,7 +278,10 @@ setMethod("cnCompare", c("catNetwork","catNetworkEvaluate"),
 
   out@order.fp <- sum((t(sum1) > 0) & (sum2 > 0))
   out@order.fn <- sum((sum1 > 0) & (t(sum2) > 0))
-
+  ## it's better
+  #out@order.fp <- sum((sum1 > 0) & (sum2 == 0))
+  #out@order.fn <- sum((sum1 == 0) & (sum2 > 0))
+  
   out@markov.fp <- 0
   out@markov.fn <- 0
   for(nnode in 1:numnodes) {
@@ -275,7 +308,7 @@ findNetworkDistances <- function(object, numsamples, nets, extended = TRUE) {
 
   nnets <- length(nets)
   if(nnets==0)
-    stop("No networks are specified.")
+    stop("No networks are given")
   for(i in 1:nnets)
     if(is.null(nets[[i]]))
       break
@@ -327,8 +360,12 @@ findNetworkDistances <- function(object, numsamples, nets, extended = TRUE) {
     out@fp[i] <- sum(mpartrue == 0 & mpar == 1)
 
     tn <- sum(mpartrue==0 & mpar==0)
-    out@sp[i] <- tn/(tn+out@fp[i])
-    out@sn[i] <- out@tp[i]/(out@tp[i]+out@fn[i])
+    out@sp[i] <- 1
+    if(tn+out@fp[i]>0)
+      out@sp[i] <- tn/(tn+out@fp[i])
+    out@sn[i] <- 1
+    if(out@tp[i]+out@fn[i]>0)
+      out@sn[i] <- out@tp[i]/(out@tp[i]+out@fn[i])
     out@fscore[i] <- 2*out@sp[i]*out@sn[i]/(out@sp[i]+out@sn[i])
     
     out@skel.tp[i] <- sum((t(mpartrue)+mpartrue)==1 & (t(mpar)+mpar)==1)/2
@@ -362,7 +399,10 @@ findNetworkDistances <- function(object, numsamples, nets, extended = TRUE) {
 
     out@order.fp[i] <- sum((t(sum1) > 0) & (sum2 > 0))
     out@order.fn[i] <- sum((sum1 > 0) & (t(sum2) > 0))
-
+    ## it's better
+    ##out@order.fp[i] <- sum((sum1 > 0) & (sum2 == 0))
+    ##out@order.fn[i] <- sum((sum1 == 0) & (sum2 > 0))
+    
     out@markov.fp[i] <- 0
     out@markov.fn[i] <- 0
     for(nnode in 1:numnodes) {

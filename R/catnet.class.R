@@ -11,7 +11,7 @@ setClass("catNetwork",
                         maxCategories="integer", categories="list",
                         probabilities="list",
                         complexity="integer",
-                        nodeComplexity="vector",
+                        nodeComplexity="ANY",
                         likelihood="numeric",
                         nodeLikelihood="ANY"), 
          validity = function(object) validCatNetwork(object),
@@ -64,11 +64,11 @@ setGeneric("cnSamples", function(object, numsamples=1, perturbations=NULL, outpu
            standardGeneric("cnSamples")
            )
 
-setGeneric("cnSetProb", function(object, data)
+setGeneric("cnSetProb", function(object, data, perturbations=NULL, nodeCats=NULL)
            standardGeneric("cnSetProb")
            )
 
-setGeneric("cnLoglik", function(object, data, bysample=FALSE)
+setGeneric("cnLoglik", function(object, data, perturbations=NULL, bysample=FALSE)
            standardGeneric("cnLoglik")
            )
 
@@ -90,6 +90,10 @@ setGeneric("cnEvaluate", function(object, data, perturbations=NULL, maxParentSet
 
 setGeneric("cnComplexity", function(object, node)
            standardGeneric("cnComplexity")
+           )
+
+setGeneric("cnKLComplexity", function(object, node)
+           standardGeneric("cnKLComplexity")
            )
 
 ## returns a graph object
@@ -156,13 +160,18 @@ setGeneric("cnCluster",
            standardGeneric("cnCluster")
            )
 
+setGeneric("cnClusterSep", 
+          function(object, data, perturbations=NULL)
+           standardGeneric("cnClusterSep")
+           )
+
 # draw a graph
 setGeneric("cnPlot", 
           function(object, file=NULL)
            standardGeneric("cnPlot")
            )
 
-setGeneric("cnFindAIC", function(object)
+setGeneric("cnFindAIC", function(object, numsamples)
            standardGeneric("cnFindAIC")
            )
 

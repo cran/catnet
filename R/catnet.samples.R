@@ -29,10 +29,30 @@ setMethod("cnSamples", c("catNetwork"),
 	  if(!is.numeric(numsamples) && !is.integer(numsamples))
             stop("The number of samples should be integer")
 	  numsamples <- as.integer(numsamples)
-          if(!is.null(perturbations) && is.vector(perturbations))
-            data <- sapply(1:numsamples, function(x) x<-genRandomCatsPert(object, perturbations))
+          if(!is.null(perturbations)) {
+            if(output=="frame" && !is.vector(perturbations))
+              perturbations <- t(perturbations)
+            if(is.vector(perturbations)) {
+              perturbations <- sapply(1:numsamples, function(j) perturbations)
+            }
+            if(ncol(perturbations) != numsamples || nrow(perturbations) != object@numnodes)
+              stop("The perturbation size should be ", object@numnodes, " by ", numsamples)
+            for(i in 1:object@numnodes)
+              if(is.character(perturbations[i,]))
+                perturbations[i,] <- sapply(perturbations[i,], function(cc) {
+                  id <- which(object@categories[[i]]==cc)
+                  if(length(id) > 0)
+                    return(id[1])
+                  else
+                    return(0)
+                  })
+          }
+          if(!is.null(perturbations))
+            data <- sapply(1:numsamples, function(j) {
+              genRandomCatsPert(object, perturbations[, j])
+            })
           else
-            data <- sapply(1:numsamples, function(x) genRandomCats(object))
+            data <- sapply(1:numsamples, function(j) genRandomCats(object))
 	  data <- matrix(data, ncol=numsamples)
           rownames(data)<-object@nodes
           if(!as.index) {
@@ -76,8 +96,8 @@ genRandomCats <- function(object) {
   for(i in (1:length(rpath))) {
     ##cat(i,", ")
     nnode <- rpath[i]
-    if(length(object@categories[[nnode]]) < 2){
-      data[nnode] <- -1
+    if(length(object@categories[[nnode]]) < 1){
+      data[nnode] <- 1
       next
     }
     if(is.null(object@parents[[nnode]])) {
@@ -116,10 +136,10 @@ genRandomCatsPert <- function(object, perturbations) {
       data[nnode] <- perturbations[nnode]
       next
     }
-    if(length(object@categories[[nnode]]) < 2){
-        data[nnode] <- -1
-        next
-      }
+    if(length(object@categories[[nnode]]) < 1){
+      data[nnode] <- 1
+      next
+    }
     if(is.null(object@parents[[nnode]])) {      
       r <- runif(1,0,1)
       icat <- 1
@@ -235,7 +255,7 @@ normalizeProb <- function(net) {
 # normalize the conditional probability tree-list at [idroot] so that it sums to 1
 normalizeProbSlot <- function(idroot, ppars, pcatlist, idx, problist) {
   if(is.null(ppars) || length(idx) < 1) {
-    if(length(problist) != length(pcatlist[[idroot]]) || length(pcatlist[[idroot]]) < 2) {
+    if(length(problist) != length(pcatlist[[idroot]]) || length(pcatlist[[idroot]]) < 1) {
        return(problist)
     }
     ps <- sum(problist)
@@ -247,7 +267,8 @@ normalizeProbSlot <- function(idroot, ppars, pcatlist, idx, problist) {
         nn <- length(problist)
         avg <- 1 / nn
         problist <- rep(avg, nn)
-        problist[nn] <- 1 - sum(problist[1:(nn-1)])
+        if(nn > 1)
+          problist[nn] <- 1 - sum(problist[1:(nn-1)])
       }
     }
     return(problist)
@@ -266,7 +287,7 @@ normalizeProbSlot <- function(idroot, ppars, pcatlist, idx, problist) {
 # multinomial model is assumed 
 nodeCondLoglik <- function(idroot, ppars, pcatlist, idx, problist) {
   if(is.null(ppars) || length(idx) < 1) {
-    if(length(pcatlist[[idroot]]) < 2) {
+    if(length(pcatlist[[idroot]]) < 1) {
        return(0)
     }
     probs <- problist
@@ -330,15 +351,17 @@ nodeCondLoglik <- function(idroot, ppars, pcatlist, idx, problist) {
 
 
 setMethod("cnSetProb", "catNetwork",
-          function(object, data) {
+          function(object, data, perturbations=NULL, nodeCats = NULL) {
             
             if(!is.matrix(data) && !is.data.frame(data))
               stop("'data' should be a matrix or data frame of categories")
-            
-            r <- .categorizeSample(data, NULL, object)
+
+            ## call this if you want to keep objects' categories
+            ##r <- .categorizeSample(data, perturbations, object)
+            ## or that if you want to change them
+            r <- .categorizeSample(data, perturbations, object=NULL, nodeCats=nodeCats, ask=TRUE)
             data <- r$data
-            object@categories <- r$categories
-            object@maxCategories <- r$maxCategories
+            perturbations <- r$perturbations
             
             if(length(dim(data)) == 2 && dim(data)[1] != object@numnodes)
 	      stop("The number of nodes in the object and data should be equal.")
@@ -347,9 +370,14 @@ setMethod("cnSetProb", "catNetwork",
             if(length(rownames) != object@numnodes)
               stop("The data rows should be named after the nodes of the object.")
 
+            ## objects' categories has to be reset for they might be different from the original if set by nodeCats
+            object@categories <- r$categories
+            object@maxCategories <- r$maxCategories
+            
             if(prod(tolower(rownames) == tolower(object@nodes)) == 0) {
               norder <- order(rownames)
               data <- data[norder,]
+              perturbations <- perturbations[norder,]
               rownames <- rownames(data)
               norder <- order(object@nodes)
               object <- cnReorderNodes(object, norder)
@@ -357,6 +385,14 @@ setMethod("cnSetProb", "catNetwork",
 
             if(prod(tolower(rownames) == tolower(object@nodes)) == 0)
               stop("The row names should correspond to the object nodes.")
+
+            ## we don't need this actually
+            ## specify object's categories for the search
+            catIndices <- NULL
+            if(!is.null(nodeCats)) {
+              ## the categories are explicitly given and may not come from the data
+              catIndices <- lapply(1:numnodes, function(i) 1:length(object@categories[[i]]))
+            }
 
 	    fast <- TRUE
 
@@ -372,7 +408,7 @@ setMethod("cnSetProb", "catNetwork",
                   })
 
 		newobject <- .Call("ccnSetProb", 
-                      	object, data, NULL, 
+                      	object, data, perturbations, 
                       	PACKAGE="catnet")
 
                 ## awkward but necessary
@@ -384,289 +420,9 @@ setMethod("cnSetProb", "catNetwork",
             
             newobject@categories <- object@categories
             newobject@maxCategories <- object@maxCategories
+            newobject@complexity <- cnComplexity(object)
             
 	    return(newobject)
           }
 )
 
-.nodeLikelihood <- function(idroot, ppars, pcatlist, idx, problist, psample) {
-  if(is.null(ppars) || length(idx) < 1) {
-    ##cat(idroot," ", psample[idroot], "\n")
-    if(psample[idroot] > length(pcatlist[[idroot]]))
-      stop("Wrong category\n")
-    cat <- psample[idroot]
-    ##cat(idroot, ": nodeLikelihood ", cat, ", ", problist[cat], "\n")
-    return(problist[cat])
-  }
-  idnode <- ppars[idx[1]]
-  if(idnode > length(psample))
-    stop("Wrong sample")
-  cat <- psample[idnode]
-  ##cat(idroot," ", idnode, " cat = ", cat)
-  return(.nodeLikelihood(idroot, ppars, pcatlist, idx[-1], problist[[cat]], psample))
-}
-
-.networkLikelihood <- function(object, data) {
-  if(dim(data)[1] != object@numnodes)
-    stop("Incompatible sample dimensions.\n")
-  
-  numsamples <- dim(data)[2]
-  if(numsamples < 1)
-    stop("No samples\n")
-
-  r <- .categorizeSample(data, NULL, object)
-  data <- r$data
-  
-  floglik <- 0
-  for(j in (1:numsamples)) {
-    ps <- data[,j]
-    liklist <- sapply(seq(1,object@numnodes), function(nnode) {
-      .nodeLikelihood(nnode, object@parents[[nnode]], object@categories, 
-                      seq(1,length(object@parents[[nnode]])),
-                      object@probabilities[[nnode]], ps)
-    })
-    ##floglik <- floglik + sum(sapply(liklist, function(x) if(x > 0) log(x) else -Inf))
-    floglik <- floglik + sum(sapply(liklist, function(x) if(x > 0) log(x) else 0))
-  }
-
-  return(floglik)
-}
-
-
-setMethod("cnLoglik", c("catNetwork"), 
-          function(object, data, bysample=FALSE) {
-
-            if(!is.matrix(data) && !is.data.frame(data))
-              stop("'data' should be a matrix or data frame of categories")
-
-            if(is.data.frame(data))
-              data <- as.matrix(t(data))
-
-            if(length(dim(data)) == 2 && dim(data)[1] != object@numnodes)
-              stop("The number of nodes in  the object and data should be equal")
-            
-            rownames <- rownames(data)
-            if(length(rownames) != object@numnodes)
-              stop("The data rows/cols should be named after the nodes of the object.")
-            
-            if(prod(tolower(rownames) == tolower(object@nodes)) == 0) {
-              norder <- order(rownames)
-              ## keep the matrix format !!
-              data <- as.matrix(data[norder,])
-              rownames <- rownames(data)
-              norder <- order(object@nodes)
-              object <- cnReorderNodes(object, norder)
-            }
-            
-            if(prod(tolower(rownames) == tolower(object@nodes)) == 0)
-              stop("The data names should correspond to the object nodes.")
-
-            r <- .categorizeSample(data, NULL, object, ask=FALSE)
-            data <- r$data
-            if(object@maxCategories < r$maxCategories)
-              stop("Data has more categories than the object")
-            
-            ##if(missing(fast) || is.null(fast)) 
-            fast <- TRUE
-            
-            numnodes <- dim(data)[1]
-            numsamples <- dim(data)[2]
-            
-            if(fast) {
-              loglik <- .Call("ccnLoglik", 
-                              object, data, NULL, 
-                              PACKAGE="catnet")
-              if(bysample)
-                return(loglik)
-              return(sum(loglik))
-            }
-            else
-              return(.networkLikelihood(object, data))
-          })
-
-
-.nodeSampleLoglik <- function(nnode, parentSet, data, categories, maxCategories) {
-
-  numnodes <- dim(data)[1]
-  numsamples <- dim(data)[2]
-
-  nodeprob <- initSampleProb(nnode, parentSet, categories, seq(1,length(parentSet)))
-  for(j in (1:numsamples)) {
-    ps <- data[,j]
-    ## increment frequency      
-    nodeprob <- updateSampleProb(nnode, parentSet, categories,
-                                 seq(1,length(parentSet)), nodeprob, ps)
-  }
-
-  nodeprob <- normalizeProbSlot(nnode, parentSet, categories,
-                   seq(1,length(parentSet)), nodeprob)
-
-  # calculate likelihood (a kind of redundancy)
-  floglik <- 0
-  for(j in (1:numsamples)) {
-    ps <- data[,j]
-    lik <- .nodeLikelihood(nnode, parentSet, categories,
-                      seq(1,length(parentSet)),
-                      nodeprob, ps)
-    floglik <- floglik + log(lik)
-  }
-  return(floglik)
-}
-
-cnNodeSampleLoglik <- function(node, parents, data, perturbations = NULL) {
-
-  if(!is.matrix(data) && !is.data.frame(data))
-    stop("data should be a matrix or data frame of node categories")
-
-  if(is.matrix(data)) {
-    numnodes <- dim(data)[1]
-    numsamples <- dim(data)[2]  
-  }
-  else {
-    numnodes <- dim(data)[2]
-    numsamples <- dim(data)[1]  
-  }
-  
-  if(numsamples < 1)
-    stop("No samples\n")
-
-  r <- .categorizeSample(data, perturbations)
-  data <- r$data
-  categories <- r$categories
-  maxCategories <- r$maxCategories
-  
-  if(!is.list(node) && !is.list(parents)) {
-    if(node < 1 || node > numnodes)
-      stop("Incompatible sample dimensions.\n")
-    if(!is.null(perturbations)) {
-      data <- data[, perturbations[node,]==0]
-    }  
-    return(.nodeSampleLoglik(node, parents, data, categories, maxCategories))
-  }
-
-  if(is.list(node) && is.list(parents)) {
-    if(length(node) != length(parents))
-      stop("'node' and 'parents' lists should be of equal length")
-    loglik <- rep(0, length(node))
-    for(i in 1:length(node)) {
-      nod <- node[[i]]
-      par <- parents[[i]]
-      ##cat("nod=", nod, ", par=", par, "\n")
-      if(nod < 1 || nod > numnodes)
-        stop("Incompatible sample dimensions.\n")
-      if(!is.null(perturbations)) {
-        subdata <- data[, perturbations[node,]==0]
-        loglik[i] <- .nodeSampleLoglik(nod, par, subdata, categories, maxCategories)
-      }
-      else {
-        loglik[i] <- .nodeSampleLoglik(nod, par, data, categories, maxCategories)
-      }
-    }
-    return(loglik)
-  }
-
-  return(0)
-}
-
-
-setMethod("cnNodeLoglik", c("catNetwork"), 
-          function(object, node, data, perturbations=NULL) {
-
-            if(!is.matrix(data) && !is.data.frame(data))
-              stop("'data' should be a matrix or data frame of categories")
-
-            if(is.data.frame(data))
-              data <- as.matrix(t(data))
-
-            if(length(dim(data)) == 2 && dim(data)[1] != object@numnodes)
-              stop("The number of nodes in  the object and data should be equal")
-            
-            rownames <- rownames(data)
-            if(length(rownames) != object@numnodes)
-              stop("The data rows/cols should be named after the nodes of the object.")
-            
-            if(prod(tolower(rownames) == tolower(object@nodes)) == 0) {
-              norder <- order(rownames)
-              ## keep the matrix format !!
-              data <- as.matrix(data[norder,])
-              rownames <- rownames(data)
-              norder <- order(object@nodes)
-              object <- cnReorderNodes(object, norder)
-            }
-            
-            if(prod(tolower(rownames) == tolower(object@nodes)) == 0)
-              stop("The data names should correspond to the object nodes.")
-
-            if(!is.numeric(node) || node < 1 || node > object@nodes)
-              stop("Wrong node")
-            node <- as.integer(node)
-              
-            r <- .categorizeSample(data, NULL, object, ask=FALSE)
-            data <- r$data
-            if(object@maxCategories < r$maxCategories)
-              stop("Data has more categories than the object")
-            
-            fast <- TRUE
-            
-            numnodes <- dim(data)[1]
-            numsamples <- dim(data)[2]
-            
-            if(fast) {
-              loglik <- .Call("ccnNodeLoglik", 
-                              object, node, data, NULL, 
-                              PACKAGE="catnet")
-              return(loglik)
-            }
-            else
-              return(.nodeLikelihood(node,
-                                     object@parents[[node]], object@categories, 
-                                     seq(1,length(object@parents[[node]])),
-                                     object@probabilities[[node]], data))
-          })
-
-
-setMethod("cnNodeLoglikError", c("catNetwork"), 
-          function(object, node, data, perturbations=NULL) {
-
-            if(!is.matrix(data) && !is.data.frame(data))
-              stop("'data' should be a matrix or data frame of categories")
-
-            if(is.data.frame(data))
-              data <- as.matrix(t(data))
-
-            if(length(dim(data)) == 2 && dim(data)[1] != object@numnodes)
-              stop("The number of nodes in  the object and data should be equal")
-            
-            rownames <- rownames(data)
-            if(length(rownames) != object@numnodes)
-              stop("The data rows/cols should be named after the nodes of the object.")
-            
-            if(prod(tolower(rownames) == tolower(object@nodes)) == 0) {
-              norder <- order(rownames)
-              ## keep the matrix format !!
-              data <- as.matrix(data[norder,])
-              rownames <- rownames(data)
-              norder <- order(object@nodes)
-              object <- cnReorderNodes(object, norder)
-            }
-            
-            if(prod(tolower(rownames) == tolower(object@nodes)) == 0)
-              stop("The data names should correspond to the object nodes.")
-
-            if(!is.numeric(node) || node < 1 || node > object@nodes)
-              stop("Wrong node")
-            node <- as.integer(node)
-              
-            r <- .categorizeSample(data, NULL, object, ask=FALSE)
-            data <- r$data
-            if(object@maxCategories < r$maxCategories)
-              stop("Data has more categories than the object")
-            
-            numnodes <- dim(data)[1]
-            numsamples <- dim(data)[2]
-            
-            loglik <- .Call("ccnNodeLoglikError", 
-                            object, node, data, NULL, 
-                            PACKAGE="catnet")
-            return(loglik)
-          })

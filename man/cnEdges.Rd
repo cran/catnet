@@ -2,6 +2,7 @@
 \alias{cnEdges}
 \alias{cnEdges,catNetwork,missing-method}
 \alias{cnEdges,catNetwork,vector-method}
+\alias{cnEdges,catNetwork,character-method}
 
 \title{Network Edges}
 
@@ -12,7 +13,7 @@ cnEdges(object, which)
 }
 \arguments{
 \item{object}{a \code{catNetwork}}
-\item{which}{a \code{vector} of node indices}
+\item{which}{a \code{vector} of node indices or node names}
 }
 
 \details{The edges of a \code{catNetwork} are specified as parent-to-child vectors. 

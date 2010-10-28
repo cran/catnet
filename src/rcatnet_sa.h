@@ -27,7 +27,6 @@
 #ifndef RCATNET_SEARCH_SA_H
 #define RCATNET_SEARCH_SA_H
 
-#include "catnet_search.h"
 #include "catnet_search2.h"
 
 #include <R.h>
@@ -50,6 +49,7 @@ protected:
 
 	void _release();
 	int *_genOrder(const int *porder, int norder, int shuffles, int bjump);
+	int *_genOrderFormDirProbs(const int *porder, int numnodes, double *matEdgeLiks, double *pOrderProb);
 
 public:
 	SEARCH_PARAMETERS **m_pSearchParams;
@@ -59,8 +59,9 @@ public:
 	~RCatnetSearchSA();
 
 	SEXP search(SEXP rNodeNames, SEXP rSamples, SEXP rPerturbations, 
-			SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, 
-			SEXP rParentsPool, SEXP rFixedParentsPool, SEXP rMatEdgeLiks, 
+			SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, SEXP rNodeCats, 
+			SEXP rParentsPool, SEXP rFixedParentsPool, 
+			SEXP rMatEdgeLiks, SEXP rDirProbs, 
 			SEXP rModel, SEXP rStartOrder,
 			SEXP rTempStart, SEXP rTempCoolFact, SEXP rTempCheckOrders, 
 			SEXP rMaxIter, SEXP rOrderShuffles, SEXP rStopDiff,

@@ -49,8 +49,8 @@ RCatnetSearch::~RCatnetSearch() {
 }
 
 SEXP RCatnetSearch::estimateCatnets(SEXP rSamples, SEXP rPerturbations, 
-                       SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, SEXP rOrder,
-                       SEXP rParentsPool, SEXP rFixedParentsPool, SEXP rMatEdgeLiks, SEXP rUseCache, SEXP rEcho) {
+			SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, SEXP rOrder, SEXP rNodeCats, 
+			SEXP rParentsPool, SEXP rFixedParentsPool, SEXP rMatEdgeLiks, SEXP rUseCache, SEXP rEcho) {
 
 	int i, j, k, len, maxComplexity, numnets, inet, echo;
  	int *pRsamples, *pRperturbations, *pSamples, *pPerturbations, 
@@ -58,7 +58,7 @@ SEXP RCatnetSearch::estimateCatnets(SEXP rSamples, SEXP rPerturbations,
 	double *matEdgeLiks, *pMatEdgeLiks;
 
 	RCatnet rcatnet;
-	SEXP dim, rparpool, cnetlist, cnetnode;
+	SEXP dim, rnodecat, rparpool, cnetlist, cnetnode;
 
 	if(!isMatrix(rSamples))
 		error("Data is not a matrix");
@@ -101,8 +101,13 @@ SEXP RCatnetSearch::estimateCatnets(SEXP rSamples, SEXP rPerturbations,
 	else {
 		memcpy(m_pRorder, INTEGER(rOrder), m_numNodes*sizeof(int));
 	}
-	for(i = 0; i < m_numNodes; i++)
-		m_pRorderInverse[m_pRorder[i]-1] = i + 1;
+	for(i = 0; i < m_numNodes; i++) {
+		if(m_pRorder[i] <= 0 || m_pRorder[i] > m_numNodes) {
+			error("Invalid nodeOrder parameter");		
+		}	
+		else
+			m_pRorderInverse[m_pRorder[i]-1] = i + 1;
+	}
 	UNPROTECT(1);
 
 	if(m_pSearchParams)
@@ -110,6 +115,7 @@ SEXP RCatnetSearch::estimateCatnets(SEXP rSamples, SEXP rPerturbations,
 	m_pSearchParams = new SEARCH_PARAMETERS(
 		m_numNodes, m_numSamples, 
 		m_maxParentSet, maxComplexity, echo, 
+		!isNull(rNodeCats), 
 		!isNull(rParentSizes), !isNull(rPerturbations), 
 		!isNull(rParentsPool), !isNull(rFixedParentsPool), 
 		!isNull(rMatEdgeLiks), 
@@ -130,6 +136,9 @@ SEXP RCatnetSearch::estimateCatnets(SEXP rSamples, SEXP rPerturbations,
 	for(j = 0; j < m_numSamples; j++) {
 		for(i = 0; i < m_numNodes; i++) {
 			pSamples[j*m_numNodes + i] = pRsamples[j*m_numNodes + m_pRorder[i] - 1];
+			if(R_IsNA(pSamples[j*m_numNodes + i]) || pSamples[j*m_numNodes + i] < 1) {
+				pSamples[j*m_numNodes + i] = CATNET_NAN;
+			}
 		}
 	}
 	UNPROTECT(1); // rSamples
@@ -147,6 +156,20 @@ SEXP RCatnetSearch::estimateCatnets(SEXP rSamples, SEXP rPerturbations,
 		UNPROTECT(1);
 	}
 
+	if(!isNull(rNodeCats)) {
+		PROTECT(rNodeCats = AS_LIST(rNodeCats));
+		for(i = 0; i < m_numNodes; i++) {
+			rnodecat = AS_INTEGER(VECTOR_ELT(rNodeCats, (int)(m_pRorder[i] - 1)));
+			len = length(rnodecat);
+			if(isVector(rnodecat) && len > 0) {
+				m_pSearchParams->m_pNodeNumCats[i] = len;
+				m_pSearchParams->m_pNodeCats[i] = (int*)CATNET_MALLOC(len*sizeof(int));
+				for(j = 0; j < len; j++)
+					m_pSearchParams->m_pNodeCats[i][j] = INTEGER(rnodecat)[j];
+			}
+		}
+		UNPROTECT(1);
+	}
 
 	parentsPool = 0;
 	if(!isNull(rParentsPool)) {
@@ -172,8 +195,11 @@ SEXP RCatnetSearch::estimateCatnets(SEXP rSamples, SEXP rPerturbations,
 					parentsPool[i][j] = -1;
 			}
 			else {
+				//error("Invalid parentsPool parameter");
 				for(j = 0; j < m_numNodes; j++)
 					parentsPool[i][j] = -1;
+				// no parents allow - achieved by a reference to itself
+				parentsPool[i][0] = i;
 			}
 		}
 		UNPROTECT(1);
@@ -234,8 +260,10 @@ SEXP RCatnetSearch::estimateCatnets(SEXP rSamples, SEXP rPerturbations,
 		delete m_pSearchParams;
 	m_pSearchParams = 0;
 
-	if(!m_nCatnets || !m_pCatnets)
+	if(!m_nCatnets || !m_pCatnets) {
+		warning("No networks are found");
 		return R_NilValue;
+	}
 
 	// create a R-list of catNetworks
 	numnets = 0;

@@ -149,8 +149,8 @@ cnDiscretize <- function(data, numCategories, mode = "uniform", qlevels = NULL) 
 cnSearchOrder <- function(data, perturbations = NULL,
                           maxParentSet = 0, parentSizes = NULL, 
                           maxComplexity = 0,
-                          nodeOrder = NULL,  
-                          parentsPool = NULL, fixedParentsPool = NULL,
+                          nodeOrder = NULL, nodeCats = NULL, 
+                          parentsPool = NULL, fixedParents = NULL,
                           edgeProb = NULL, 
                           echo = FALSE) {
 
@@ -194,9 +194,39 @@ cnSearchOrder <- function(data, perturbations = NULL,
       edgeProb[i, edgeProb[i,] < 0] <- 0
       edgeProb[i, edgeProb[i,] > 1] <- 1
     }
+
+    bones <- 0
+    for(i in 1:numnodes) {
+      for(j in 1:numnodes) {
+        if(is.na(edgeProb[i,j]) || edgeProb[i,j] < 0 || edgeProb[i,j] > 1)
+           edgeProb[i,j] <- 0.5
+        if(edgeProb[i,j] == 1)
+          bones <- bones + 1
+      }
+    }
+    if(bones) {
+      if(is.null(fixedParents))
+        fixedParents <- vector("list", numnodes)
+      for(i in 1:numnodes) {
+        for(j in 1:numnodes) {
+          if(edgeProb[i,j] == 1 && length(fixedParents[[i]]) < maxParentSet) {
+            fixedParents[[i]] <- c(fixedParents[[i]], j)
+            ##cat("fixed ", i, ": ", fixedParents[[i]], "\n")
+          }
+        }
+      }
+    }
+  }
+
+  if(!is.null(fixedParents)) {
+    for(j in 1:numnodes)
+      if(length(fixedParents[[i]]) > maxParentSet) {
+        fixedParents[[i]] <- fixedParents[[i]][1:maxParentSet]
+        warning("fixedParents for node ", i, " exceeds the maximum parent size. It's reduced to ", maxParentSet)
+      }
   }
     
-  r <- .categorizeSample(data, perturbations)
+  r <- .categorizeSample(data, perturbations, object=NULL, nodeCats=nodeCats, ask=TRUE)
   data <- r$data
   perturbations <- r$perturbations
   categories <- r$categories
@@ -211,25 +241,25 @@ cnSearchOrder <- function(data, perturbations = NULL,
   }
   maxComplexity <- as.integer(maxComplexity)
   
-  if(is.null(perturbations)) {
-    dims <- dim(data)
-    perturbations <- matrix(rep(0, dims[1]*dims[2]), dims[1], dims[2])
-  }
-
   if(is.null(nodeOrder))
     nodeOrder <- 1:numnodes
 
   nodenames <- rownames(data)    
   if(length(nodenames) < numnodes)
     nodenames <- seq(1,numnodes)
+
+  catIndices <- NULL
+  if(!is.null(nodeCats)) {
+    catIndices <- lapply(1:numnodes, function(i) 1:length(categories[[i]]))
+  }
   
   if(!fast) {
     bestnets <- optimalNetsForOrder(data, perturbations, 
                                     categories, as.integer(maxCategories),
                                     as.integer(maxParentSet), as.integer(parentSizes), 
                                     as.integer(maxComplexity),
-                                    as.integer(nodeOrder),
-                                    parentsPool, fixedParentsPool, 
+                                    as.integer(nodeOrder), catIndices, 
+                                    parentsPool, fixedParents, 
                                     fast, echo, FALSE)
   }
   else {
@@ -239,8 +269,8 @@ cnSearchOrder <- function(data, perturbations = NULL,
                       data, perturbations, 
                       as.integer(maxParentSet), as.integer(parentSizes),
                       as.integer(maxComplexity),
-                      as.integer(nodeOrder),
-                      parentsPool, fixedParentsPool, edgeProb, 
+                      as.integer(nodeOrder), catIndices, 
+                      parentsPool, fixedParents, edgeProb, 
                       ## no cache
                       FALSE, 
                       echo, 
@@ -299,15 +329,15 @@ cnSearchOrder <- function(data, perturbations = NULL,
                       categories, maxCategories,
                       maxParentSet, parentSizes, 
                       maxComplexity,
-                      startorder, 
-                      parentsPool, fixedParentsPool, edgeProb, 
+                      startorder,
+                      catIndices, 
+                      parentsPool, fixedParents,
+                      edgeProb, dirProb, 
                       selectMode, 
                       tempStart, tempCoolFact, tempCheckOrders, 
                       maxIter, orderShuffles, stopDiff,
-                      numThreads, echo, saved.seed) {
-
-  ##set.seed(saved.seed)
-
+                      numThreads, echo) {
+  
   nodenames <- rownames(data)
   .Call("ccnReleaseCache", PACKAGE="catnet")
   optnets <- .Call("ccnOptimalNetsSA",
@@ -315,7 +345,9 @@ cnSearchOrder <- function(data, perturbations = NULL,
                    data, perturbations, 
                    as.integer(maxParentSet), as.integer(parentSizes),
                    as.integer(maxComplexity),
-                   parentsPool, fixedParentsPool, edgeProb, 
+                   catIndices, 
+                   parentsPool, fixedParents,
+                   edgeProb, dirProb, 
                    selectMode, as.integer(startorder),
                    tempStart, tempCoolFact, as.integer(tempCheckOrders), 
                    as.integer(maxIter), orderShuffles, stopDiff,
@@ -338,17 +370,17 @@ cnSearchOrder <- function(data, perturbations = NULL,
     ord <- sapply(nodenames, function(c) which(enetnodes==c))
     if(sum(ord != 1:numnodes) > 0)    
       optnets[[nn]] <- cnReorderNodes(optnets[[nn]], ord)
-    ## now the nodes in the network are as that in the data
+    ## now the nodes in the network are ordered as in the data
     optnets[[nn]]@categories <- categories
   }
   
   ## replace existing best networks    
   if(!is.null(eval) && length(eval@nets) > 0) {
-    enets <- eval@nets
+    enets <- optnets
     for(nn in 1:length(enets)) {
       if(is.null(enets[[nn]]) || !is(enets[[nn]], "catNetwork"))
         next
-      bnet <- cnFind(optnets, enets[[nn]]@complexity)
+      bnet <- cnFind(eval@nets, enets[[nn]]@complexity)
       if(!is.null(bnet) && bnet@complexity == enets[[nn]]@complexity) 
         if(bnet@likelihood > enets[[nn]]@likelihood)
           ##replace with better
@@ -359,6 +391,9 @@ cnSearchOrder <- function(data, perturbations = NULL,
   else {
     eval@nets <- optnets
   }
+
+  eval@complexity <- sapply(eval@nets, function(net) net@complexity)
+  eval@loglik <- sapply(eval@nets, function(net) net@likelihood)
   
   return(eval)
 
@@ -420,8 +455,8 @@ cnSearchOrder <- function(data, perturbations = NULL,
                                      categories, as.integer(maxCategories),
                                      as.integer(maxParentSet), as.integer(parentSizes),
                                      as.integer(maxComplexity),
-                                     as.integer(neworder), 
-                                     parentsPool, fixedParentsPool, 
+                                     as.integer(neworder), catIndices, 
+                                     parentsPool, fixedParents, 
                                      fast=TRUE, echo=FALSE, useCache=TRUE)
 
       if(length(newnets) < 1)
@@ -519,10 +554,11 @@ cnSearchOrder <- function(data, perturbations = NULL,
   return(eval)
 }
 
-cnSearchSA <- function(data, perturbations,
+cnSearchSA <- function(data, perturbations=NULL,
                        maxParentSet=0, parentSizes = NULL, 
-                       maxComplexity = 0,
-                       parentsPool = NULL, fixedParentsPool = NULL, edgeProb = NULL, 
+                       maxComplexity = 0, nodeCats = NULL, 
+                       parentsPool = NULL, fixedParents = NULL,
+                       edgeProb = NULL, dirProb = NULL, 
                        selectMode = "BIC", 
                        tempStart = 1, tempCoolFact = 0.9, tempCheckOrders = 10, 
                        maxIter = 100, orderShuffles = 1, stopDiff = 0,
@@ -577,11 +613,15 @@ cnSearchSA <- function(data, perturbations,
       stop("priorSearch's number of nodes and sample size are not compatible with those of the data")
   }
   
-  if(tempStart <= 0) {
-    warning("tempStart is set to 1")
-    tempStart <- 1
+  if(tempStart < 0) {
+    warning("tempStart is set to 0")
+    tempStart <- 0
   }
-  if(tempCoolFact <= 0 || tempCoolFact > 1) {
+  if(tempCoolFact < 0) {
+    warning("tempCoolFact is set to 0")
+    tempCoolFact <- 0
+  }
+  if(tempCoolFact > 1) {
     warning("tempCoolFact is set to 1")
     tempCoolFact <- 1
   }
@@ -594,12 +634,61 @@ cnSearchSA <- function(data, perturbations,
     maxIter <- tempCheckOrders
   }
 
-  r <- .categorizeSample(data, perturbations)
+  r <- .categorizeSample(data, perturbations, object=NULL, nodeCats=nodeCats, ask=TRUE)
   data <- r$data
   perturbations <- r$perturbations
   categories <- r$categories
   maxCategories <- r$maxCategories
 
+  nodenames <- rownames(data)
+  if(length(nodenames) < numnodes)
+    nodenames <- seq(1, numnodes)
+
+  catIndices <- NULL
+  if(!is.null(nodeCats)) {
+    catIndices <- lapply(1:numnodes, function(i) 1:length(categories[[i]]))
+  }
+  
+  if(FALSE && is.null(dirProb) && !is.null(perturbations)) {
+    mat <- .Call("ccnKLPairwise", 
+                  data, perturbations, 
+                  PACKAGE="catnet")
+    klmat <- matrix(mat, numnodes, numnodes)
+    dirProb <-t(klmat)/(klmat+t(klmat))
+    rownames(dirProb)<-nodenames
+    colnames(dirProb)<-nodenames
+    for(i in 1:numnodes) {
+      for(j in 1:numnodes) {
+        if(is.na(dirProb[i,j]) || dirProb[i,j] < 0 || dirProb[i,j] > 1)
+           dirProb[i,j] <- 0.5
+        if(dirProb[i,j] > 1-1e-8)
+           dirProb[i,j] <- 1-1e-8
+        if(dirProb[i,j] < 1e-8)
+           dirProb[i,j] <- 1e-8
+      }
+    }
+  }
+
+  if(!is.null(edgeProb)) {
+    if(length(colnames(edgeProb)) != numnodes || length(rownames(edgeProb)) != numnodes)
+      stop("edgeProb matrix should be with named columns and rows")
+    edgeProb <- edgeProb[nodenames, nodenames]
+  }
+
+  if(!is.null(dirProb)) {
+    if(length(colnames(dirProb)) != numnodes || length(rownames(dirProb)) != numnodes)
+      stop("dirProb matrix should be with named columns and rows")
+    dirProb <- dirProb[nodenames, nodenames]
+  }
+  
+  if(!is.null(fixedParents)) {
+    for(j in 1:numnodes)
+      if(length(fixedParents[[i]]) > maxParentSet) {
+        fixedParents[[i]] <- fixedParents[[i]][1:maxParentSet]
+        warning("fixedParents for node ", i, " exceeds the maximum parent size. It's reduced to ", maxParentSet)
+      }
+  }
+  
   if(maxComplexity <= 0)
     maxComplexity <- as.integer(numnodes * exp(log(maxCategories)*maxParentSet) * (maxCategories-1))
   minComplexity <- sum(sapply(categories, function(cat) (length(cat)-1)))
@@ -608,15 +697,6 @@ cnSearchSA <- function(data, perturbations,
     maxComplexity <- minComplexity
   }
 
-  nodenames <- rownames(data)
-  if(length(nodenames) < numnodes)
-    nodenames <- seq(1, numnodes)
-
-  if(is.null(perturbations)) {
-    dims <- dim(data)
-    perturbations <- matrix(rep(0, dims[1]*dims[2]), dims[1], dims[2])
-  }
-  
   if(is.null(priorSearch) || length(priorSearch@nets) < 1) {
     optorder <- sample(1:numnodes)
     eval <- new("catNetworkEvaluate", numnodes, numsamples, 0)
@@ -639,6 +719,12 @@ cnSearchSA <- function(data, perturbations,
         optnet <- cnFind(optnets, maxComplexity)
       }
     }
+    if(is.null(optnet))
+      optnet <- optnets[[1]]
+    if(is.null(optnet)) {
+      optorder <- sample(1:numnodes)
+      warning("no valid network found - priorSearch ignored")
+    }
     optorder <- cnOrder(optnet)
 
     ## make sure the optnet comes is data compatible
@@ -646,19 +732,20 @@ cnSearchSA <- function(data, perturbations,
       stop("The data names should correspond to the prior search nodes.")
   }
 
-  saved.seed <- .Random.seed
   eval <- .searchSA(eval,
                     as.integer(numnodes), as.integer(numsamples),
                     data, perturbations, 
                     categories, as.integer(maxCategories),
                     as.integer(maxParentSet), parentSizes, 
                     as.integer(maxComplexity),
-                    as.integer(optorder),  
-                    parentsPool, fixedParentsPool, edgeProb, 
+                    as.integer(optorder),
+                    catIndices, 
+                    parentsPool, fixedParents,
+                    edgeProb, dirProb, 
                     selectMode, 
                     tempStart, tempCoolFact, as.integer(tempCheckOrders), 
                     as.integer(maxIter), orderShuffles, stopDiff,
-                    as.integer(numThreads), echo, saved.seed)
+                    as.integer(numThreads), echo)
   
   t2 <- proc.time()
   eval@time <- eval@time + as.numeric(t2[3] - t1[3])

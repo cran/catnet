@@ -44,15 +44,13 @@ parHisto <- function(objectlist, norder = NULL) {
  
 cnSearchHist <- function(data, perturbations,  
                          maxParentSet, parentSizes = NULL,
-                         maxComplexity=0,
-                         parentsPool = NULL, fixedParentsPool = NULL,
+                         maxComplexity=0, nodeCats = NULL,  
+                         parentsPool = NULL, fixedParents = NULL,
                          selectMode = "BIC", 
                          maxIter = 32, numThreads = 2, echo=FALSE) {
 
   if(!is.matrix(data) && !is.data.frame(data))
     stop("data should be a matrix or data frame")
-
-  fast <- TRUE
   
   if(is.matrix(data)) {
     numnodes <- nrow(data)
@@ -86,23 +84,23 @@ cnSearchHist <- function(data, perturbations,
     parentSizes[parentSizes>maxParentSet] <- maxParentSet
   }
   
-  r <- .categorizeSample(data, perturbations)
+  r <- .categorizeSample(data, perturbations, object=NULL, nodeCats=nodeCats, ask=TRUE)
   data <- r$data
   perturbations <- r$perturbations
   categories <- r$categories
   maxCategories <- r$maxCategories
 
+  catIndices <- NULL
+  if(!is.null(nodeCats)) {
+    catIndices <- lapply(1:numnodes, function(i) 1:length(categories[[i]]))
+  }
+  
   if(maxComplexity <= 0)
     maxComplexity <- as.integer(numnodes * exp(log(maxCategories)*maxParentSet) * (maxCategories-1))
   minComplexity <- sum(sapply(categories, function(cat) (length(cat)-1)))
   if(maxComplexity < minComplexity)
     maxComplexity <- minComplexity
   
-  if(is.null(perturbations)) {
-    dims <- dim(data)
-    perturbations <- matrix(rep(0,dims[1]*dims[2]), dims[1], dims[2])
-  }
-
   numThreads <- as.integer(numThreads)
   if(numThreads < 1)
     numThreads <- 1
@@ -111,26 +109,26 @@ cnSearchHist <- function(data, perturbations,
   if(maxIter < numThreads)
     maxIter <- numThreads
   
-  if(fast) {
-    ## call the C-function
-    .Call("ccnReleaseCache", PACKAGE="catnet")
-    vhisto <- .Call("ccnParHistogram", 
-                    data, perturbations, 
-                    as.integer(maxParentSet), as.integer(parentSizes),
-                    as.integer(maxComplexity),
-                    parentsPool, fixedParentsPool,
-                    selectMode, as.integer(maxIter),
-                    as.integer(numThreads), 
-                    ## cache
-                    TRUE, 
-                    echo, 
-                    PACKAGE="catnet")
+  ## call the C-function
+  .Call("ccnReleaseCache", PACKAGE="catnet")
+  vhisto <- .Call("ccnParHistogram", 
+                  data, perturbations, 
+                  as.integer(maxParentSet), as.integer(parentSizes),
+                  as.integer(maxComplexity),
+                  catIndices, 
+                  parentsPool, fixedParents,
+                  selectMode, as.integer(maxIter),
+                  as.integer(numThreads), 
+                  ## cache
+                  TRUE, 
+                  echo, 
+                  PACKAGE="catnet")
+  
+  mhisto <- matrix(vhisto, numnodes, numnodes)
+  rownames(mhisto)<-nodenames
+  colnames(mhisto)<-nodenames
 
-    mhisto <- matrix(vhisto, numnodes, numnodes)
-    rownames(mhisto)<-nodenames
-    colnames(mhisto)<-nodenames
-    return(mhisto)
-  }
+  return(mhisto)
 
   ## R-implementation
 
@@ -149,8 +147,8 @@ cnSearchHist <- function(data, perturbations,
     res <- optimalNetsForOrder(data, perturbations, 
                                categories, as.integer(maxCategories),
                                as.integer(maxParentSet), NULL, 
-                               as.integer(maxComplexity), order, 
-                               parentsPool, fixedParentsPool, 
+                               as.integer(maxComplexity), order, catIndices, 
+                               parentsPool, fixedParents, 
                                fast=TRUE, echo=FALSE, useCache=FALSE)
     
     t2 <- proc.time()

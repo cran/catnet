@@ -34,17 +34,22 @@ checkProbSet <- function(idroot, ppars, pcatlist, idx, problist) {
 ## the latter is assured if the catNetwork is created by genRandomParents
 
 # recursive probability assignment
-setRandomProb <- function(idroot, ppars, pcatlist, idx) {
+setRandomProb <- function(idroot, ppars, pcatlist, idx, delta1=0.01, delta2=0.01) {
   if(is.null(ppars) || length(ppars) < 1 || length(idx) < 1) {
-    if(length(pcatlist[[idroot]]) < 2) {
+    if(length(pcatlist[[idroot]]) < 1) {
       return(NULL)
     }
-    plist <- sapply(pcatlist[[idroot]], function(x) runif(1,0.01,0.99))
-    plist <- plist/sum(plist)
+    ii <- 0
+    while(ii<10*(1+floor(1/(0.5-delta1-delta2)))^length(pcatlist[[idroot]])) {
+      plist <- sapply(pcatlist[[idroot]], function(x) runif(1))
+      plist <- plist/sum(plist)
+      if(sum(plist<delta1 | plist>1-delta1)+sum(plist>0.5-delta2 & plist<0.5+delta2) == 0)
+        break
+      ii <- ii + 1
+    }
     plist <- sapply(seq(1,length(plist)), function(n, plist){
-      plist[n] <- floor(100*plist[n])/100
+      plist[n] <- floor(1000*plist[n])/1000
       }, plist)
-    #cat(sum(plist),"\n")
     plist[1] <- 1 - sum(plist[-1])
     #poutlist <- c(poutlist, plist)
     return(as.vector(plist))
@@ -53,16 +58,14 @@ setRandomProb <- function(idroot, ppars, pcatlist, idx) {
     id <- ppars[idx[1]]
     #cat(ppars[idx], id, "\n")
     poutlist <- lapply(pcatlist[[id]],
-           function(cat, idroot, ppars, pcatlist, idx)
-           setRandomProb(idroot, ppars, pcatlist, idx),
-           idroot, ppars, pcatlist, idx[-1])
+           function(cat) setRandomProb(idroot, ppars, pcatlist, idx[-1], delta1, delta2))
   }
 }
 
 # recursive probability assignment
 setDefaultProb <- function(idroot, ppars, pcatlist, idx) {
   if(is.null(ppars) || length(ppars) < 1 || length(idx) < 1) {
-    if(length(pcatlist[[idroot]]) < 2) {
+    if(length(pcatlist[[idroot]]) < 1) {
       return(NULL)
     }
     plist <- rep(1, length(pcatlist[[idroot]]))

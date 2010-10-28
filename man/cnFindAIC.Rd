@@ -10,10 +10,11 @@
 }
 
 \usage{
-cnFindAIC(object)
+cnFindAIC(object, numsamples)
 }
 \arguments{
  \item{object}{A \code{list} of \code{catNetwork} objects or \code{catNetworkEvaluate}}
+ \item{numsamples}{an \code{integer}}
 }
 
 \details{The function returns the network with maximal AIC value from a list of networks 
