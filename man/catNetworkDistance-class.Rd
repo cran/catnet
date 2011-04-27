@@ -39,7 +39,7 @@
 
 \author{N. Balov}
 
-\seealso{\code{\link{catNetwork-class}}, \code{\link{catNetworkEvaluate-class}}, \code{\link{cnEvaluate}}, \code{\link{cnCompare}}, \code{\link{cnPlot}}
+\seealso{\code{\link{catNetwork-class}}, \code{\link{catNetworkEvaluate-class}}, \code{\link{cnCompare}}, \code{\link{cnPlot}}
 }
 
 \keyword{classes}

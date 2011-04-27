@@ -25,10 +25,10 @@ size_t g_memcounter = 0;
 
 static const R_CallMethodDef R_CallDef[] = {
 	{"ccnOptimalNetsForOrder", (DL_FUNC)&catnetOptimalNetsForOrder, 12},
-	{"ccnOptimalNetsSA", (DL_FUNC)&catnetOptimalNetsSA, 22},
-	{"ccnParHistogram", (DL_FUNC)&catnetParHistogram, 13},
+	{"ccnOptimalNetsSA", (DL_FUNC)&catnetOptimalNetsSA, 24},
+	{"ccnParHistogram", (DL_FUNC)&catnetParHistogram, 14},
 	{"ccnSetProb", (DL_FUNC)&catnetSetProb, 3},
-	{"ccnLoglik", (DL_FUNC)&catnetLoglik, 3},
+	{"ccnLoglik", (DL_FUNC)&catnetLoglik, 4},
 	{"ccnNodeLoglik", (DL_FUNC)&catnetNodeLoglik, 4},
 	{"ccnEntropyPairwise", (DL_FUNC)&catnetEntropyPairwise, 2},
 	{"ccnEntropyOrder", (DL_FUNC)&catnetEntropyOrder, 2},
@@ -37,6 +37,7 @@ static const R_CallMethodDef R_CallDef[] = {
 	{"ccnNodeLoglikError", (DL_FUNC)&catnetNodeLoglikError, 4},
 	{"ccnMarginalProb", (DL_FUNC)&catnetMarginalProb, 2},
 	{"ccnReleaseCache", (DL_FUNC)&catnetReleaseCache, 0},
+	{"ccnSamples", (DL_FUNC)&catnetSamples, 4},
 	{"ccnSetSeed", (DL_FUNC)&catnetSetSeed, 1},
 	{NULL, NULL, 0},
 };

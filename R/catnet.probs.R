@@ -2,6 +2,87 @@
 # Categorical Network Class Methods
 # Probability Calculations
 
+listProbSet <- function(idroot, ppars, pcatlist, idx, problist, strin) { 
+  if(is.null(ppars) || length(idx) < 1) { 
+    if(length(pcatlist[[idroot]]) != length(problist)) {
+      ##cat(idroot, ",   ", length(pcatlist[[idroot]]), ", ", length(problist), "\n")
+      warning("Wrong probability slot") 
+      return("") 
+    } 
+    strout <- sapply(seq(1, length(pcatlist[[idroot]])), function(j, strin, pcatlist, problist) { 
+      paste("[", strin, "]", pcatlist[j], "  ", problist[j], "\n", sep="") 
+    }, strin, pcatlist[[idroot]], problist) 
+    return(paste(strout, sep="", collapse="")) 
+  } 
+  idnode <- ppars[idx[1]] 
+  idx <- idx[-1] 
+  strout <- sapply(seq(1,length(pcatlist[[idnode]])), 
+    function(cat, strin) { 
+      listProbSet(idroot, ppars, pcatlist, idx, problist[[cat]], paste(strin, pcatlist[[idnode]][cat], sep=" ")) 
+    }, strin) 
+  return(paste(strout, sep="", collapse="")) 
+}
+
+listProbTable <- function(idroot, ppars, pcatlist, idx, problist, parents) { 
+  if(is.null(ppars) || length(idx) < 1) { 
+    if(length(pcatlist[[idroot]]) != length(problist)) {
+      warning("Wrong probability slot") 
+      return("") 
+    }
+    return(c(parents, problist))
+  } 
+  idnode <- ppars[idx[1]] 
+  idx <- idx[-1] 
+  rout <- NULL
+  for(cat in 1:length(pcatlist[[idnode]])) { 
+    rout <- rbind(rout, listProbTable(idroot, ppars, pcatlist, idx, problist[[cat]], c(parents, pcatlist[[idnode]][cat])))
+  }
+  rout <- as.table(rout)
+  return(rout)
+} 
+ 
+setMethod("cnPlotProb", c("catNetwork"),  
+          function(object, which=NULL) { 
+            if(is.null(which)) 
+              which <- seq(1, object@numnodes)
+            if(is.character(which))
+              which <- sapply(which, function(node) which(object@nodes == node))
+            str <- sapply(which, function(n) { 
+              paste(paste("Node[", object@nodes[n], "], Parents: ", sep=""), 
+                    paste(object@nodes[object@parents[[n]]], sep=",", collapse=" "), "\n",  
+                    listProbSet(n, object@parents[[n]], object@categories, 
+                                seq(1,length(object@parents[[n]])), 
+                                object@probabilities[[n]], ""), 
+                    collapse="", sep="") 
+            }) 
+            cat(str)
+          })
+
+setMethod("cnProb", c("catNetwork"),  
+          function(object, which=NULL) { 
+            if(is.null(which)) 
+              which <- seq(1, object@numnodes)
+            if(is.character(which))
+              which <- sapply(which, function(node) which(object@nodes == node))
+            ltab <- lapply(which,  function(n) { 
+              ntab <- listProbTable(n, object@parents[[n]], object@categories, 
+                                    seq(1,length(object@parents[[n]])), 
+                                    object@probabilities[[n]], NULL)
+              if(length(object@parents[[n]]) > 0) {
+                colnames(ntab) <- c(object@nodes[object@parents[[n]]], object@categories[[n]])
+                for(j in (length(object@parents[[n]])+1):ncol(ntab))
+                  ntab[,j] <- as.numeric(ntab[,j])
+              }
+              else {                      
+                ntab <- as.numeric(ntab)
+                names(ntab) <- object@categories[[n]]
+              }
+              return(ntab)
+            })
+            names(ltab) <- object@nodes[which]
+            return(ltab)
+          }) 
+
 checkProbSet <- function(idroot, ppars, pcatlist, idx, problist) {
   if(length(ppars) == 0 || length(ppars) < 1 || length(idx) < 1) {
     if(is.null(problist) || length(pcatlist[[idroot]]) != length(problist)) {

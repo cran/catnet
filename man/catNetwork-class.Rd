@@ -51,6 +51,8 @@ Technically, \code{catNetwork} is a S4 type of R-class implemented in object-ori
 	\item{\code{complexity}:}{an \code{integer}, the network complexity} 
 	\item{\code{likelihood}:}{a \code{numerical}, the total likelihood of the sample being used for estimation}
 
+	\item{\code{nodeSampleSizes}:}{a numerical \code{vector}, if the object is an estimate, the node sample sizes.} 
+
   }
 }
 

@@ -5,7 +5,7 @@
 
 \title{catNetwork to igraph}
 
-\description{Create an \code{igraph} object from a \code{catNetwork}}
+\description{Create an \code{igraph} object, as defined in \code{graph} package, from a \code{catNetwork}}
 
 \usage{
 as.igraph(object)

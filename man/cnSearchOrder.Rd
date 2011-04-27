@@ -61,7 +61,7 @@ The elements of \code{edgeProb} are cropped in the range [0,1], such that the ze
   cnFind(object=nets, complexity=cc)
 }
 
-\seealso{\code{\link{cnSearchSA}}, \code{\link{cnEvaluate}} }
+\seealso{\code{\link{cnSearchSA}} }
 
 \keyword{methods}
 \keyword{graphs}

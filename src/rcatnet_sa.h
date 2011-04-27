@@ -60,11 +60,11 @@ public:
 
 	SEXP search(SEXP rNodeNames, SEXP rSamples, SEXP rPerturbations, 
 			SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, SEXP rNodeCats, 
-			SEXP rParentsPool, SEXP rFixedParentsPool, 
+			SEXP rParentsPool, SEXP rFixedParentsPool, SEXP rMaxParentsPool, 
 			SEXP rMatEdgeLiks, SEXP rDirProbs, 
 			SEXP rModel, SEXP rStartOrder,
 			SEXP rTempStart, SEXP rTempCoolFact, SEXP rTempCheckOrders, 
-			SEXP rMaxIter, SEXP rOrderShuffles, SEXP rStopDiff,
+			SEXP rMaxIter, SEXP rOrderShuffles, SEXP rStopDiff, SEXP rStopTime, 
 			SEXP rThreads, SEXP rUseCache, SEXP rEcho);
 
 };

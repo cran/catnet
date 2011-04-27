@@ -307,26 +307,11 @@ sprintf(str,"\nnlookup=%d\n", nlookup);printf(str);
 #endif
 		if(g_pcache[nlookup]) {
 
-/*			j = 0;
-			for(i = 0; i < g_ncache; i++)
-				if(g_pcache[i]) j++;
-printf("fill %d/%d\n", j, g_ncache);
-char str[256];
-sprintf(str,"  Overwrite node=%d, numpars=%d, pool = ", node, parsize);printf(str);
-for(i = 0; i < poolsize; i++) {
-	sprintf(str,"%d  ", m_parBuff1[i]);printf(str);
-}printf("\n");
-sprintf(str,"  Old node=%d, numpars=%d, pool = ", g_pcache[nlookup]->nnode, g_pcache[nlookup]->npars);printf(str);
-for(i = 0; i < g_pcache[nlookup]->nPool; i++) {
-	sprintf(str,"%d  ", g_pcache[nlookup]->pPool[i]);printf(str);
-}printf("\n");*/
 			delete g_pcache[nlookup];
 		}
 		g_pcache[nlookup] = pCacheEl;
-
-  //clock_t lt = clock();
-  //printf("%ld\n", lt);
-
+		/*clock_t lt = clock();
+		printf("%ld\n", lt);*/
 		return 1;
 	}
 

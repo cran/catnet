@@ -112,8 +112,7 @@ RCatnet::RCatnet(SEXP cnet) {
 		if (IS_VECTOR(pf)) {
 			m_numParents[nnode] = length(pf);
 			pn = INTEGER_POINTER(pf);
-			//printf("%d numpars %d, %d\n", nnode, m_numParents[nnode], pn[0]);
-			//printf(str);
+			//printf("%d numpars %d, %x\n", nnode, m_numParents[nnode], pn);
 			//sprintf(str, "Parents [%d], ", nnode);
 			//printf(str);
 			m_parents[nnode] = (int*) CATNET_MALLOC(m_numParents[nnode] * sizeof(int));
@@ -147,7 +146,7 @@ RCatnet::RCatnet(SEXP cnet) {
 			CATNET_FREE(pvec);
 		}
 	}
-	
+
 
 	UNPROTECT(5);
 }
@@ -283,6 +282,14 @@ SEXP RCatnet::genRcatnet(const char * objectName = (const char*)"catNetwork") {
 	else
 		NUMERIC_POINTER(pint)[0] = R_NegInf;
 	SET_SLOT(cnet, install("likelihood"), pint);
+	UNPROTECT(1);
+
+	PROTECT(pint = NEW_INTEGER(m_numNodes));
+	INTEGER_POINTER(pint)[0] = m_numNodes;
+	for(node = 0; node < m_numNodes; node++) {
+		INTEGER_POINTER(pint)[node] = m_pProbLists[node]->sampleSize;
+	}
+	SET_SLOT(cnet, install("nodeSampleSizes"), pint);
 	UNPROTECT(1);
 
 	UNPROTECT(1); // cnet
@@ -481,4 +488,131 @@ SEXP prob_vector(SEXP rnodes, SEXP rparents, SEXP rcatlist, SEXP rproblist) {
 	UNPROTECT(5);
 	return pstr;
 }
+
+SEXP RCatnet::genSamples(SEXP rNumSamples, SEXP rPerturbations, SEXP rNaRate) {
+
+	SEXP rsamples = R_NilValue;
+	int numsamples;
+	int *pSamples, *pRsamples, *pPerturbations;
+	double fNaRate;
+	int i, j, k, nnode, *pnodepars, *pnodesample, *porder;
+	double u, v, *pnodeprob;
+	PROB_LIST<double>* pProbList; 
+	
+	PROTECT(rNumSamples = AS_INTEGER(rNumSamples));
+	numsamples = INTEGER_POINTER(rNumSamples)[0];
+	UNPROTECT(1);
+
+	PROTECT(rNaRate = AS_NUMERIC(rNaRate));
+	fNaRate = NUMERIC_POINTER(rNaRate)[0];
+	UNPROTECT(1);
+
+	pPerturbations = 0;
+	if(!isNull(rPerturbations)) {
+		PROTECT(rPerturbations = AS_INTEGER(rPerturbations));
+		pPerturbations = INTEGER(rPerturbations);
+	}
+
+	porder = getOrder();
+	if(!porder)
+		return R_NilValue;
+//printf("order: ");
+//for(i = 0; i < m_numNodes; i++)
+//	printf(" %d", porder[i]+1);
+//printf("\n");
+
+	pSamples = (int*)CATNET_MALLOC(m_numNodes*numsamples*sizeof(int));
+	if(!pSamples) {
+		CATNET_FREE(porder);
+		return R_NilValue;
+	}
+
+	pnodesample = 0;
+	if(m_maxParents > 0) {
+		pnodesample = (int*)CATNET_MALLOC(m_maxParents * sizeof(int));
+		if(!pnodesample) {
+			CATNET_FREE(pSamples);
+			CATNET_FREE(porder);
+			return R_NilValue;
+		}
+	}
+
+	for(k = 0; k < m_numNodes; k++) {
+		nnode = porder[k];
+		pnodepars = m_parents[nnode];
+		pProbList = (PROB_LIST<double>*)getNodeProb(nnode);
+
+		for (j = 0; j < numsamples; j++) {
+
+			if(pPerturbations) {
+				if(!R_IsNA(pPerturbations[j*m_numNodes + nnode]) && 
+					pPerturbations[j*m_numNodes + nnode] >= 1 && pPerturbations[j*m_numNodes + nnode] <= m_numCategories[nnode]) {
+					pSamples[j * m_numNodes + nnode] = pPerturbations[j * m_numNodes + nnode];
+					continue;
+				}
+			}
+
+			for (i = 0; i < m_numParents[nnode]; i++) {
+				if (pnodepars[i] < 0 || pnodepars[i] >= m_numNodes)
+					break;
+				pnodesample[i] = (int)(pSamples[j * m_numNodes + pnodepars[i]] - 1);
+			}
+			pnodeprob = pProbList->find_slot(0, pnodesample, 0);
+
+			u = (double)rand() / (double)RAND_MAX;
+			v = 0;
+			for(i = 0; i < m_numCategories[nnode]; i++) {
+				v += pnodeprob[i];
+				if(u <= v)
+					break;
+			}
+			pSamples[j * m_numNodes + nnode] = i + 1;
+		}
+	}
+
+	k = (int)(fNaRate*m_numNodes);
+	if(k > 0 && k < m_numNodes) {
+		int ii, fmax, *paux = (int*)CATNET_MALLOC(m_numNodes*sizeof(int));
+		for (j = 0; j < numsamples; j++) {
+			for(ii = 0; ii < m_numNodes; ii++)
+				paux[ii] = (int)rand();
+			for(i = 0; i < k; i++) {
+				nnode = 0;
+				fmax = -(int)RAND_MAX;
+				for(ii = 0; ii < m_numNodes; ii++) {
+					if(fmax < paux[ii]) {
+						fmax = paux[ii];
+						nnode = ii;
+					}
+				}
+				if(nnode >= 0 && nnode < m_numNodes) {
+					paux[nnode] = -(int)RAND_MAX;
+					pSamples[j * m_numNodes + nnode] = R_NaInt;
+//printf("[%d, %d] = NA\n", j, nnode);
+				}
+			}
+		}
+		CATNET_FREE(paux);
+	}
+
+	if(!isNull(rPerturbations))
+		UNPROTECT(1);
+
+	if(pnodesample)
+		CATNET_FREE(pnodesample);		
+	if(porder)
+		CATNET_FREE(porder);
+
+	// output the new matrix
+	PROTECT(rsamples = NEW_INTEGER(m_numNodes * numsamples));
+	pRsamples = (int*)INTEGER_POINTER(rsamples);
+	memcpy(pRsamples, pSamples, m_numNodes*numsamples*sizeof(int));
+	UNPROTECT(1);
+
+	CATNET_FREE(pSamples);
+
+	return rsamples;
+}
+
+
 

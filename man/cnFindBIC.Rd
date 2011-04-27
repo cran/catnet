@@ -10,11 +10,11 @@
 }
 
 \usage{
-cnFindBIC(object, numsamples)
+ cnFindBIC(object, numsamples)
 }
 \arguments{
-\item{object}{A \code{list} of \code{catNetworkNode} objects or \code{catNetworkEvaluate}}
-\item{numsamples}{The number of samples used for estimating \code{object}}
+ \item{object}{A \code{list} of \code{catNetworkNode} objects or \code{catNetworkEvaluate}}
+ \item{numsamples}{The number of samples used for estimating \code{object}}
 }
 
 \details{The function returns the network with maximal BIC value from a list of networks 

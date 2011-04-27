@@ -150,14 +150,14 @@ int *RCatnetSearchHist::_genOrder(const int *porder, int norder, int shuffles, i
 SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations, 
 			SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, SEXP rNodeCats, 
 			SEXP rParentsPool, SEXP rFixedParentsPool, 
-			SEXP rModel, SEXP rMaxIter, 
+			SEXP rScore, SEXP rWeight, SEXP rMaxIter, 
 			SEXP rThreads, SEXP rUseCache, SEXP rEcho) {
 
 	int n, nn, i, j, k, len, maxComplexity, echo;
  	int *pRsamples, *pRperturbations, *pSamples, *pPerturbations, 
 		**parentsPool, **fixedParentsPool, *pPool, *pParentSizes;
 	double complx, fLogLik, ftemp, *pMatHisto;
-	int niter, maxIter, nModelSel, nstop;
+	int niter, maxIter, nScoreSel, nWeight, nstop;
 
 	MUTEX m_cache_mutex;
 
@@ -175,7 +175,8 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 	PROTECT(rMaxParents = AS_INTEGER(rMaxParents));
 	PROTECT(rMaxComplexity = AS_INTEGER(rMaxComplexity));
 	PROTECT(rMaxIter = AS_INTEGER(rMaxIter));
-	PROTECT(rModel = AS_CHARACTER(rModel));
+	PROTECT(rScore = AS_CHARACTER(rScore));
+	PROTECT(rWeight = AS_INTEGER(rWeight));
 	PROTECT(rThreads = AS_INTEGER(rThreads));
 	PROTECT(rUseCache = AS_LOGICAL(rUseCache));
 	PROTECT(rEcho = AS_LOGICAL(rEcho));
@@ -197,13 +198,15 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 
 	echo = LOGICAL(rEcho)[0];
 
-	nModelSel = 0;
-	if(!strncmp(CHARACTER_VALUE(rModel), "AIC", 3))
-		nModelSel = 1;
-	if(!strncmp(CHARACTER_VALUE(rModel), "BIC", 3))
-		nModelSel = 2;
+	nScoreSel = 0;
+	if(!strncmp(CHARACTER_VALUE(rScore), "AIC", 3))
+		nScoreSel = 1;
+	if(!strncmp(CHARACTER_VALUE(rScore), "BIC", 3))
+		nScoreSel = 2;
 
-	UNPROTECT(7);
+	nWeight = INTEGER_POINTER(rWeight)[0];
+
+	UNPROTECT(8);
 
 //printf("nDrives = %d, nModelSel = %d, bUseCache = %d\n", m_nDrives, nModelSel, m_bUseCache);
 //printf("maxComplexity = %d\n", maxComplexity);
@@ -257,7 +260,7 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 			(m_nDrives < 2)?echo:0, 
 			!isNull(rNodeCats), 
 			!isNull(rParentSizes), !isNull(rPerturbations), 
-			!isNull(rParentsPool), !isNull(rFixedParentsPool), FALSE, 
+			!isNull(rParentsPool), !isNull(rFixedParentsPool), FALSE, 0, 
 			m_bUseCache?&m_cache_mutex:0, m_pDrives[n]);
 	}
 
@@ -424,8 +427,9 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 		}
 		if(nCatnets > 0 && pCatnets) {
 
+			fLogLik = 0;
 			pCurNet = NULL;
-			switch(nModelSel) {
+			switch(nScoreSel) {
 			case 1: // AIC
 				fLogLik = -FLT_MAX;
 				for(nCurNet = 0; nCurNet < nCatnets; nCurNet++) {
@@ -468,10 +472,12 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 				continue;
 			}
 
-			//printf("curnet %d  %f\n", pCurNet->complexity(), pCurNet->loglik());
-			fLogLik = pCurNet->loglik();
-
-			ftemp = (double)exp((double)fLogLik / (double)(m_numSamples*m_numNodes));
+			if(nWeight <= 0)
+				ftemp = 1;
+			else if(nWeight == 1)
+				ftemp =(double)exp( pCurNet->loglik() / (double)(m_numSamples*m_numNodes));
+			else
+				ftemp = (double)exp((double)fLogLik / (double)(m_numSamples*m_numNodes));
 
 			pNumParents = pCurNet->numParents();
 			pParents = pCurNet->parents();

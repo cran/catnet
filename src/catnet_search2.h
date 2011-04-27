@@ -180,24 +180,11 @@ public:
 		memset(m_pNodeCats, 0, numnodes*sizeof(int*));
 		memset(m_pNodeNumCats, 0, numnodes*sizeof(int));
 
-/*if(matEdgeLiks) { 
-printf("matEdgeLiks: \n");
-for(i = 0; i < numnodes; i++) {
-	for(j = 0; j < numnodes; j++)
-		if(matEdgeLiks[i*numnodes+j] < 0.0000000001)
-			printf("[%d,%d] = %f\n", j, i, matEdgeLiks[i*numnodes+j]);
-	}
-}*/
 		if(pestim->m_pNodeNumCats && pestim->m_pNodeCats) {
-//printf("nodeCats are given:\n");
 			memcpy(m_pNodeNumCats, pestim->m_pNodeNumCats, numnodes*sizeof(int));
 			for(i = 0; i < numnodes; i++) {
 				m_pNodeCats[i] = (int*)CATNET_MALLOC(m_pNodeNumCats[i]*sizeof(int));
 				memcpy(m_pNodeCats[i], pestim->m_pNodeCats[i], m_pNodeNumCats[i]*sizeof(int));
-//printf("%d:  ", i);
-//for(j = 0; j < m_pNodeNumCats[i]; j++)
-//	printf("%d  ", m_pNodeCats[i][j]);
-//printf("\n");
 			}
 		}
 		else { 
@@ -273,6 +260,46 @@ for(i = 0; i < numnodes; i++) {
 		psubsamples = 0;
 		if(perturbations) {
 			psubsamples = (int*)CATNET_MALLOC(numnodes*numsamples*sizeof(int));
+		}
+
+		/* parent pools */
+		if(pestim->m_maxParentsPool >= 1 && pestim->m_matNodeCondLiks != 0 && parentsPool != 0) {
+			double fs,ff,fsum;
+			for(i = 0; i < numnodes; i++) {
+				for(j = 0; j < numnodes; j++) 
+					parentsPool[i][j] = -1;
+				if(i < pestim->m_maxParentsPool) {
+					for(j = 0; j < i; j++) 
+						parentsPool[i][j] = j;
+					continue;
+				}
+				/* sample from {m_matNodeCondLiks[i*numnodes+.]} */
+				fsum = 0;
+				for(j = 0; j < i; j++) {
+					fsum += pestim->m_matNodeCondLiks[i*numnodes+j];
+				}
+				k = 0;
+				ncomb = 0;
+				while(k < pestim->m_maxParentsPool && ncomb < numnodes*numnodes) {
+					ncomb++;
+					ff = fsum * (double)rand() / (double)RAND_MAX;
+					fs = 0;
+					j = 0;
+					while(fs <= ff && j < i) {
+						fs += pestim->m_matNodeCondLiks[i*numnodes+j];
+						j++;
+					}
+					j--;
+					for(d = 0; d < k; d++) {
+						if(parentsPool[i][d] == j)
+							break;
+					}
+					if(d != k || j >= numnodes)
+						continue;
+					parentsPool[i][k] = j;
+					k++;
+				}
+			}
 		}
 
 		/* create a network without edges*/
@@ -493,11 +520,9 @@ for(i = 0; i < numnodes; i++) {
 								}
 							}
 							fLogLik = baseCatnet.setNodeSampleProb(nnode, psubsamples, numsubsamples);
-//printf("pert fLoglik[%d] = %f (%d)\n", nnode, fLogLik, numsubsamples);
 						}
 						else {
 							fLogLik = baseCatnet.setNodeSampleProb(nnode, psamples, numsamples);
-//printf("fLoglik[%d] = %f (%d)\n", nnode, fLogLik, numsamples);
 						}
 
 						/*prior*/
@@ -558,6 +583,7 @@ for(i = 0; i < numnodes; i++) {
 						/* retain the same m_pCatnets list */
 						continue;
 					}
+
 					if(pestim->m_pCacheMutex) {
 						MUTEX_LOCK(pestim->m_pCacheMutex);
 						setCachedProb(parset, parsetsize + fixparsetsize, 
@@ -790,7 +816,7 @@ for(i = 0; i < numnodes; i++) {
 				m_pCatnets[j] -> normalizeProbabilities();
 				m_pCatnets[j] -> setCategoryIndices(m_pNodeNumCats, m_pNodeCats);
 			}
-		} 
+		}
 
 		if(m_pNodeCats) {
 			for(i = 0; i < m_numNodes; i++) 

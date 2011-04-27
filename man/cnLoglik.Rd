@@ -17,7 +17,7 @@ cnLoglik(object, data, perturbations=NULL, bysample=FALSE)
 \item{bysample}{a \code{logical}}
 }
 
-\details{If \code{bysample} is set to TRUE, the function output is a vector of length the sample size with values the log-likelihood of each individual sample instance. Otherwise, the total sum of the log-likelihood of the sample instances is reported.
+\details{If \code{bysample} is set to TRUE, the function output is a vector of log-likelihoods of the individual sample records. Otherwise, the total average of the log-likelihood of the sample is reported.
 }
 
 \value{A numeric value}

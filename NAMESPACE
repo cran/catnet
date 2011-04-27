@@ -17,13 +17,13 @@ exportMethods(
 	cnSubNetwork, cnReorderNodes, 
 	cnEdges, cnMatEdges, 
 	cnParents, cnMatParents, 		
-	cnProb, cnSetProb, cnNodeMarginalProb, 
+	cnProb, cnPlotProb, cnSetProb, cnNodeMarginalProb, 
 	cnComplexity, cnOrder, 
 	cnPlot, cnDot,
 	cnSamples, 
 	cnLoglik, cnNodeLoglik, 
-	cnFind, cnFindAIC, cnFindBIC, 
-	cnEvaluate, cnPredict, 
+	cnFind, cnFindAIC, cnFindBIC, cnFindKL, 
+	cnPredict, 
 	cnKLComplexity, 
 	cnCompare, 
 	cnParHist, 
@@ -31,7 +31,8 @@ exportMethods(
 	as.graph, as.igraph)
 
 export(
-	cnNew, cnRandomCatnet, cnCatnetFromGraph, cnCatnetFromSif, cnCatnetFromEdges, 
+	cnNew, cnRandomCatnet, 
+	cnCatnetFromGraph, cnCatnetFromSif, cnCatnetFromBif, cnCatnetFromEdges, 
 	isDAG, dag2cpdag, 
 	cnNodeSampleLoglik, cnNodeSampleProb, 
 	cnDiscretize, 

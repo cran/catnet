@@ -49,7 +49,7 @@
       
       lencat <- length(cats)
       
-      if(is.numeric(data[i,ids])) {
+      if(is.numeric(data[i,ids]) && is.null(object)) {
         if(!is.integer(data[i,ids]))
           data[i,ids] <- as.integer(data[i,ids]) - min(data[i,ids]) + 1
         data[i,data[i,ids]<1] <- 1
@@ -113,7 +113,7 @@
         
       lencat <- length(cats)
 
-      if(is.numeric(fdata[ids,i])) {
+      if(is.numeric(fdata[ids,i]) && is.null(object)) {
         ## fdata is actually indices
         data[i,ids] <- as.integer(fdata[ids,i]) - min(fdata[ids,i]) + 1
         data[i, data[i,ids]<1] <- 1
@@ -143,13 +143,13 @@
     rownames(data) <- 1:numnodes
   
   if(ask && maxCategories*maxCategories > numsamples) {
-    cat("The sample is small. Continue? ('y' or 'n')\n")
+    cat("The sample size is too small. Continue? ('y' or 'n')\n")
     if(scan("", what="character", nmax=1, quiet=TRUE) != "y" ) 
       stop("Operation canceled")
   }
 
   if(ask && maxCategories > 16) {
-    cat("The data seems to have too many categories. The operation can be very long and memory consuming. Continue? ('y' or 'n')\n")
+    cat("The data seems to have too many categories. The processing is expected to be very slow and memory consuming. Continue? ('y' or 'n')\n")
     if(scan("", what="character", nmax=1, quiet=TRUE) != "y" ) 
       stop("Operation canceled")
   }

@@ -38,18 +38,18 @@ SEXP catnetOptimalNetsForOrder(SEXP rSamples, SEXP rPerturbations,
 
 SEXP catnetOptimalNetsSA(SEXP rNodeNames, SEXP rSamples, SEXP rPerturbations, 
 			SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, SEXP rNodeCats, 
-			SEXP rParentsPool, SEXP rFixedParentsPool, 
+			SEXP rParentsPool, SEXP rFixedParentsPool, SEXP rMaxParentsPool, 
 			SEXP rMatEdgeLiks, SEXP rDirProbs, 
 			SEXP rModel, SEXP rStartOrder,
 			SEXP rTempStart, SEXP rTempCoolFact, SEXP rTempCheckOrders, 
-			SEXP rMaxIter, SEXP rOrderShuffles, SEXP rStopDiff, 
+			SEXP rMaxIter, SEXP rOrderShuffles, SEXP rStopDiff, SEXP rStopTime,  
 			SEXP rThreads, SEXP rUseCache, SEXP rEcho);
 SEXP catnetParHistogram(SEXP rSamples, SEXP rPerturbations, 
 			SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, SEXP rNodeCats, 
 			SEXP rParentsPool, SEXP rFixedParentsPool, 
-			SEXP rModel, SEXP rMaxIter,
+			SEXP rScore, SEXP rWeight, SEXP rMaxIter,
 			SEXP rThreads, SEXP rUseCache, SEXP rEcho);
-SEXP catnetLoglik(SEXP cnet, SEXP rSamples, SEXP rPerturbations);
+SEXP catnetLoglik(SEXP cnet, SEXP rSamples, SEXP rPerturbations, SEXP rBySample);
 SEXP catnetNodeLoglik(SEXP cnet, SEXP rNode, SEXP rSamples, SEXP rPerturbations);
 SEXP catnetNodeLoglikError(SEXP cnet, SEXP rNode, SEXP rSamples, SEXP rPerturbations);
 SEXP catnetSetProb(SEXP cnet, SEXP rSamples, SEXP rPerturbations);
@@ -57,6 +57,7 @@ SEXP catnetEntropyPairwise(SEXP rSamples, SEXP rPerturbations);
 SEXP catnetEntropyOrder(SEXP rSamples, SEXP rPerturbations);
 SEXP catnetKLpairwise(SEXP rSamples, SEXP rPerturbations);
 SEXP catnetPearsonPairwise(SEXP rSamples, SEXP rPerturbations);
+SEXP catnetSamples(SEXP cnet, SEXP rNumSamples, SEXP rPerturbations, SEXP rNaRate);
 SEXP catnetReleaseCache();
 SEXP catnetSetSeed(SEXP rSeed);
 

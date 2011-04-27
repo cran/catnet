@@ -72,7 +72,7 @@ networks such as model selection in classes of optimal networks with varying com
 as proposed in \cite{salzman06}. 
 Despite the diversity and efficiency of the existing algorithms, 
 being strictly structure learning techniques, their selection flexibility is usually very limited. 
-In conclusion, \Rpackage{catnet} does not intend to replace the existing, in many cases much more efficient, learning algorithms but to provide alternative, non-heuristic, tools for statistical inference. 
+In conclusion, \Rpackage{catnet} does not intend to replace the existing, in many cases much more efficient, learning algorithms but to provide non-heuristic, Maximum Likelihood based, set of tools for statistical inference. 
 
 Although \Rpackage{catnet} is designed as a self-contained package and provides 
 the basic functionality one needs for working with categorical Bayesian networks, 
@@ -189,8 +189,8 @@ if(bgraph) {
 }
 @
 
-In \Rpackage{catnet} package one is able to import graphs from Simple Interaction Format (SIF) files. 
-If a SIF file describes a DAG, which may not be the case since SIF files can describe any graph structure, the graph can be imported by calling the \Rfunction{cnCatnetFromSif} function. 
+In \Rpackage{catnet} package one is able to import graphs from Simple Interaction Format (SIF) and Bayesian Networks Interchange Format (BIF) files. 
+If a SIF file describes a DAG, which may not be the case since SIF files can describe any graph structure, the graph can be imported by calling the \Rfunction{cnCatnetFromSif} function. In this case a random probability structure is assigned. On the other hand, a BIF file describes both the DAG and probability structures. 
 
 <<cnet3>>=
 #cnet3 <- cnCatnetFromSif(filename)
@@ -235,7 +235,7 @@ cnMatParents(cnet1)
 cnMatEdges(cnet1)
 @
 
-\Rfunction{cnProb} function provides an access to the complete 
+\Rfunction{cnProb} and \Rfunction{cnPlotProb} function provides an access to the complete 
 probability table of a network, which is a recursive list and can be quite large
 for networks with big parent sets and many categories. 
 Conditional probabilities are reported in the following format. 
@@ -248,7 +248,7 @@ The third node ($N3$) has two categories and one parent ($N2$) and consequently 
 one for $N2=C1$ and another for $N2=C2$. 
 
 <<simplefuns3>>=
-cnProb(cnet1)
+cnPlotProb(cnet1)
 @
 
 An important characteristic of any categorical Bayesian network is its complexity. 
@@ -478,44 +478,6 @@ main="Model selection curve for the list of networks")
 @
 \end{center}
 
-\subsection{Learning Evaluation}
-
-The abundance of network learning algorithms compels means for evaluating and comparing them. There is a multitude of existing benchmark networks available that provide the two components needed to perform an evaluation - a known network and sample generated from it. 
-
-For learning validation purposes, \Rpackage{catnet} provides the function \Rfunction{cnEvaluate}. 
-For given \Robject{catNetwork} object and some data, the function 
-finds a set of optimal networks that maximize the likelihood of that data 
-and have complexity from the minimum possible up to a value 
-specified by the user. Internally, the function calls \Rfunction{cnSearchOrder}
-for the node order of the given network. 
-Moreover, the resulting optimal networks are compared to the given network using several topological criteria for graph comparison (see the manual of \Rfunction{cnCompare} for more details).
-The output of \Rfunction{cnEvaluate} is a \Robject{catNetworkEvaluate} object that contains all relevant diagnostic information some of which can be conveniently plotted. 
-
-\begin{center}
-<<ex16, fig=TRUE, echo=TRUE>>=
-## generate a 1000-size sample from cnet
-numsamples <- 500
-samples <- cnSamples(object=cnet, numsamples, output="frame")
-maxComplexity <- cnComplexity(cnet)
-##perturbations <- as.data.frame(t(matrix(rep(0, cnet@numnodes*numsamples), nrow=cnet@numnodes)))
-netlist <- cnEvaluate(object=cnet, data=samples, perturbations=NULL, maxComplexity)
-## diagnostic plots
-cnPlot(netlist)
-## find the reconstructed network with the true complexity
-bnet <- cnFind(netlist, maxComplexity)
-bnet
-cnCompare(cnet, bnet)
-bnet2 <- cnFind(netlist, maxComplexity/2)
-bnet2
-cnCompare(cnet, bnet2)
-@
-\end{center}
-
-Another application of \Rfunction{cnEvaluate} function might be reducing a network to a less complex one. 
-A stochastic way to achive this is to generate a large sample from the original network, 
-then evaluate the sample to obtain a network with the desired complexity.
-In the above example, \Robject{bnet2} is a reduced version of the original network \Robject{cnet} with about twice smaller complexity.
-
 \subsection{Model Selection with AIC and BIC criteria}
 
 The model selection problem in the context of network learning is one of the focuses in \Rpackage{catnet}.
@@ -607,7 +569,7 @@ In addition to the parameters of \Rfunction{cnSearchOrder}, \Rfunction{cnSearchS
 \Robject{tempCoolFact} - the cooling factor from one temperature step to another. 
 It is a number between 0 and 1, inclusively.
 For example, if \Robject{tempStart} is the temperature in the first step, 
-\Robject{tempStart*tempCoolFact} will be the temperature in the second.}
+\Robject{tempStart*temthepCoolFact} will be the temperature in the second.}
 \item{
 \Robject{tempCheckOrders} - the number of proposals to be checked for given temperature. 
 This is the number of orders, elements of the current order neighborhood, to be proposed at each step before decreasing the temperature. 
@@ -649,7 +611,7 @@ Another hint is to look at the acceptance rate of the SA algorithm and choose a 
 about 10 to 30 percent acceptance. 
 In any case, a number of independent runs of \Rfunction{cnSearchSA} are recommended before making conclusions, a general recommendation for any MCMC procedure.
 
-The following example illustrates a typical call of \Rfunction{cnSearchSA}
+The following example theillustrates a typical call of \Rfunction{cnSearchSA}
 <<ex18>>=
 set.seed(345)
 netlist <- cnSearchSA(data=samples, perturbations=NULL, 
@@ -736,8 +698,8 @@ cnCompare(cnet8, anet9)
 
 \section{Conclusion}
 
-The \Rpackage{catnet} package for \Robject{R} provides an inference framework for discrete Bayesian networks with the intention to diversify the existing tools for network statistical modeling. Implemented strictly according to the Maximum Likelihood  principle, it targets the more statistical oriented community. It provides MLE solutions for networks with known order of their nodes and is able to perform stochastic search in the space of orders. The search functions of the package can handle data with perturbations, suitable for micro-array analysis, as well as constraints on the network connectivity. 
-The additional functions for sampling, prediction and network comparison complete the \Rpackage{catnet} package to an independent framework for discrete network analysis. 
+The \Rpackage{catnet} package for \Robject{R} provides an inference framework for discrete Bayesian networks with the intention to diversify the existing tools for network statistical modeling. Implemented strictly according to the Maximum Likelihood  principle, it targets the more statistical oriented community. It provides MLE solutions for networks with known order of their nodes and is able to perform stochastic search in the space of orders. The inference functions of the package can handle data with missing values and data with perturbations, suitable for micro-array analysis as well as, soft and hard edge constraints on the graph structure. 
+The additional functions for sampling, prediction and network comparison complete the \Rpackage{catnet} package to a self-contained framework for discrete network analysis. 
 
 \begin{thebibliography}{10}
 
@@ -754,7 +716,7 @@ Beinlich, I., Suermondth, G., Chavez, R., Cooper, G.,
 \bibitem[Bouckaert(1992)]{bouckaert}
 Bouckaert, R.
 \newblock{Optimizing causal orderings for generating dags from data.}
-\newblock{1992, In Proc. Conf. on Uncertainty in Artiﬁcial Intelligence, pages 9-16. Morgan-Kaufmann.}
+\newblock{1992, In Proc. Conf. on Uncertainty in Artificial Intelligence, pages 9-16. Morgan-Kaufmann.}
 
 \bibitem[Buntine(1996)]{buntine}
 Buntine, W.,

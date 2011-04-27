@@ -260,6 +260,12 @@ setMethod("cnCompare", c("catNetwork","catNetworkEvaluate"),
   if(!extended)
 	return(out)
   
+  if(numnodes > 512) {
+    cat("The network is large and calculating the exponential distance may be very slow. Continue? ('y' or 'n')\n")
+    if(scan("", what="character", nmax=1, quiet=TRUE) != "y" ) 
+      return(out)
+  }
+  
   m1 <- mpartrue
   sum1 <- m1
   m2 <- mpar

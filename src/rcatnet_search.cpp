@@ -118,7 +118,7 @@ SEXP RCatnetSearch::estimateCatnets(SEXP rSamples, SEXP rPerturbations,
 		!isNull(rNodeCats), 
 		!isNull(rParentSizes), !isNull(rPerturbations), 
 		!isNull(rParentsPool), !isNull(rFixedParentsPool), 
-		!isNull(rMatEdgeLiks), 
+		!isNull(rMatEdgeLiks), 0, 
 		NULL, this);
 
 	if(!isNull(rParentSizes)) {
@@ -238,8 +238,7 @@ SEXP RCatnetSearch::estimateCatnets(SEXP rSamples, SEXP rPerturbations,
 		UNPROTECT(1);
 	}
 
-	matEdgeLiks = 0;
-	if(!isNull(rMatEdgeLiks)) {
+	if(!isNull(rMatEdgeLiks) && m_pSearchParams->m_matEdgeLiks) {
 		PROTECT(rMatEdgeLiks = AS_NUMERIC(rMatEdgeLiks));
 		matEdgeLiks = m_pSearchParams->m_matEdgeLiks;
 		pMatEdgeLiks = REAL(rMatEdgeLiks);

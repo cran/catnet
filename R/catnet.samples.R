@@ -25,7 +25,7 @@
 ##	})
 
 setMethod("cnSamples", c("catNetwork"),
-	function(object, numsamples=1, perturbations=NULL, output="frame", as.index=FALSE) {
+	function(object, numsamples=1, perturbations=NULL, output="frame", as.index=FALSE, naRate=0) {
 	  if(!is.numeric(numsamples) && !is.integer(numsamples))
             stop("The number of samples should be integer")
 	  numsamples <- as.integer(numsamples)
@@ -47,12 +47,27 @@ setMethod("cnSamples", c("catNetwork"),
                     return(0)
                   })
           }
-          if(!is.null(perturbations))
-            data <- sapply(1:numsamples, function(j) {
-              genRandomCatsPert(object, perturbations[, j])
-            })
-          else
-            data <- sapply(1:numsamples, function(j) genRandomCats(object))
+
+          if(naRate < 0)
+            naRate <- 0
+          if(naRate>1)
+            naRate <- 1
+          
+          fast <- TRUE
+          if(fast) {
+            data <- .Call("ccnSamples", 
+                          object, as.integer(numsamples), perturbations, as.numeric(naRate), 
+                          PACKAGE="catnet")
+          }
+          else {
+            if(!is.null(perturbations))
+              data <- sapply(1:numsamples, function(j) {
+                genRandomCatsPert(object, perturbations[, j])
+              })
+            else
+              data <- sapply(1:numsamples, function(j) genRandomCats(object))
+          }
+          
 	  data <- matrix(data, ncol=numsamples)
           rownames(data)<-object@nodes
           if(!as.index) {
@@ -421,6 +436,7 @@ setMethod("cnSetProb", "catNetwork",
             newobject@categories <- object@categories
             newobject@maxCategories <- object@maxCategories
             newobject@complexity <- cnComplexity(object)
+
             
 	    return(newobject)
           }

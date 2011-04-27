@@ -13,7 +13,8 @@ setClass("catNetwork",
                         complexity="integer",
                         nodeComplexity="ANY",
                         likelihood="numeric",
-                        nodeLikelihood="ANY"), 
+                        nodeLikelihood="ANY",
+                        nodeSampleSizes="vector"), 
          validity = function(object) validCatNetwork(object),
          package = "catnet"
 	   )
@@ -52,15 +53,19 @@ setGeneric("cnMatParents",
            standardGeneric("cnMatParents")
            )
 
-setGeneric("cnProb", function(object, which)
+setGeneric("cnProb", function(object, which=NULL)
            standardGeneric("cnProb")
            )
 
-setGeneric("cnDot", function(object, file=NULL, format="ps")
+setGeneric("cnPlotProb", function(object, which=NULL)
+           standardGeneric("cnPlotProb")
+           )
+
+setGeneric("cnDot", function(object, file=NULL, format="ps", style=NULL)
            standardGeneric("cnDot")
            )
 
-setGeneric("cnSamples", function(object, numsamples=1, perturbations=NULL, output="frame", as.index=FALSE)
+setGeneric("cnSamples", function(object, numsamples=1, perturbations=NULL, output="frame", as.index=FALSE, naRate=0)
            standardGeneric("cnSamples")
            )
 
@@ -88,11 +93,11 @@ setGeneric("cnEvaluate", function(object, data, perturbations=NULL, maxParentSet
            standardGeneric("cnEvaluate")
            )
 
-setGeneric("cnComplexity", function(object, node)
+setGeneric("cnComplexity", function(object, node=NULL, include.unif=TRUE)
            standardGeneric("cnComplexity")
            )
 
-setGeneric("cnKLComplexity", function(object, node)
+setGeneric("cnKLComplexity", function(object, node=NULL)
            standardGeneric("cnKLComplexity")
            )
 
@@ -179,6 +184,10 @@ setGeneric("cnFindBIC", function(object, numsamples)
            standardGeneric("cnFindBIC")
            )
 
+setGeneric("cnFindKL", function(object, numsamples)
+           standardGeneric("cnFindKL")
+           )
+
 setGeneric("addNetworkNode", 
           function(object, newnode, newparents, loglik, problist, nodecats, ...)
            standardGeneric("addNetworkNode")
@@ -251,7 +260,7 @@ setClass("catNetworkEvaluate",
 	   )
 
 setGeneric("cnFind", 
-          function(object, complexity)
+          function(object, complexity=0, alpha=0,factor=1)
            standardGeneric("cnFind")
            )
 
@@ -278,7 +287,7 @@ setClass("CPDAG",
 	   )
 
 setGeneric("dag2cpdag", 
-          function(object)
+           function(object)
            standardGeneric("dag2cpdag")
            )
 

@@ -138,15 +138,20 @@ public:
 		m_maxCategories = maxcats;
 
 		m_numParents = (int*) CATNET_MALLOC(m_numNodes * sizeof(int));
+		memset(m_numParents, 0, m_numNodes * sizeof(int));
 		m_parents = (int**) CATNET_MALLOC(m_numNodes * sizeof(int*));
+		memset(m_parents, 0, m_numNodes * sizeof(int*));
 		m_numCategories = (int*) CATNET_MALLOC(m_numNodes * sizeof(int));
-		m_catIndices = (int**) CATNET_MALLOC(m_numNodes * sizeof(int*));
-		for (i = 0; i < m_numNodes; i++) {
-			m_numParents[i] = 0;
-			m_parents[i] = 0;
-			m_numCategories[i] = m_maxCategories;
-			m_catIndices[i] = 0;
+		if (pcats != 0)
+			memcpy(m_numCategories, pcats, m_numNodes * sizeof(int));
+		else {
+			for (i = 0; i < m_numNodes; i++)
+				m_numCategories[i] = m_maxCategories;
 		}
+
+		m_catIndices = (int**) CATNET_MALLOC(m_numNodes * sizeof(int*));
+		memset(m_catIndices, 0, m_numNodes * sizeof(int*));
+		
 		m_nodeNames = (t_node**) CATNET_MALLOC(m_numNodes * sizeof(t_node*));
 		if (nodes) {	
 			for (i = 0; i < m_numNodes; i++) {
@@ -171,11 +176,8 @@ public:
 					memcpy(m_parents[i], ppars[i], m_numParents[i] * sizeof(int));
 			}
 		}
-		if (pcats != 0)
-			memcpy(m_numCategories, pcats, m_numNodes * sizeof(int));
 		
 		nodeparcats = (int*)CATNET_MALLOC((m_maxParents+1)*sizeof(int));
-
 		m_pProbLists = (PROB_LIST<t_prob>**) CATNET_MALLOC(m_numNodes * sizeof(PROB_LIST<t_prob>*));
 		memset(m_pProbLists, 0, m_numNodes * sizeof(PROB_LIST<t_prob>*));
 		for (i = 0; i < m_numNodes; i++) {
@@ -189,9 +191,7 @@ public:
 				m_pProbLists[i] = new PROB_LIST<t_prob>(m_numCategories[i], m_maxCategories, m_numParents[i], nodeparcats);
 			}
 		}
-		
 		CATNET_FREE(nodeparcats);
-
 	}
 
 	void setNodeNames(char **pnames, const int *porder) {
@@ -590,6 +590,80 @@ public:
 		return ploglik;
 	}
 
+	t_prob* bySampleLoglikVector(int *psamples, int nsamples, int *pert=0) {
+		int i, j, ipar, npert;
+		/* psamples have categories in the range [1, m_maxCategories] */
+		t_prob *pnodeprob, *ploglik;
+		int nodepars, *pncount;
+		int *pnodepars, *pnodesample, samp;
+
+		if(!psamples || nsamples < 1)
+			return 0;
+
+		ploglik = (t_prob*) CATNET_MALLOC(nsamples * sizeof(t_prob));
+		memset(ploglik, 0, nsamples * sizeof(t_prob));
+
+		pncount = (int*) CATNET_MALLOC(nsamples * sizeof(int));
+
+		pnodesample = (int*) CATNET_MALLOC(m_maxParents * sizeof(int));
+		for (i = 0; i < m_numNodes; i++) {
+			if(!m_pProbLists[i])
+				continue;
+			pnodepars = m_parents[i];
+			nodepars = m_numParents[i];
+
+			//memset(pncount, 0, nsamples * sizeof(int));
+
+			if(pert){
+				npert = 0;
+				for (j = 0; j < nsamples; j++) {
+					// check for perturbation
+					if(pert[j * m_numNodes + i])
+						continue; 
+					for (ipar = 0; ipar < nodepars; ipar++) {
+						pnodesample[ipar] = psamples[j * m_numNodes + pnodepars[ipar]];
+					}
+					pnodeprob = m_pProbLists[i]->find_slot(0, pnodesample, 0);
+					samp = psamples[j * m_numNodes + i];
+					if (pnodeprob && samp >= 0 && samp < m_numCategories[i]) {
+						if(pnodeprob[samp] > 0)
+							ploglik[j] += (t_prob)log((double)pnodeprob[samp]);
+						else {
+							ploglik[j] = (t_prob)-FLT_MAX;
+							break;
+						}
+						pncount[j]++;
+					}
+				}
+			}
+			else {
+				for (j = 0; j < nsamples; j++) {
+					for (ipar = 0; ipar < nodepars; ipar++) {
+						pnodesample[ipar] = psamples[j * m_numNodes + pnodepars[ipar]];
+					}
+					pnodeprob = m_pProbLists[i]->find_slot(0, pnodesample, 0);
+					samp = psamples[j * m_numNodes + i];
+					if (pnodeprob && samp >= 0 && samp < m_numCategories[i]) {
+						if(pnodeprob[samp] > 0)
+							ploglik[j] += (t_prob)log((double)pnodeprob[samp]);
+						else {
+							ploglik[j] = (t_prob)-FLT_MAX;
+							break;
+						}
+						pncount[j]++;
+					}
+				}
+			}
+			//for (j = 0; j < nsamples; j++)
+			//	if(pncount[j] > 1 && ploglik[j] > -FLT_MAX)
+			//		ploglik[j] /= (t_prob)pncount[j];
+		}
+
+		CATNET_FREE(pnodesample);
+		CATNET_FREE(pncount);
+		return ploglik;
+	}
+
 	t_prob sampleNodeLoglik(int nnode, int *psamples, int nsamples) {
 		int j, ipar;
 		/* psamples have categories in the range [1, m_maxCategories] */
@@ -641,16 +715,16 @@ public:
 		t_prob *pnodeprob, floglik;
 		int *pnodesample, *pnodepars, samp, ncount;
 
-		if (!m_pProbLists || !psamples || nsamples < 1)
-			return 0;
+		if (!m_pProbLists || !psamples || nsamples < 1) {
+			return (t_prob)-FLT_MAX;
+		}
 
 		if(!m_pProbLists[nnode]) {
 			// error
-			return 0;
+			return (t_prob)-FLT_MAX;
 		}
 		else
 			m_pProbLists[nnode]->set_zero();
-
 		pnodesample = (int*) CATNET_MALLOC(m_maxParents * sizeof(int));
 		pnodepars = m_parents[nnode];
 		ncount = 0;
@@ -667,11 +741,13 @@ public:
 				ncount++;
 			}
 		}
-
 		CATNET_FREE(pnodesample);
 
-		// at this point m_pProbLists[nnode] has counts not probabilities 
-		// find m_pProbLists[nnode]->loglik
+		/* keep sample sizes */
+		m_pProbLists[nnode]->sampleSize = ncount;
+
+		/* at this point m_pProbLists[nnode] has counts not probabilities 
+		  find m_pProbLists[nnode]->loglik */
 		m_pProbLists[nnode]->loglikelihood();
 		if(ncount > 1) {
 			m_pProbLists[nnode]->loglik /= (t_prob)ncount;
@@ -1020,6 +1096,42 @@ printf("dd = %f,  faux = %f, perr1 = %f, perr2 = %f\n", dd, faux, perr1, perr2);
 		CATNET_FREE(jointprob);
 
 		return margprob;
+	}
+
+	int *getOrder() {
+		int *porder = 0, *pfound = 0, bhaspar, i, j, k;
+		if(m_numNodes < 1 || !m_numParents || !m_parents)
+			return 0;
+
+		porder = (int*)CATNET_MALLOC(m_numNodes * sizeof(int));
+		pfound = (int*)CATNET_MALLOC(m_numNodes * sizeof(int));
+		memset(pfound, 0, m_numNodes * sizeof(int));
+		for(i = 0; i < m_numNodes; i++) {
+			for(j = 0; j < m_numNodes; j++) {
+				if(pfound[j])
+					continue;
+				if(m_numParents[j] <= 0)
+					break;
+				bhaspar = 0;
+				for(k = 0; k < m_numParents[j]; k++) {
+					if(pfound[m_parents[j][k]])
+						continue;
+					bhaspar = 1;
+					break;
+				}
+				if(!bhaspar)
+					break;
+			}
+			if(j >= m_numNodes || pfound[j]) {
+				CATNET_FREE(pfound);
+				CATNET_FREE(porder);
+				return 0;
+			}
+			porder[i] = j;
+			pfound[j] = 1;
+		}
+		CATNET_FREE(pfound);
+		return porder;
 	}
 
 };

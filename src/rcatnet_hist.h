@@ -57,7 +57,7 @@ public:
 	SEXP search(SEXP rSamples, SEXP rPerturbations, 
 			SEXP rMaxParents, SEXP rParentSizes, SEXP rMaxComplexity, SEXP rNodeCats, 
 			SEXP rParentsPool, SEXP rFixedParentsPool, 
-			SEXP rModel, SEXP rMaxIter,
+			SEXP rScore, SEXP rWeight, SEXP rMaxIter,
 			SEXP rThreads, SEXP rUseCache, SEXP rEcho);
 
 };

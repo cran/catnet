@@ -65,7 +65,7 @@ Also, the slots from \code{hamm} to \code{markov.fn} are not used.
 
 \author{N. Balov}
 
-\seealso{\code{\link{catNetwork-class}}, \code{\link{catNetworkDistance-class}}, \code{\link{cnEvaluate}}, \code{\link{cnCompare}}, \code{\link{cnPlot}}
+\seealso{\code{\link{catNetwork-class}}, \code{\link{catNetworkDistance-class}}, \code{\link{cnCompare}}, \code{\link{cnPlot}}
 }
 
 \keyword{classes}

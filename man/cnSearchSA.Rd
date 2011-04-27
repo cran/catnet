@@ -8,12 +8,12 @@
 \usage{
 cnSearchSA(data, perturbations, 
 	maxParentSet=0, parentSizes=NULL, 
-	maxComplexity=0, 
-	nodeCats=NULL, parentsPool=NULL, fixedParents=NULL, 
+	maxComplexity=0, nodeCats=NULL, 
+	parentsPool=NULL, fixedParents=NULL, 
 	edgeProb=NULL, dirProb=NULL, 
 	selectMode = "BIC", 
 	tempStart=1, tempCoolFact=0.9, tempCheckOrders=10, maxIter=100, 
-	orderShuffles=1, stopDiff=0, 
+	orderShuffles=1, stopDiff=0, stopTime = 0, 
 	numThreads=2, priorSearch=NULL, echo=FALSE)
 }
 
@@ -25,7 +25,7 @@ cnSearchSA(data, perturbations,
 \item{maxComplexity}{an \code{integer}, maximal network complexity for the search}
 \item{nodeCats}{a \code{list} of node categories}
 \item{parentsPool}{a \code{list} of parent sets to choose from}
-\item{fixedParents}{a \code{list} of parent sets to choose from}
+\item{fixedParents}{a \code{list} of fixed parent sets}
 \item{edgeProb}{a square \code{matrix} of length the number of nodes specifying prior edge probabilities}
 \item{dirProb}{a square \code{matrix} of length the number of nodes specifying prior directional probabilities}
 \item{selectMode}{a \code{character}, optimization network selection criterion such as "AIC" and "BIC"}
@@ -35,6 +35,7 @@ cnSearchSA(data, perturbations,
 \item{maxIter}{an \code{integer}, the total number of iterations, thus orders, to be processed}
 \item{orderShuffles}{a \code{numeric}, the number of shuffles for generating new candidate orders from the last accepted}
 \item{stopDiff}{a \code{numeric} value, stopping epsilon criterion}
+\item{stopTime}{a \code{numeric} value, if positive, stopping time criterion}
 \item{numThreads}{an \code{integer} value, the number of parallel threads}
 \item{priorSearch}{a \code{catNetworkEvaluate} object from a previous search}
 \item{echo}{a \code{logical} that sets on/off some functional progress and debug information}

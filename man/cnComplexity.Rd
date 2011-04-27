@@ -11,13 +11,14 @@
 \description{Returns the complexity of a network}
 
 \usage{
-cnComplexity(object, node)
-cnKLComplexity(object, node)
+cnComplexity(object, node=NULL, include.unif=TRUE)
+cnKLComplexity(object, node=NULL)
 }
 
 \arguments{
 \item{object}{a \code{catNetwork} object}
-\item{node}{an \code{integer}, the node index or missing}
+\item{node}{an \code{integer}, node index}
+\item{include.unif}{a \code{logical}}
 }
 
 \details{Complexity is a network characteristics that depends both on its graphical structure and 
@@ -32,6 +33,8 @@ has complexity \code{c1*c2*...*ck}.
 Complexity is always a number that is equal or greater than the number of nodes in the network. 
 For a network with specified graph structure, its complexity determines the number of parameters needed 
 to define its probability distribution and hence the importance of complexity as network characteristic. 
+
+If \code{include.unif} is set to \code{FALSE}
 }
 
 \value{An \code{integer}}

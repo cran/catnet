@@ -45,6 +45,9 @@ public:
 			cnet.numCategories(), cnet.probLists());
 		return *this;
 	}
+
+	SEXP genSamples(SEXP rNumSamples, SEXP rPerturbations, SEXP rNaRate);
+
 };
 
 extern "C" {

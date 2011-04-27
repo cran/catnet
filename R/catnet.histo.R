@@ -42,11 +42,11 @@ parHisto <- function(objectlist, norder = NULL) {
   return(mhisto)
 }
  
-cnSearchHist <- function(data, perturbations,  
-                         maxParentSet, parentSizes = NULL,
+cnSearchHist <- function(data, perturbations=NULL,  
+                         maxParentSet=1, parentSizes = NULL,
                          maxComplexity=0, nodeCats = NULL,  
                          parentsPool = NULL, fixedParents = NULL,
-                         selectMode = "BIC", 
+                         score = "BIC", weight="likelihood", 
                          maxIter = 32, numThreads = 2, echo=FALSE) {
 
   if(!is.matrix(data) && !is.data.frame(data))
@@ -108,6 +108,12 @@ cnSearchHist <- function(data, perturbations,
   maxIter <- as.integer(maxIter)
   if(maxIter < numThreads)
     maxIter <- numThreads
+
+  nweight <- 0
+  if(weight=="likelihood")
+    nweight <- 1
+  if(weight=="score")
+    nweight <- 2
   
   ## call the C-function
   .Call("ccnReleaseCache", PACKAGE="catnet")
@@ -117,7 +123,7 @@ cnSearchHist <- function(data, perturbations,
                   as.integer(maxComplexity),
                   catIndices, 
                   parentsPool, fixedParents,
-                  selectMode, as.integer(maxIter),
+                  score, nweight, as.integer(maxIter),
                   as.integer(numThreads), 
                   ## cache
                   TRUE, 
@@ -128,51 +134,5 @@ cnSearchHist <- function(data, perturbations,
   rownames(mhisto)<-nodenames
   colnames(mhisto)<-nodenames
 
-  return(mhisto)
-
-  ## R-implementation
-
-  lfact <- 1/(numnodes*numsamples)
-  lsum <- 0
-  
-  norders <- maxIter
-  for(k in 1:norders) {
-
-    order <- sample(1:numnodes)
-    if(echo)
-      cat("\n Order: ", order, "\n")
-
-    t1 <- proc.time()
-    
-    res <- optimalNetsForOrder(data, perturbations, 
-                               categories, as.integer(maxCategories),
-                               as.integer(maxParentSet), NULL, 
-                               as.integer(maxComplexity), order, catIndices, 
-                               parentsPool, fixedParents, 
-                               fast=TRUE, echo=FALSE, useCache=FALSE)
-    
-    t2 <- proc.time()
-    mins <- floor((t2[1]-t1[1])/60)
-    secs <- t2[1]-t1[1] - 60*mins
-    if(echo)
-      cat(k, "\\", norders, "search time: ", mins, "min, ", secs, "sec\n")
-
-    cnet <- cnFind(res, maxComplexity)
-    hh <- parHisto(cnet, order)
-    laux <- exp(cnet@likelihood * lfact)
-    lsum <- lsum + laux
-    hh <- hh * laux
-    if(k == 1)
-      mhisto <- hh
-    else
-      mhisto <- mhisto + hh
-  }
-
-  ##if(lsum > 0)
-  ##  mhisto <- mhisto / lsum
-  
-  rownames(mhisto)<-nodenames
-  colnames(mhisto)<-nodenames
-  
   return(mhisto)
 }

@@ -10,7 +10,7 @@
 }
 
 \usage{
-cnFindAIC(object, numsamples)
+ cnFindAIC(object, numsamples)
 }
 \arguments{
  \item{object}{A \code{list} of \code{catNetwork} objects or \code{catNetworkEvaluate}}

@@ -1,34 +1,52 @@
 #########################################################################
 # Plotting Methods  
 
-setMethod("cnDot", "catNetwork", function(object, file="", format="ps") { 
+setMethod("cnDot", "catNetwork", function(object, file="", format="ps", style=NULL) {
+  ## style format is a list of node[shape, shape.color, edge.color] 
   if(length(object@meta)>0) 
-    str <- sprintf("\"%s, \\nComplexity %d, \\nLogLikelihood %5.3f\"[shape=plaintext]", 
+    str <- sprintf("\"%s, \\nComplexity %d, \\nLogLikelihood %5.3f\"[shape=plaintext]\n", 
                    as.character(object@meta), object@complexity, object@likelihood) 
   else 
-    str <- sprintf("\"catNetwork with \\nComplexity %d, \\nLogLikelihood %5.3f\"[shape=plaintext]", 
+    str <- sprintf("\"catNetwork with \\nComplexity %d, \\nLogLikelihood %5.3f\"[shape=plaintext]\n", 
                    object@complexity, object@likelihood)
   noedges <- TRUE
+  pmat <- cnMatParents(object)
   strout <- sapply(seq(1, length(object@parents)), function(n) { 
-    if(is.null(object@parents[[n]])) 
-      return("") 
+    if(is.null(object@parents[[n]])) {
+      if(sum(pmat[,n]) > 0 && !is.null(style) && length(style)>=n && length(style[[n]])>=3)
+        paste("\"", object@nodes[[n]], "\"[shape=\"", style[[n]][1], "\", color=\"", style[[n]][2], "\"];\n",
+              "edge[color=\"", style[[n]][3], "\"];\n", collapse="", sep="")
+      else
+        return("")
+    }
     else{
       noedges <- FALSE
-      #cat(n, length(object@parents[[n]]), "\n") 
       paste(sapply(object@parents[[n]], function(j) { 
-        #cat(j) 
-        if(length(object@parents[[j]]) > 0 && length(which(object@parents[[j]] == n)) > 0) { 
-          ## double-edge in both directions 
-          ##paste("\"", object@nodes[j], "\" -> \"", object@nodes[n], "\" [dir=both, style=dashed];\n", collapse="", sep="")
-          paste("\"", object@nodes[j], "\" -> \"", object@nodes[n], "\" [style=dashed];\n", collapse="", sep="") 
-        } 
-        else 
-          paste("\"", object@nodes[j], "\" -> \"", object@nodes[n], "\";\n", collapse="", sep="") 
+        if(!is.null(style) && length(style)>=n && length(style[[n]])>=3) {
+          if(length(object@parents[[j]]) > 0 && length(which(object@parents[[j]] == n)) > 0 )
+            paste("\"", object@nodes[[n]], "\"[shape=\"", style[[n]][1], "\", color=\"", style[[n]][2], "\"];\n",
+                  "edge[color=\"", style[[n]][3], "\"];\n", 
+                  "\"", object@nodes[j], "\" -> \"", object@nodes[n], "\" [style=dashed];\n", collapse="", sep="")
+          else
+            paste("\"", object@nodes[[n]], "\"[shape=\"", style[[n]][1], "\", color=\"", style[[n]][2], "\"];\n",
+                  "edge[color=\"", style[[n]][3], "\"];\n",
+                  "\"", object@nodes[j], "\" -> \"", object@nodes[n], "\";\n", collapse="", sep="")
+        }
+        else {
+          if(length(object@parents[[j]]) > 0 && length(which(object@parents[[j]] == n)) > 0) 
+            paste("\"", object@nodes[j], "\" -> \"", object@nodes[n], "\" [style=dashed];\n", collapse="", sep="") 
+          else 
+            paste("\"", object@nodes[j], "\" -> \"", object@nodes[n], "\";\n", collapse="", sep="")
+        }
       }), collapse="", sep="") 
     } 
   }) 
   strout <- paste(str, paste(strout, collapse="", sep="")) 
-  str <- paste("digraph G {\n", strout, "}\n", collapse="", sep="") 
+  str <- paste("digraph G {\n", strout, "}\n", collapse="", sep="")
+
+  if(is.null(format))
+    format <- ""
+  
   if(!missing(file) && !is.null(file)) { 
  
     ## get the full path to the file 
@@ -37,10 +55,10 @@ setMethod("cnDot", "catNetwork", function(object, file="", format="ps") {
     write(str, file=paste(file,".dot",sep="")) 
  
     dotviewer <- as.character(Sys.getenv("R_DOTVIEWER")) 
-    if(dotviewer != "") {
+    if(dotviewer != "" && (format == "ps" || format == "pdf")) {
       if(format == "ps") 
         strdotcall<-paste(dotviewer, " -Tps \"", file, ".dot\"", " -o \"", file, ".ps\"", sep="")
-      else  
+      else
         strdotcall<-paste(dotviewer, " -Tpdf \"", file, ".dot\"", " -o \"", file, ".pdf\"", sep="") 
       try(system(strdotcall, intern=TRUE, ignore.stderr=TRUE), silent = TRUE) 
  
@@ -54,12 +72,12 @@ setMethod("cnDot", "catNetwork", function(object, file="", format="ps") {
       } 
     } 
   } 
-  else 
+  if(format == "dot")
     cat(str) 
   }) 
  
  
-setMethod("cnDot", "list", function(object, file="", format="ps") { 
+setMethod("cnDot", "list", function(object, file="", format="ps", style=NULL) { 
   if(!is.list(object)) 
     return("") 
   objectlist <- object 
@@ -118,6 +136,9 @@ setMethod("cnDot", "list", function(object, file="", format="ps") {
     liststr <- paste(liststr, str, "", sep="") 
     i <- i + 1 
   }
+
+  if(is.null(format))
+    format <- ""
   
   if(!missing(file) && !is.null(file)) { 
  
@@ -127,7 +148,7 @@ setMethod("cnDot", "list", function(object, file="", format="ps") {
     write(liststr, file=paste(file,".dot",sep="")) 
  
     dotviewer <- as.character(Sys.getenv("R_DOTVIEWER")) 
-    if(dotviewer != "") {
+    if(dotviewer != "" && (format == "ps" || format == "pdf")) {
       if(format == "ps") 
         strdotcall<-paste(dotviewer, " -Tps \"", file, ".dot\"", " -o \"", file, ".ps\"", sep="")
       else
@@ -144,11 +165,11 @@ setMethod("cnDot", "list", function(object, file="", format="ps") {
       } 
     } 
   } 
-  else 
+  if(format == "dot")
     cat(liststr) 
 }) 
  
-setMethod("cnDot", "matrix", function(object, file="", format="ps") { 
+setMethod("cnDot", "matrix", function(object, file="", format="ps", style=NULL) { 
   if(!is(object, "matrix")) 
     stop("Specify a valid square matrix.") 
   medges <- as.matrix(object) 
@@ -173,6 +194,9 @@ setMethod("cnDot", "matrix", function(object, file="", format="ps") {
     } 
   }
   str <- paste("digraph G {\n", strout, "}\n", collapse="", sep="")
+
+  if(is.null(format))
+    format <- ""
   
   if(!missing(file) && !is.null(file)) { 
  
@@ -181,8 +205,8 @@ setMethod("cnDot", "matrix", function(object, file="", format="ps") {
  
     write(str, file=paste(file,".dot",sep="")) 
  
-    dotviewer <- as.character(Sys.getenv("R_DOTVIEWER")) 
-    if(dotviewer != "") { 
+    dotviewer <- as.character(Sys.getenv("R_DOTVIEWER"))
+    if(dotviewer != "" && (format == "ps" || format == "pdf")) {
       if(format == "ps")
         strdotcall<-paste(dotviewer, " -Tps \"", file, ".dot\"", " -o \"", file, ".ps\"", sep="")
       else
@@ -199,7 +223,7 @@ setMethod("cnDot", "matrix", function(object, file="", format="ps") {
       } 
     } 
   } 
-  else 
+  if(format == "dot")
     cat(str) 
   }) 
  

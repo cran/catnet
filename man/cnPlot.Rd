@@ -42,7 +42,7 @@ and the false positive (\code{fp}) and false negative (\code{fn}) edges vs. comp
 
 \value{A R-plot or \code{dot}-file or \code{pdf}-file.}
 
-\seealso{\code{\link{cnDot}}, \code{\link{catNetworkEvaluate-class}}, \code{\link{cnEvaluate}}, \code{\link{cnCompare}}
+\seealso{\code{\link{cnDot}}, \code{\link{catNetworkEvaluate-class}}, \code{\link{cnCompare}}
 }
 
 \author{N. Balov}

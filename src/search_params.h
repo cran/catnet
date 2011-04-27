@@ -42,9 +42,11 @@ struct SEARCH_PARAMETERS {
 	int m_maxParentSet;
 	int *m_pParentSizes;
 	int m_maxComplexity;
+	int m_maxParentsPool;
 	int **m_parentsPool;
 	int **m_fixedParentsPool;
 	double *m_matEdgeLiks;
+	double *m_matNodeCondLiks;
 	int m_echo;
 	MUTEX *m_pCacheMutex;
 	int m_seed;
@@ -53,7 +55,8 @@ struct SEARCH_PARAMETERS {
 
 	SEARCH_PARAMETERS(int numNodes, int numSamples, int maxParentSet, int maxComplexity, int echo, 
 			int hasCats = 0, int hasParentSizes = 0, int hasPerturbations = 0, 
-			int hasParentsPool = 0, int hasFixedParentsPool = 0, int hasPairLiks = 0, 
+			int hasParentsPool = 0, int hasFixedParentsPool = 0, 
+			int hasEdgeLiks = 0, int maxParentsPool=0, 
 			MUTEX *pCacheMutex = 0, void *pCaller = 0, int nSeed = 0) {
 		int i;
 		m_numNodes = numNodes;
@@ -88,6 +91,14 @@ struct SEARCH_PARAMETERS {
 		if(hasPerturbations)
 			m_pPerturbations = (int*)CATNET_MALLOC(m_numNodes*m_numSamples*sizeof(int));
 
+		m_maxParentsPool = maxParentsPool;
+		m_matNodeCondLiks = 0;
+		/* apply the maxParentsPool restriction only if there are no user specified parent pools */
+		if(!hasParentsPool && m_maxParentsPool >= 1) {
+			m_matNodeCondLiks = (double*)CATNET_MALLOC(m_numNodes*m_numNodes*sizeof(double));
+			hasParentsPool = 1;
+		}
+
 		m_parentsPool = 0;
 		if(hasParentsPool) {
 			m_parentsPool = (int**)CATNET_MALLOC(m_numNodes*sizeof(int*));
@@ -105,7 +116,7 @@ struct SEARCH_PARAMETERS {
 		}
 		
 		m_matEdgeLiks = 0;
-		if(hasPairLiks) {
+		if(hasEdgeLiks) {
 			m_matEdgeLiks = (double*)CATNET_MALLOC(m_numNodes*m_numNodes*sizeof(double));
 		//printf("matEdgeLiks = malloc %d\n", m_numNodes*m_numNodes*sizeof(double));
 		}
@@ -114,7 +125,7 @@ struct SEARCH_PARAMETERS {
 		if(nSeed == 0) {
 			m_seed = rand();
 		}
-	}	
+	}
 
 	~SEARCH_PARAMETERS() {
 		int i;
@@ -146,6 +157,9 @@ struct SEARCH_PARAMETERS {
 		}
 		if(m_matEdgeLiks) {
 			CATNET_FREE(m_matEdgeLiks);
+		}
+		if(m_matNodeCondLiks) {
+			CATNET_FREE(m_matNodeCondLiks);
 		}
 	}
 };

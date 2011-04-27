@@ -130,7 +130,7 @@ nodeAncestors <- function(idroot, ppars) {
     return(probabilities[[idnode]])
   }
     
-  nodesOrder <- orderNodesDescend(parents)
+  nodesOrder <- cnOrder(parents)
 
   nodepar <- nodeAncestors(idnode, parents)
 
@@ -231,7 +231,8 @@ setMethod("cnNodeMarginalProb", signature("catNetwork"),
             if(node < 1 || node > object@numnodes)
               stop("Invalid node ", node)
             vmarg <- .Call("ccnMarginalProb", 
-                           object, node, 
+                           object,
+                           as.integer(node), 
                            PACKAGE="catnet")
             return(vmarg)
             ##return(.nodeMarginalProb(nnode, object@parents, object@probabilities, object@categories))

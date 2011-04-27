@@ -52,7 +52,7 @@
 
 
 setMethod("cnLoglik", c("catNetwork"), 
-          function(object, data, perturbations=NULL) {
+          function(object, data, perturbations=NULL, bysample=FALSE) { 
 
             if(!is.matrix(data) && !is.data.frame(data))
               stop("'data' should be a matrix or data frame of categories")
@@ -92,21 +92,17 @@ setMethod("cnLoglik", c("catNetwork"),
             if(object@maxCategories < r$maxCategories)
               stop("Data has more categories than the object")
             
-            ##if(missing(fast) || is.null(fast)) 
-            fast <- TRUE
-            
             numnodes <- dim(data)[1]
             numsamples <- dim(data)[2]
             
-            if(fast) {
-              loglik <- .Call("ccnLoglik", 
-                              object, data, perturbations, 
-                              PACKAGE="catnet")
-              ##loglik <- loglik[!is.nan(loglik)]
-              return(sum(loglik))
-            }
-            else
-              return(.networkLikelihood(object, data))
+            loglik <- .Call("ccnLoglik", 
+                            object, data, perturbations, bysample, 
+                            PACKAGE="catnet")
+            ##return(.networkLikelihood(object, data))
+            ##loglik <- loglik[!is.nan(loglik)]
+            if(bysample)
+              return(loglik)
+            return(sum(loglik))
           })
 
 

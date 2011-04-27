@@ -57,37 +57,48 @@ cnCatnetFromEdges <- function(nodes, edges, numCategories = 2) {
   return(object) 
 } 
  
-cnCatnetFromSif <- function(file, numCategories = 2) { 
-  fsif <- read.table(file) 
-  nodes <- NULL 
-  for(s in fsif[,1]) 
+cnCatnetFromSif <- function(file, numcats = 2) { 
+  nodes <- NULL
+  fsif <- read.table(file)
+  if(ncol(fsif) < 3)
+    fsif <- read.csv(file,header=FALSE)
+  if(ncol(fsif)<2)
+    stop("file with at least 2 columns should be given")
+  if(ncol(fsif) == 3) {
+    col1 <- as.character(fsif[,1])
+    col2 <- as.character(fsif[,3])
+  }
+  else {
+    col1 <- as.character(fsif[,1])
+    col2 <- as.character(fsif[,2])
+  }
+  for(s in as.character(col1)) {
     if(length(which(nodes==s)) > 0) 
       next 
-    else 
-      nodes <- c(nodes, s) 
-  for(s in fsif[,3]) 
+    nodes <- c(nodes, s)
+  }
+  for(s in as.character(col2)) {
     if(length(which(nodes==s)) > 0) 
       next 
-    else 
-      nodes <- c(nodes, s) 
+    nodes <- c(nodes, s)
+  }
   numnodes <- length(nodes) 
   edges <- vector("list", numnodes) 
   for(n in 1:dim(fsif)[1]) { 
-    k <- which(nodes==fsif[n,1]) 
-    ##m <- which(nodes==fsif[n,3]) 
-    m <- as.character(fsif[n,3]) 
+    k <- which(nodes==col1[n]) 
+    m <- as.character(col2[n]) 
     if(length(which(edges[[k]]==m)) > 0) 
       next 
     edges[[k]] <- c(edges[[k]], m) 
-  } 
- 
+  }
+
   object <- new("catNetwork", numnodes=length(nodes)) 
-  object <- edges2catnet(object, nodes, edges, as.integer(numCategories)) 
+  object <- edges2catnet(object, nodes, edges, as.integer(numcats)) 
   return(object) 
 } 
  
 cnNew <- function(nodes, cats, parents, probs = NULL, p.delta1=0.01, p.delta2=0.01) {
- 
+
   if(length(nodes) < 1) 
     stop("At least 1 node is needed") 
  
@@ -98,14 +109,24 @@ cnNew <- function(nodes, cats, parents, probs = NULL, p.delta1=0.01, p.delta2=0.
     stop("Incompatible category list") 
    
   maxCategories <- 0 
-  for(cat in cats) if(!is.null(cat) && maxCategories < length(cat)) maxCategories <- length(cat) 
+  for(cat in cats)
+    if(!is.null(cat) && maxCategories < length(cat))
+      maxCategories <- length(cat) 
  
   maxParents <- 0
   i <- 1
   for(par in parents) {
-    if(!is.null(par) && maxParents < length(par)) {
-      maxParents <- length(par)
+    if(!is.null(par)) {
+      par <- sapply(par, function(pp)
+             if(is.character(pp))
+               return (which(nodes == pp)[1])
+             else
+               return(as.integer(pp))
+             )
+      par <- par[par>=1 & par<= length(nodes)]
       parents[[i]] <- as.integer(par)
+      if(maxParents < length(par))
+        maxParents <- length(par)
     }
     i <- i + 1
   }
@@ -135,9 +156,10 @@ cnNew <- function(nodes, cats, parents, probs = NULL, p.delta1=0.01, p.delta2=0.
    
   object@likelihood <- 0 
   object@nodeLikelihood <- NA
+  object@nodeSampleSizes <- NA
   
-  if(!validCatNetwork(object, TRUE)) 
-    stop("Incompatible parameters") 
+  if(!validCatNetwork(object, FALSE)) 
+    stop("Invalid network") 
    
   return(object)   
 } 
@@ -189,7 +211,7 @@ setMethod("show", "catNetwork",
  
 setMethod("cnNumNodes", "catNetwork", function(object) length(object@nodes)) 
  
-genRandomCatnet <- function(.Object, numnodes, maxparents, maxcats, defaultprob, p.delta1, p.delta2) { 
+genRandomCatnet <- function(object, numnodes, maxparents, maxcats, defaultprob, p.delta1, p.delta2) { 
  
   nodes <- sapply(seq(1,numnodes), function(i) paste("N", i ,sep=""))             
   parents <- genRandomParents(numnodes, maxparents) 
@@ -215,22 +237,23 @@ genRandomCatnet <- function(.Object, numnodes, maxparents, maxcats, defaultprob,
                                     seq(1, length(parents[[parid]])), p.delta1, p.delta2) 
                   }) 
  
-  .Object@numnodes <- as.integer(numnodes) 
-  .Object@nodes <- nodes 
-  .Object@meta <- "" 
-  .Object@maxParents <- as.integer(maxparents) 
-  .Object@parents <- parents 
-  .Object@categories <- cats 
-  .Object@maxCategories <- as.integer(maxcats) 
-  .Object@probabilities <- probs 
+  object@numnodes <- as.integer(numnodes) 
+  object@nodes <- nodes 
+  object@meta <- "" 
+  object@maxParents <- as.integer(maxparents) 
+  object@parents <- parents 
+  object@categories <- cats 
+  object@maxCategories <- as.integer(maxcats) 
+  object@probabilities <- probs 
  
-  .Object@nodeComplexity <- sapply(1:as.integer(numnodes), function(x) nodeComplexity(.Object, x)) 
-  .Object@complexity <- as.integer(sum(.Object@nodeComplexity)) 
+  object@nodeComplexity <- sapply(1:as.integer(numnodes), function(x) nodeComplexity(object, x)) 
+  object@complexity <- as.integer(sum(object@nodeComplexity)) 
    
-  .Object@likelihood <- 0 
-  .Object@nodeLikelihood <- NA 
+  object@likelihood <- 0 
+  object@nodeLikelihood <- NA
+  object@nodeSampleSizes <- NA 
    
-  return(.Object)   
+  return(object)   
 } 
  
 # returns vector   
@@ -324,12 +347,15 @@ setMethod("cnParents", c("catNetwork", "character"),
               return(NULL)
             cnParents(object, id) 
           })
- 
+
 setMethod("cnParents", c("catNetwork", "vector"),  
           function(object, which) { 
             if(is.null(which)) 
               which <- seq(1, object@numnodes) 
-            plist <- lapply(which, function(n) { 
+            plist <- lapply(which, function(n) {
+              n <- as.integer(n)
+              if(n<1 || n>object@numnodes)
+                return(NULL)
               if(is.null(object@parents[[n]])) 
                 return(NULL) 
               as.character(object@nodes[object@parents[[n]]]) 
@@ -380,64 +406,7 @@ setMethod("cnMatParents", c("catNetwork", "vector"),
               nodeorder <- seq(1,n) 
             return(matParents(object, nodeorder)) 
           }) 
- 
-listProbSet <- function(idroot, ppars, pcatlist, idx, problist, strin) { 
-  if(is.null(ppars) || length(idx) < 1) { 
-    if(length(pcatlist[[idroot]]) != length(problist)) {
-      ##cat(idroot, ",   ", length(pcatlist[[idroot]]), ", ", length(problist), "\n")
-      warning("Wrong probability slot") 
-      return("") 
-    } 
-    strout <- sapply(seq(1, length(pcatlist[[idroot]])), function(j, strin, pcatlist, problist) { 
-      paste("[", strin, "]", pcatlist[j], "  ", problist[j], "\n", sep="") 
-    }, strin, pcatlist[[idroot]], problist) 
-    return(paste(strout, sep="", collapse="")) 
-  } 
-  idnode <- ppars[idx[1]] 
-  idx <- idx[-1] 
-  strout <- sapply(seq(1,length(pcatlist[[idnode]])), 
-    function(cat, strin) { 
-      listProbSet(idroot, ppars, pcatlist, idx, problist[[cat]], paste(strin, pcatlist[[idnode]][cat], sep=" ")) 
-    }, strin) 
-  return(paste(strout, sep="", collapse="")) 
-} 
- 
- 
-setMethod("cnProb", c("catNetwork", "missing"),  
-          function(object) { 
-            which <- seq(1:object@numnodes) 
-            cnProb(object, which) 
-          }) 
-
-setMethod("cnProb", c("catNetwork", "character"),  
-          function(object, which) {
-            id <- sapply(which, function(node) which(object@nodes == node))
-            if(length(id) < 1)
-              return(NULL)
-            cnProb(object, id) 
-          })
-
-setMethod("cnProb", c("catNetwork", "vector"),  
-          function(object, which) { 
-            if(is.null(which)) 
-              which <- seq(1, object@numnodes) 
-            str <- sapply(which, function(n) { 
-              ##paste(paste("Node[", n, "], Parents: ", sep=""), 
-              ##             paste(object@parents[[n]], collapse=" "), "\n",  
-              ##             listProbSet(n, object@parents[[n]], object@categories, 
-              ##                           seq(1,length(object@parents[[n]])), 
-              ##                           object@probabilities[[n]], ""), 
-              ##             collapse="", sep="") 
-              paste(paste("Node[", object@nodes[n], "], Parents: ", sep=""), 
-                    paste(object@nodes[object@parents[[n]]], sep=",", collapse=" "), "\n",  
-                    listProbSet(n, object@parents[[n]], object@categories, 
-                                seq(1,length(object@parents[[n]])), 
-                                object@probabilities[[n]], ""), 
-                    collapse="", sep="") 
-            }) 
-            cat(str)
-          }) 
- 
+  
 setMethod("cnOrder", "catNetwork",    
 	function(object) { 
           cnOrderNodes(object@parents) 
@@ -548,19 +517,64 @@ parentSetComplexity <- function(numnodecats, parents, categories) {
   else 
     return(numnodecats-1) 
 } 
- 
-setMethod("cnComplexity", signature("catNetwork"), function(object, node) {
-  if(missing(node)) { 
+
+condNonUnifComplexity <- function(idroot, ppars, pcatlist, probs, idx) {
+  if(is.null(ppars) || length(idx) < 1) {
+    ## if(length(pprobs[[idroot]]) != length(pcatlist[[idroot]]))
+    ## stop("length(pprobs[[idroot]]) != length(pcatlist[[idroot]]))")
+    nodep <- probs
+    ##cat(nodep, "\n")
+    nodep <- nodep[nodep!=0]
+    return(as.numeric(length(pcatlist[[idroot]])-1)) 
+  }
+  idnode <- ppars[idx[1]]
+  if(length(idx)==1) {
+    vv <- probs[[1]]
+    for(cat in 2:length(pcatlist[[idnode]])) {
+      vv <- vv + probs[[cat]]
+    }
+    mv <- vv / length(pcatlist[[idnode]])
+    vv <- (probs[[1]]-mv)^2
+    for(cat in 2:length(pcatlist[[idnode]])) {
+      vv <- vv + (probs[[cat]]-mv)^2
+    }
+    if(sum(vv)<=1e-16)
+      return(0)
+    return(as.numeric(length(pcatlist[[idnode]])*(length(pcatlist[[idroot]])-1)))
+  }
+  ccmplx <- sapply(seq(1, length(pcatlist[[idnode]])),
+         function(cat) condNonUnifComplexity(idroot, ppars, pcatlist, probs[[cat]], idx[-1]))
+  return(sum(ccmplx))
+}
+
+setMethod("cnComplexity", signature("catNetwork"), function(object, node=NULL, include.unif=TRUE) {
+  if(is.null(node)) { 
     pc <- sapply(1:object@numnodes, function(x) nodeComplexity(object, x)) 
     return(as.integer(sum(pc))) 
   }
   if(is.character(node))
     node <- which(object@nodes == node)
+  cmplx <- 0
   if(!is.numeric(node)) { 
-    pc <- sapply(1:object@numnodes, function(x) nodeComplexity(object, x)) 
-    return(as.integer(sum(pc))) 
+    pc <- sapply(1:object@numnodes, function(x) {
+      if(include.unif)
+        return(nodeComplexity(object, x))
+      else {
+        idx <- 1:length(object@parents[[x]])
+        return(condNonUnifComplexity(x,object@parents[[x]], object@categories, object@probabilities[[x]], idx))
+      }
+    })
+    cmplx <- as.integer(sum(pc))
   } 
-  return(as.integer(nodeComplexity(object, as.integer(node))))   
+  else {
+    if(include.unif)
+      cmplx <- as.integer(nodeComplexity(object, as.integer(node)))
+    else {
+      idx <- 1:length(object@parents[[node]])
+      cmplx <- condNonUnifComplexity(node,object@parents[[node]], object@categories, object@probabilities[[node]], idx)
+    }
+  }
+  return(cmplx)
 })  
 
 setMethod("cnSubNetwork", "catNetwork",  

@@ -1,7 +1,6 @@
 \name{alarm}
 \docType{data}
 
-\alias{alarm}
 \alias{alarmnet}
 
 \title{The ALARM network}
@@ -13,7 +12,7 @@
     1989, In Proc. 2-nd Euro. Conf. on AI and Medicine). 
   It is categorical Bayesian network has 37 nodes and 46 directed edges. 
 }
-\usage{data(alarm)}
+\usage{data(alarmnet)}
 \format{A data frame with 37 variables and 2000 samples.}
 \source{http://www.norsys.com/netlib/alarm.htm}
 

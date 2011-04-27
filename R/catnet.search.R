@@ -219,13 +219,13 @@ cnSearchOrder <- function(data, perturbations = NULL,
   }
 
   if(!is.null(fixedParents)) {
-    for(j in 1:numnodes)
+    for(i in 1:numnodes)
       if(length(fixedParents[[i]]) > maxParentSet) {
         fixedParents[[i]] <- fixedParents[[i]][1:maxParentSet]
         warning("fixedParents for node ", i, " exceeds the maximum parent size. It's reduced to ", maxParentSet)
       }
   }
-    
+
   r <- .categorizeSample(data, perturbations, object=NULL, nodeCats=nodeCats, ask=TRUE)
   data <- r$data
   perturbations <- r$perturbations
@@ -252,45 +252,33 @@ cnSearchOrder <- function(data, perturbations = NULL,
   if(!is.null(nodeCats)) {
     catIndices <- lapply(1:numnodes, function(i) 1:length(categories[[i]]))
   }
-  
-  if(!fast) {
-    bestnets <- optimalNetsForOrder(data, perturbations, 
-                                    categories, as.integer(maxCategories),
-                                    as.integer(maxParentSet), as.integer(parentSizes), 
-                                    as.integer(maxComplexity),
-                                    as.integer(nodeOrder), catIndices, 
-                                    parentsPool, fixedParents, 
-                                    fast, echo, FALSE)
-  }
-  else {
-    ## call the C-function
-    .Call("ccnReleaseCache", PACKAGE="catnet")
-    bestnets <- .Call("ccnOptimalNetsForOrder", 
-                      data, perturbations, 
-                      as.integer(maxParentSet), as.integer(parentSizes),
-                      as.integer(maxComplexity),
-                      as.integer(nodeOrder), catIndices, 
-                      parentsPool, fixedParents, edgeProb, 
-                      ## no cache
-                      FALSE, 
-                      echo, 
-                      PACKAGE="catnet")
-    if(length(nodenames) == numnodes && length(bestnets) > 0) {
-      for(i in 1:length(bestnets)) {
-        if(is.null(bestnets[[i]])) {
-          warning("No network")
-          next
-        }
-        bestnets[[i]]@nodes <- nodenames[nodeOrder]
+    
+  .Call("ccnReleaseCache", PACKAGE="catnet")
+  bestnets <- .Call("ccnOptimalNetsForOrder", 
+                    data, perturbations, 
+                    as.integer(maxParentSet), as.integer(parentSizes),
+                    as.integer(maxComplexity),
+                    as.integer(nodeOrder), catIndices, 
+                    parentsPool, fixedParents, edgeProb, 
+                    ## no cache
+                    FALSE, 
+                    echo, 
+                    PACKAGE="catnet")
+  if(length(nodenames) == numnodes && length(bestnets) > 0) {
+    for(i in 1:length(bestnets)) {
+      if(is.null(bestnets[[i]])) {
+        warning("No network")
+        next
       }
+      bestnets[[i]]@nodes <- nodenames[nodeOrder]
     }
   }
-
+  
   if(echo)
     cat("Collating ", length(bestnets), " networks...\n")
   
   eval <- new("catNetworkEvaluate", numnodes, numsamples, length(bestnets))
-
+  
   for(i in 1:length(bestnets)) {
     if(is.null(bestnets[[i]]))
       next
@@ -331,11 +319,11 @@ cnSearchOrder <- function(data, perturbations = NULL,
                       maxComplexity,
                       startorder,
                       catIndices, 
-                      parentsPool, fixedParents,
+                      parentsPool, fixedParents, maxParentsPool, 
                       edgeProb, dirProb, 
                       selectMode, 
                       tempStart, tempCoolFact, tempCheckOrders, 
-                      maxIter, orderShuffles, stopDiff,
+                      maxIter, orderShuffles, stopDiff, stopTime, 
                       numThreads, echo) {
   
   nodenames <- rownames(data)
@@ -346,11 +334,11 @@ cnSearchOrder <- function(data, perturbations = NULL,
                    as.integer(maxParentSet), as.integer(parentSizes),
                    as.integer(maxComplexity),
                    catIndices, 
-                   parentsPool, fixedParents,
+                   parentsPool, fixedParents, as.integer(maxParentsPool), 
                    edgeProb, dirProb, 
                    selectMode, as.integer(startorder),
                    tempStart, tempCoolFact, as.integer(tempCheckOrders), 
-                   as.integer(maxIter), orderShuffles, stopDiff,
+                   as.integer(maxIter), orderShuffles, stopDiff, stopTime, 
                    ## threads
                    as.integer(numThreads),
                    ## cache
@@ -396,172 +384,16 @@ cnSearchOrder <- function(data, perturbations = NULL,
   eval@loglik <- sapply(eval@nets, function(net) net@likelihood)
   
   return(eval)
-
-  fast <- TRUE
-  
-  jumpShuffles <- FALSE
-  if(orderShuffles < 0) {
-    jumpShuffles <- TRUE
-    orderShuffles <- -orderShuffles
-  }
-  minShuffles <- floor(orderShuffles)
-  orderShuffles <- orderShuffles - minShuffles
-
-  if(fast) {
-    ## call the C-function
-    .Call("ccnReleaseCache", PACKAGE="catnet")
-  }
-
-  ntrials <- length(eval@complexity)
-  
-  optprob <- -Inf
-  optnets <- eval@nets
-  if(selectMode == "AIC") {
-    optnet <- cnFindAIC(optnets)
-  }
-  else {
-    if(selectMode == "BIC") {
-      optnet <- cnFindBIC(optnets, numsamples)
-    }
-    else {
-      optnet <- cnFind(optnets, maxComplexity)
-    }
-  }
-  if(!is.null(optnet)) {
-    optprob <- optnet@likelihood
-    ##cat("optprob = ", optprob, "\n")
-  }
-  else {
-    ntrials <- 0
-  }
-
-  temp <- tempStart
-  
-  naccept <- 0
-  nsteps <- 0
-
-  optorder <- startorder
-  if(echo)
-    cat("\nStart Order: ", optorder, "\n")
-  
-  while(nsteps < maxIter) {
-
-    curTempDelta <- 0
-    for(i in 1:tempCheckOrders) {
-
-      neworder <- cnGenOrder(optorder, minShuffles+rbinom(1, 1, orderShuffles), jumpShuffles)
-      
-      newnets <- optimalNetsForOrder(data, perturbations, 
-                                     categories, as.integer(maxCategories),
-                                     as.integer(maxParentSet), as.integer(parentSizes),
-                                     as.integer(maxComplexity),
-                                     as.integer(neworder), catIndices, 
-                                     parentsPool, fixedParents, 
-                                     fast=TRUE, echo=FALSE, useCache=TRUE)
-
-      if(length(newnets) < 1)
-        next
-      if(selectMode == "AIC") {
-        newnet <- cnFindAIC(newnets)
-      }
-      else {
-        if(selectMode == "BIC")
-          newnet <- cnFindBIC(newnets, numsamples)
-        else {
-          newnet <- cnFind(newnets, maxComplexity)
-        }
-      }
-      if(is.null(newnet))
-        stop("no network found")
-        
-      newprob <- newnet@likelihood
-
-      if(is.null(optnet) && naccept < 1) {
-        ## it's the first network set for the search
-        naccept <- naccept + 1
-        optnets <- newnets
-        optnet <- newnet
-        optprob <- optnet@likelihood
-        
-        eval@nets <- optnets
-        eval@complexity[ntrials+naccept] <- optnet@complexity
-        eval@loglik[ntrials+naccept] <- optnet@likelihood
-        nsteps <- nsteps + 1
-        next
-      }
-
-      if(optprob >= newprob) {
-        acceptprob <- exp((newprob - optprob)/temp)
-      }
-      
-      if(optprob < newprob || runif(1,0,1) < acceptprob) {
-        ## cat("optprob = ", optprob, ", newprob = ", newprob, "\n")
-        ## accept
-        optorder <- neworder
-        optnets <- newnets
-        optnet <- newnet
-        optprob <- newprob
-        naccept <- naccept + 1
-
-        eval@complexity[ntrials+naccept] <- optnet@complexity
-        eval@loglik[ntrials+naccept] <- optprob
-        
-        if(naccept > 1 && curTempDelta < abs(eval@loglik[ntrials+naccept] - eval@loglik[ntrials+naccept-1]))
-          curTempDelta <- abs(eval@loglik[ntrials+naccept] - eval@loglik[ntrials+naccept-1])
-      }
-      
-      nsteps <- nsteps + 1
-      
-    } ## tempCheckOrders
-
-    if(length(newnets) < 1)
-        stop("no networks found; check function parameters")
-    
-    if(naccept > 1 && curTempDelta < stopDiff)
-      break
-    
-    if(echo)
-      cat("\nTemp = ", temp, "Iterations = ", nsteps, "Order: ", optorder, "\n")
-    
-    temp <- temp * tempCoolFact
-  }
-
-  if(echo)
-    cat("Collating ", length(eval@nets), " networks...\n")
-  
-  nodenames <- rownames(data)
-  for(nn in 1:length(eval@nets)) {
-    if(is.null(eval@nets[[nn]]) || !is(eval@nets[[nn]], "catNetwork"))
-      next
-    bnet <- cnFind(optnets, eval@nets[[nn]]@complexity)
-    if(!is.null(bnet) && bnet@complexity == eval@nets[[nn]]@complexity)
-      if(bnet@likelihood > eval@nets[[nn]]@likelihood) {
-        ##replace with better
-        eval@nets[[nn]] <- bnet
-      }
- 
-    ## reorder eval@nets[[nn]]'s nodes to match data's nodes
-    enetnodes <- eval@nets[[nn]]@nodes
-    ord <- sapply(nodenames, function(c) which(enetnodes==c))
-    if(sum(ord != 1:numnodes) > 0)    
-      eval@nets[[nn]] <- cnReorderNodes(eval@nets[[nn]], ord)
-    eval@nets[[nn]]@categories <- categories
-  }
-  
-  if(echo)
-      cat("Accepted/Total = ", naccept/nsteps, "\n")
-
-  return(eval)
 }
 
 cnSearchSA <- function(data, perturbations=NULL,
                        maxParentSet=0, parentSizes = NULL, 
                        maxComplexity = 0, nodeCats = NULL, 
-                       parentsPool = NULL, fixedParents = NULL,
+                       parentsPool = NULL, fixedParents = NULL, 
                        edgeProb = NULL, dirProb = NULL, 
                        selectMode = "BIC", 
                        tempStart = 1, tempCoolFact = 0.9, tempCheckOrders = 10, 
-                       maxIter = 100, orderShuffles = 1, stopDiff = 0,
+                       maxIter = 100, orderShuffles = 1, stopDiff = 0, stopTime = 0, 
                        numThreads = 2, 
                        priorSearch = NULL,  ## catNetworkEvaluate
                        echo=FALSE) {
@@ -682,7 +514,7 @@ cnSearchSA <- function(data, perturbations=NULL,
   }
   
   if(!is.null(fixedParents)) {
-    for(j in 1:numnodes)
+    for(i in 1:numnodes)
       if(length(fixedParents[[i]]) > maxParentSet) {
         fixedParents[[i]] <- fixedParents[[i]][1:maxParentSet]
         warning("fixedParents for node ", i, " exceeds the maximum parent size. It's reduced to ", maxParentSet)
@@ -697,6 +529,15 @@ cnSearchSA <- function(data, perturbations=NULL,
     maxComplexity <- minComplexity
   }
 
+  maxParentsPool <- 0
+  if(maxParentsPool > 0) {
+    maxParentsPool <- as.integer(maxParentsPool)
+    if(maxParentsPool < maxParentSet)
+      maxParentsPool <- maxParentSet
+    if(maxParentsPool > numnodes)
+      maxParentsPool <- numnodes
+  }
+  
   if(is.null(priorSearch) || length(priorSearch@nets) < 1) {
     optorder <- sample(1:numnodes)
     eval <- new("catNetworkEvaluate", numnodes, numsamples, 0)
@@ -709,7 +550,7 @@ cnSearchSA <- function(data, perturbations=NULL,
       stop("'priorSearch' has no networks")
 
     if(selectMode == "AIC") {
-      optnet <- cnFindAIC(optnets)
+      optnet <- cnFindAIC(optnets, numsamples)
     }
     else {
       if(selectMode == "BIC") {
@@ -731,7 +572,7 @@ cnSearchSA <- function(data, perturbations=NULL,
     if(prod(nodenames == optnet@nodes) == 0)
       stop("The data names should correspond to the prior search nodes.")
   }
-
+  
   eval <- .searchSA(eval,
                     as.integer(numnodes), as.integer(numsamples),
                     data, perturbations, 
@@ -740,11 +581,11 @@ cnSearchSA <- function(data, perturbations=NULL,
                     as.integer(maxComplexity),
                     as.integer(optorder),
                     catIndices, 
-                    parentsPool, fixedParents,
+                    parentsPool, fixedParents, as.integer(maxParentsPool), 
                     edgeProb, dirProb, 
                     selectMode, 
                     tempStart, tempCoolFact, as.integer(tempCheckOrders), 
-                    as.integer(maxIter), orderShuffles, stopDiff,
+                    as.integer(maxIter), orderShuffles, stopDiff, stopTime, 
                     as.integer(numThreads), echo)
   
   t2 <- proc.time()

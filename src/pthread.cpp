@@ -159,7 +159,7 @@ int c_thread::_exit_thread(void* pexitcode) {
 #else //#ifdef _POSIX_THREADS
 
 c_thread::c_thread() {
-	m_hThread = NULL;
+	m_hThread = 0;
 	pthread_mutex_init(&m_thread_cs, NULL);
 	pthread_attr_init(&m_thread_attr);
 	pthread_attr_setdetachstate(&m_thread_attr, PTHREAD_CREATE_JOINABLE);
@@ -216,7 +216,7 @@ int c_thread::_wait_stop_event(int milliseconds) {
 }
 
 int c_thread::_join_thread() {
-	void *pstatus = NULL;
+	void *pstatus = 0;
 	int res = 0;
 	_lock();
 	if (!m_hThread) {
@@ -227,7 +227,7 @@ int c_thread::_join_thread() {
 	res = pthread_join(m_hThread, &pstatus);
 	if(!res) {
 		_lock();
-		m_hThread = NULL;
+		m_hThread = 0;
 		_unlock();
 	}
 	return res;
@@ -258,7 +258,7 @@ int c_thread::_stop_thread() {
 	if(res) {
 		res = pthread_cancel(m_hThread);
 		_lock();
-		m_hThread = NULL;
+		m_hThread = 0;
 		_unlock();
 	}
 	if(!res)

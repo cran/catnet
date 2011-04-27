@@ -927,3 +927,188 @@ SEXP catnetPearsonPairwise(SEXP rSamples, SEXP rPerturbations) {
 }
 
 } // extern "C"
+
+
+double *catnetPairwiseCondLikelihood(SEXP rSamples, SEXP rPerturbations) {
+
+	int *pSamples, *pRSamples, *pPerturbations;
+	int *pSamplesPert, numsamplesPert;
+	int *pNodeNumCats, **pNodeCats, mincat, maxcat, maxCategories;
+	double *pprobs;
+	int numsamples, numnodes, i, j, k, d, nnode1, nnode2, ncount;
+	double floglik, fsum, *matPairs, fmin, fmax;
+	SEXP dim;
+
+	if(!isMatrix(rSamples))
+		error("Data should be a matrix");
+	if(!isNull(rPerturbations) && !isMatrix(rPerturbations))
+		error("Perturbations should be a matrix");
+
+	PROTECT(rSamples = AS_INTEGER(rSamples));
+	pRSamples = INTEGER(rSamples);
+
+	dim = GET_DIM(rSamples);
+	numnodes = INTEGER(dim)[0];
+	numsamples = INTEGER(dim)[1];	
+
+	// pSamples are assumed positive indices
+	pSamples = (int*)CATNET_MALLOC(numnodes*numsamples*sizeof(int));
+	memcpy(pSamples, pRSamples, numnodes*numsamples*sizeof(int));
+	UNPROTECT(1); //rSamples
+
+	for(j = 0; j < numnodes*numsamples; j++) {
+		pSamples[j]--;
+	}
+
+	// categoies
+	pNodeNumCats = (int*)CATNET_MALLOC(numnodes*sizeof(int));
+	pNodeCats = (int**)CATNET_MALLOC(numnodes*sizeof(int*));
+	memset(pNodeCats, 0, numnodes*sizeof(int*));
+	memset(pNodeNumCats, 0, numnodes*sizeof(int));
+
+	maxCategories = 1;
+	for(i = 0; i < numnodes; i++) {
+		mincat = INT_MAX;
+		maxcat = -INT_MAX;
+		for(j = 0; j < numsamples; j++) {
+			if(pSamples[j*numnodes + i] < mincat)
+				mincat = pSamples[j*numnodes + i];
+			if(pSamples[j*numnodes + i] > maxcat)
+				maxcat = pSamples[j*numnodes + i];
+		}
+		pNodeNumCats[i] = maxcat - mincat + 1;
+		pNodeCats[i] = (int*)CATNET_MALLOC(pNodeNumCats[i]*sizeof(int));
+		for(j = 0; j < pNodeNumCats[i]; j++)
+			pNodeCats[i][j] = mincat + j;
+	}
+	for(i = 0; i < numnodes; i++) {
+		/* order pNodeNumCats[i] */
+		for(j = 0; j < pNodeNumCats[i]; j++) {
+			for(k = j + 1; k < pNodeNumCats[i]; k++) {
+				if(pNodeCats[i][j] > pNodeCats[i][k]) {
+					d = pNodeCats[i][j]; 
+					pNodeCats[i][j] = pNodeCats[i][k];
+					pNodeCats[i][k] = d;
+				}
+			}
+		} 
+		for(j = 0; j < numsamples; j++) {
+			for(d = 0; d < pNodeNumCats[i]; d++)
+				if(pNodeCats[i][d] == pSamples[j*numnodes + i])
+					break;
+			pSamples[j*numnodes + i] = d;
+		}
+		if(maxCategories < pNodeNumCats[i])
+			maxCategories = pNodeNumCats[i];
+	}
+
+	pprobs = (double*)CATNET_MALLOC(maxCategories*maxCategories*sizeof(double));
+
+	pSamplesPert = 0;
+	pPerturbations = 0;
+	if(!isNull(rPerturbations)) {
+		PROTECT(rPerturbations = AS_INTEGER(rPerturbations));
+		pPerturbations = INTEGER(rPerturbations);
+		pSamplesPert = (int*)CATNET_MALLOC(numnodes*numsamples*sizeof(int));
+	}
+
+	matPairs = (double*)CATNET_MALLOC(numnodes*numnodes*sizeof(double));
+	memset(matPairs, 0, numnodes*numnodes*sizeof(double));
+
+	for(nnode1 = 0; nnode1 < numnodes; nnode1++) {
+		numsamplesPert = 0;
+		if(pPerturbations) {
+			for(j = 0; j < numsamples; j++) {
+				if(!pPerturbations[j * numnodes + nnode1]) {
+					memcpy(pSamplesPert + numsamplesPert*numnodes, pSamples + j*numnodes, numnodes*sizeof(int));
+					numsamplesPert++;
+				}
+			}
+		}
+		//printf("\nnnode = %d (%d)\n", nnode1, numsamplesPert);
+		for(nnode2 = 0; nnode2 < numnodes; nnode2++) {
+	
+			if(nnode1 == nnode2)
+				continue;
+
+			ncount = 0;
+			memset(pprobs, 0, maxCategories*maxCategories*sizeof(double));
+			// estimate logP(nnode1|nnode2)
+			if(pPerturbations) {
+				for(j = 0; j < numsamplesPert; j++) {
+					pprobs[maxCategories*pSamplesPert[j*numnodes + nnode2] + pSamplesPert[j*numnodes + nnode1]]++; 
+					ncount++;
+				}
+			} 
+			else {
+				for(j = 0; j < numsamples; j++) {
+					pprobs[maxCategories*pSamples[j*numnodes + nnode2] + pSamples[j*numnodes + nnode1]]++; 
+					ncount++;
+				}
+			}
+
+			floglik = 0;
+			for(i = 0; i < pNodeNumCats[nnode2]; i++) {
+				fsum = 0;
+				fmin = 0;
+				for(j = 0; j < pNodeNumCats[nnode1]; j++) {
+					fsum += pprobs[maxCategories*i+j];
+					if(pprobs[maxCategories*i+j] > 0)
+						fmin += (double)pprobs[maxCategories*i+j] * (double)log((double)pprobs[maxCategories*i+j]);
+				}
+				floglik += fmin;
+				if(fsum > 0)
+					floglik -= fsum*log(fsum);
+			}
+			if(ncount > 1 && floglik > (double)-FLT_MAX)
+				floglik /= (double)ncount;
+			matPairs[nnode1*numnodes + nnode2] = floglik;
+		}
+		fsum = 0; fmin = FLT_MAX; fmax = -FLT_MAX;
+//printf("matPairs[%d] = ", nnode1+1);
+		for(nnode2 = 0; nnode2 < numnodes; nnode2++) {
+//printf("%f ", matPairs[nnode1*numnodes + nnode2]);
+			fsum += matPairs[nnode1*numnodes + nnode2];
+			if(fmin > matPairs[nnode1*numnodes + nnode2])
+				fmin = matPairs[nnode1*numnodes + nnode2];
+			if(fmax < matPairs[nnode1*numnodes + nnode2])
+				fmax = matPairs[nnode1*numnodes + nnode2];
+		}
+//printf("\n");
+		fsum = 1;
+		if(fmax-fmin>0)
+			fsum = 1 / (fmax-fmin);
+		for(nnode2 = 0; nnode2 < numnodes; nnode2++) 
+			 matPairs[nnode1*numnodes + nnode2] = (matPairs[nnode1*numnodes + nnode2] - fmin)*fsum; 
+	}
+
+	if(!isNull(rPerturbations))
+		UNPROTECT(1); //rPerturbations
+
+	if(pSamplesPert)
+		CATNET_FREE(pSamplesPert);
+
+	if(pSamples)
+		CATNET_FREE(pSamples);
+
+	if(pprobs)
+		CATNET_FREE(pprobs);
+
+	if(pNodeCats) {
+		for(i = 0; i < numnodes; i++) 
+			if(pNodeCats[i])
+				CATNET_FREE(pNodeCats[i]);
+		CATNET_FREE(pNodeCats);
+	}
+
+	if(pNodeNumCats) 
+		CATNET_FREE(pNodeNumCats);
+
+	//char str[128];
+	//sprintf(str, "Mem Balance  %d\n", (int)g_memcounter);
+	//printf(str);
+
+	return matPairs;
+
+}
+

@@ -18,10 +18,10 @@ condProbEntropy <- function(idroot, ppars, pcatlist, probs, idx) {
 }
 
 setMethod("cnKLComplexity", c("catNetwork"), 
-          function(object, node) {
+          function(object, node=NULL) {
             if(!is(object, "catNetwork"))
               stop("The object should be a catNetwork")
-            if(missing(node))
+            if(is.null(node))
               node <- 1:object@numnodes
             if(is.character(node))
               node <- which(object@nodes == node)

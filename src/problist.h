@@ -37,6 +37,7 @@ struct PROB_LIST {
 	int *pBlockSize;
 	t_prob loglik;
 	t_prob priorlik;
+	int sampleSize;
 
 	void reset() {
 		if (numParCats)
@@ -53,6 +54,7 @@ struct PROB_LIST {
 		nProbSize = 0;
 		loglik = 0;
 		priorlik = 0;
+		sampleSize = 0;
 	}
 
 
@@ -65,6 +67,7 @@ struct PROB_LIST {
 		nProbSize = 0;
 		loglik = 0;
 		priorlik = 0;
+		sampleSize = 0;
 	}
 
 	PROB_LIST<t_prob>& operator =(const PROB_LIST<t_prob> &plist) {
@@ -97,11 +100,12 @@ struct PROB_LIST {
 		}
 		loglik = plist.loglik;
 		priorlik = plist.priorlik;
+		sampleSize = plist.sampleSize;
 		return *this;
 	}
 
 	PROB_LIST(int ncats, int nmaxcats = 2, int npars = 0, int *parcats = 0,
-			t_prob *pprobs = 0, int probsize = 0) {
+			t_prob *pprobs = 0, int probsize = 0, int samples = 0) {
 		int i;
 		if (ncats < 1 || nmaxcats < 1 || npars < 0 || (npars && !parcats))
 			return;
@@ -113,6 +117,7 @@ struct PROB_LIST {
 		nProbSize = 0;
 		loglik = 0;
 		priorlik = 0;
+		sampleSize = samples;
 		if (numPars > 0) {
 			numParCats = (int*) CATNET_MALLOC(numPars * sizeof(int));
 			if (parcats)
@@ -120,7 +125,6 @@ struct PROB_LIST {
 			else
 				for (i = 0; i < numPars; i++)
 					numParCats[i] = nmaxcats;
-
 			pBlockSize = (int*) CATNET_MALLOC(numPars * sizeof(int));
 			pBlockSize[numPars - 1] = ncats;
 			for (i = numPars - 1; i > 0; i--) {
@@ -135,7 +139,7 @@ struct PROB_LIST {
 			nProbSize = pBlockSize[0] * parcats[0];
 		} else
 			nProbSize = ncats;
-		
+
 		pProbs = (t_prob*) CATNET_MALLOC(nProbSize * sizeof(t_prob));
 		memset(pProbs, 0, nProbSize * sizeof(t_prob));
 		if (pProbs && pprobs) {

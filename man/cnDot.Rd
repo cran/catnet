@@ -16,13 +16,14 @@
 software package, that describes the graph structure of a \code{catNetwork} object.}
 
 \usage{
-cnDot(object, file="", format="ps")
+ cnDot(object, file=NULL, format="ps", style=NULL)
 }
 
 \arguments{
-\item{object}{a \code{catNetwork}, a list of \code{catNetwork}s or a parent matrix}
-\item{file}{a \code{character}, an optional output file name}
-\item{format}{a \code{character}, an optional output file format, "ps" or "pdf"}
+ \item{object}{a \code{catNetwork}, a list of \code{catNetwork}s or a parent matrix}
+ \item{file}{a \code{character}, an optional output file name}
+ \item{format}{a \code{character}, an optional output file format, "ps" or "pdf"}
+ \item{style}{a \code{list} of triplets, nodes' shape, color and edge-color}
 }
 
 \details{

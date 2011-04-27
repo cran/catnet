@@ -39,6 +39,8 @@ THREAD_PROC_DEFINE(CatnetSearchSaThreadProc, pParam) {
 	return(0);
 }
 
+double *catnetPairwiseCondLikelihood(SEXP rSamples, SEXP rPerturbations);
+
 RCatnetSearchSA::RCatnetSearchSA() {
 	m_nDrives = 0;
 	m_pDrives = NULL;
@@ -233,19 +235,19 @@ printf("\n");*/
 
 SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 		SEXP rPerturbations, SEXP rMaxParents, SEXP rParentSizes,
-		SEXP rMaxComplexity, SEXP rNodeCats, SEXP rParentsPool, SEXP rFixedParentsPool, 
+		SEXP rMaxComplexity, SEXP rNodeCats, SEXP rParentsPool, SEXP rFixedParentsPool, SEXP rMaxParentsPool, 
 		SEXP rMatEdgeLiks, SEXP rDirProbs, 
 		SEXP rModel, SEXP rStartOrder, SEXP rTempStart, SEXP rTempCoolFact,
 		SEXP rTempCheckOrders, SEXP rMaxIter, SEXP rOrderShuffles,
-		SEXP rStopDiff, SEXP rThreads, SEXP rUseCache, SEXP rEcho) {
+		SEXP rStopDiff, SEXP rStopTime, SEXP rThreads, SEXP rUseCache, SEXP rEcho) {
 
-	int n, nn, i, j, k, len, maxComplexity, numnets, inet, echo;
+	int n, nn, i, j, k, len, maxComplexity, numnets, inet, echo, maxParentsPool;
 	int *pRsamples, *pRperturbations, *pSamples, *pPerturbations,
 			**parentsPool, **fixedParentsPool, *pPool, *pParentSizes;
 	double complx, fLogLik, fOptLogLik, deltaLogLik, ftemp;
 	int tempCheckOrders, minShuffles, bjump, niter, maxIter, nstop,
 			nstopCounter, naccept, stepiters, stepaccept, nLastChangedTemp;
-	double tempCur, tempStart, tempCoolFact, orderShuffles, stopDiff,
+	double tempCur, tempStart, tempCoolFact, orderShuffles, stopDiff, stopTime, 
 			acceptprob;
 
 	MUTEX m_cache_mutex;
@@ -256,7 +258,7 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 	const char *pstr;
 	char **pNodeNames;
 
-	double *matEdgeLiks, *pMatEdgeLiks, ordProb, *newOrdProb, *pDirProbs;
+	double *matEdgeLiks, *pMatEdgeLiks, ordProb, *newOrdProb, *pDirProbs, *matNodeCondLiks, *pNodeCondLiks;
 	
 	RCatnet rcatnet;
 	SEXP dim, rnodecat, rparpool, cnetlist, cnetnode;
@@ -268,12 +270,14 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 
 	PROTECT(rMaxParents = AS_INTEGER(rMaxParents));
 	PROTECT(rMaxComplexity = AS_INTEGER(rMaxComplexity));
+	PROTECT(rMaxParentsPool = AS_INTEGER(rMaxParentsPool));
 	PROTECT(rTempStart = AS_NUMERIC(rTempStart));
 	PROTECT(rTempCoolFact = AS_NUMERIC(rTempCoolFact));
 	PROTECT(rTempCheckOrders = AS_INTEGER(rTempCheckOrders));
 	PROTECT(rMaxIter = AS_INTEGER(rMaxIter));
 	PROTECT(rOrderShuffles = AS_NUMERIC(rOrderShuffles));
 	PROTECT(rStopDiff = AS_NUMERIC(rStopDiff));
+	PROTECT(rStopTime = AS_NUMERIC(rStopTime));
 	PROTECT(rThreads = AS_INTEGER(rThreads));
 	PROTECT(rUseCache = AS_LOGICAL(rUseCache));
 	PROTECT(rModel = AS_CHARACTER(rModel));
@@ -281,12 +285,14 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 
 	m_maxParentSet = INTEGER_POINTER(rMaxParents)[0];
 	maxComplexity = INTEGER_POINTER(rMaxComplexity)[0];
+	maxParentsPool = INTEGER_POINTER(rMaxParentsPool)[0];
 	tempStart = NUMERIC_POINTER(rTempStart)[0];
 	tempCoolFact = NUMERIC_POINTER(rTempCoolFact)[0];
 	tempCheckOrders = INTEGER_POINTER(rTempCheckOrders)[0];
 	maxIter = INTEGER_POINTER(rMaxIter)[0];
 	orderShuffles = NUMERIC_POINTER(rOrderShuffles)[0];
 	stopDiff = NUMERIC_POINTER(rStopDiff)[0];
+	stopTime = NUMERIC_POINTER(rStopTime)[0];
 	m_nDrives = INTEGER_POINTER(rThreads)[0];
 	if (m_nDrives < 1)
 		m_nDrives = 1;
@@ -305,7 +311,7 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 	if (!strncmp(CHARACTER_VALUE(rModel), "BIC", 3))
 		nModelSel = 2;
 
-	UNPROTECT(12);
+	UNPROTECT(14);
 
 	//printf("nDrives = %d, nModelSel = %d, bUseCache = %d\n", m_nDrives, nModelSel, m_bUseCache);
 
@@ -389,6 +395,15 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 	if (!isNull(rDirProbs) && length(rDirProbs) == m_numNodes*m_numNodes)
 		PROTECT(rDirProbs = AS_NUMERIC(rDirProbs));
 
+	pNodeCondLiks = 0;
+	if(maxParentsPool >= 1) {
+		pNodeCondLiks = catnetPairwiseCondLikelihood(rSamples, rPerturbations);
+		if(m_bUseCache && 4*maxParentsPool < m_numNodes) {
+			m_bUseCache = 0;
+			warning("Cache is disabled, maxParentsPool<<numNodes");
+		}
+	}
+
 	m_pSearchParams = (SEARCH_PARAMETERS**) CATNET_MALLOC(m_nDrives
 			* sizeof(SEARCH_PARAMETERS*));
 	for (n = 0; n < m_nDrives; n++) {
@@ -396,7 +411,8 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 				m_maxParentSet, maxComplexity, (m_nDrives < 2) ? echo : 0, 
 				!isNull(rNodeCats), 
 				!isNull(rParentSizes), !isNull(rPerturbations), 
-				!isNull(rParentsPool), !isNull(rFixedParentsPool), !isNull(rMatEdgeLiks), 
+				!isNull(rParentsPool), !isNull(rFixedParentsPool), 
+				!isNull(rMatEdgeLiks), maxParentsPool, 
 				m_bUseCache ? &m_cache_mutex : NULL, m_pDrives[n]);
 	}
 
@@ -411,7 +427,7 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 	tempCur = tempStart;
 	nLastChangedTemp = 0;
 
-	if (echo) {
+	if (echo && m_numNodes < 32) {
 		printf("Start order: ");
 		for (i = 0; i < m_numNodes; i++)
 			printf("%d ", m_pOptOrder[i]);
@@ -443,6 +459,9 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 			}
 			if (!m_pTestOrder[n])
 				error("_genOrder returns an error");
+//debugging
+//for(i=0;i<m_numNodes;i++)
+//	m_pTestOrder[n][i] = i+1;
 
 			nstop = 0;
 			if (n > 0) {
@@ -589,6 +608,15 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 				}
 			}
 
+			if (maxParentsPool >= 1 && pNodeCondLiks) {
+				matNodeCondLiks = m_pSearchParams[n]->m_matNodeCondLiks;
+				for(j = 0; j < m_numNodes; j++) {
+					for(i = 0; i < m_numNodes; i++) {
+						matNodeCondLiks[j*m_numNodes + i] = pNodeCondLiks[(m_pTestOrder[n][j] - 1)*m_numNodes + m_pTestOrder[n][i] - 1];
+					}
+				}
+			}
+
 			m_pSearchParams[n]->m_seed = rand();
 
 			//printf("start thread %d,   params = %p, driver = %p\n", n, m_pSearchParams[n], m_pDrives[n]);
@@ -723,8 +751,10 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 
 						if (echo) {
 							printf("Accept order: ");
-							for (i = 0; i < m_numNodes; i++)
-								printf("%d ", m_pOptOrder[i]);
+							if(m_numNodes < 32) {
+								for (i = 0; i < m_numNodes; i++)
+									printf("%d ", m_pOptOrder[i]);
+							}
 							if(deltaLogLik > 0)
 								printf("\n");
 							else
@@ -822,6 +852,11 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 			delete m_pDrives[n];
 	}
 	
+	if(pNodeCondLiks) {
+		CATNET_FREE(pNodeCondLiks);
+		pNodeCondLiks = 0;
+	}
+
 	if (m_pSearchParams)
 		CATNET_FREE(m_pSearchParams);
 	m_pSearchParams = 0;
