@@ -327,7 +327,7 @@ SEXP catnetOptimalNetsSA(SEXP rNodeNames, SEXP rSamples, SEXP rPerturbations,
 			SEXP rMatEdgeLiks, SEXP rDirProbs, 
 			SEXP rModel, SEXP rStartOrder,
 			SEXP rTempStart, SEXP rTempCoolFact, SEXP rTempCheckOrders, 
-			SEXP rMaxIter, SEXP rOrderShuffles, SEXP rStopDiff, SEXP rStopTime, 
+			SEXP rMaxIter, SEXP rOrderShuffles, SEXP rStopDiff, 
 			SEXP rThreads, SEXP rUseCache, SEXP rEcho) {
 
 	//if(!isMatrix(rSamples))
@@ -364,8 +364,6 @@ SEXP catnetOptimalNetsSA(SEXP rNodeNames, SEXP rSamples, SEXP rPerturbations,
 		error("maxIter should be an integer");
 	if(!isNumeric(AS_NUMERIC(rStopDiff)))
 		error("stopDiff should be numerical");
-	if(!isNumeric(AS_NUMERIC(rStopTime)))
-		error("stopTime should be numerical");
 	if(!isNumeric(AS_NUMERIC(rOrderShuffles)))
 		error("orderShuffles should be numerical");
 	if(!isInteger(AS_INTEGER(rThreads)))
@@ -382,7 +380,7 @@ SEXP catnetOptimalNetsSA(SEXP rNodeNames, SEXP rSamples, SEXP rPerturbations,
 			rMatEdgeLiks, rDirProbs, 
 			rModel, rStartOrder,
 			rTempStart, rTempCoolFact, rTempCheckOrders, 
-			rMaxIter, rOrderShuffles, rStopDiff, rStopTime, 
+			rMaxIter, rOrderShuffles, rStopDiff, 
 			rThreads, rUseCache, rEcho);
 	delete pengine;
 
@@ -695,7 +693,7 @@ SEXP catnetNodeLoglik(SEXP cnet, SEXP rNode, SEXP rSamples, SEXP rPerturbations)
 
 SEXP catnetNodeLoglikError(SEXP cnet, SEXP rNode, SEXP rSamples, SEXP rPerturbations) {
 
-	int *pSamples, *pPerturbations;
+	int *pSamples;
 	int numsamples, numnodes, j, nnode, nerrors;
 	double *floglik, *pvec;
 	SEXP dim, rvec = R_NilValue;
@@ -736,12 +734,12 @@ SEXP catnetNodeLoglikError(SEXP cnet, SEXP rNode, SEXP rSamples, SEXP rPerturbat
 	}
 	nnode--;
 
-	pPerturbations = 0;
-	if(!isNull(rPerturbations)) {
-		PROTECT(rPerturbations = AS_INTEGER(rPerturbations));
-		pPerturbations = INTEGER(rPerturbations);
-		UNPROTECT(1);
-	}
+	//int *pPerturbations = 0;
+	//if(!isNull(rPerturbations)) {
+	//	PROTECT(rPerturbations = AS_INTEGER(rPerturbations));
+	//	pPerturbations = INTEGER(rPerturbations);
+	//	UNPROTECT(1);
+	//}
 
 	nerrors = 0;
 	floglik = rnet->findNodeSampleProbError(nnode, pSamples, numsamples, nerrors);

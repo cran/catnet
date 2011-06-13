@@ -25,7 +25,7 @@ size_t g_memcounter = 0;
 
 static const R_CallMethodDef R_CallDef[] = {
 	{"ccnOptimalNetsForOrder", (DL_FUNC)&catnetOptimalNetsForOrder, 12},
-	{"ccnOptimalNetsSA", (DL_FUNC)&catnetOptimalNetsSA, 24},
+	{"ccnOptimalNetsSA", (DL_FUNC)&catnetOptimalNetsSA, 23},
 	{"ccnParHistogram", (DL_FUNC)&catnetParHistogram, 14},
 	{"ccnSetProb", (DL_FUNC)&catnetSetProb, 3},
 	{"ccnLoglik", (DL_FUNC)&catnetLoglik, 4},

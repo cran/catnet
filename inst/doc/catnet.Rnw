@@ -39,40 +39,32 @@
 
 \section*{Introduction}
 
-The \Rpackage{catnet} package implements \underline{cat}egorical Bayesian \underline{net}work framework in \Robject{R}.
-Bayesian networks are graphical statistical models that represent directed dependencies between random variables and thus are able to model causal relationships among these variables.
+The \Rpackage{catnet} package for \Robject{R} implements a \underline{cat}egorical Bayesian \underline{net}work inference framework.
+Bayesian networks are graphical statistical models representing causal dependencies between random variables.
 A Bayesian network has two components: Directed Acyclic Graph (DAG) with nodes the variables of interest and a probability structure given as a set of conditional distributions, 
-one for each node in the graph. Any Bayesian network also satisfies 
-the so called {\it local Markov property}, which states that 
-each node in the network is independent of its non-descendants given its parent nodes. That property 
-leads to a direct factorization of the joint distribution of the node-variables, a fact of great practical importance that is responsible for the popularity of the Bayesian network models. 
+one for each node in the graph. Any Bayesian network satisfies 
+the so called {\it local Markov property}, stating that 
+each node in the network is independent of its non-descendants given its parent nodes. This  property implies a factorization of the joint distribution of the node-variables that greatly facilitates the statistical inference. 
 
-Two classes of Bayesian networks are among the most used in practice: linear Gaussian networks and 
-categorical ones (also called discrete Bayesian networks). In a linear Gaussian network, the nodes represent continuous variables with Gaussian conditional distributions and the expected value of each node 
-is a linear combination of its parent nodes. Gaussian networks benefit from nice analytical properties, but in practice, the linearity and normality assumptions on the observed variables are rarely justified, which limits their applicability. 
-In a categorical Bayesian network, each node takes value in a fixed set of categories and 
-the conditional distributions are multinomial with no additional parametric constraints. 
-Consequently, when working with data that is discrete or can be discretized without substantial loss of information, the categorical network framework provides greater representation power - the main reason to be chosen as statistical model in \Rpackage{catnet}.
+Two classes of Bayesian networks are among the most used in practice: linear Gaussian networks and categorical ones (also called discrete Bayesian networks). In a linear Gaussian network, the nodes represent continuous variables with Gaussian conditional distributions and the expected value of each node is a linear combination of its parent nodes. Gaussian networks benefit from strong analytical properties and inference methodology. However, their usage is not justified when the linearity and normality assumptions on the observed variables are violated.  
+On the other hand, in a categorical Bayesian network, each node takes value in a fixed set of categories and the conditional distributions are multinomial with no additional parametric constraints. Consequently, when the data of interest is genuinely categorical or the node marginals follow some multi-modal distributions suitable for discretization, the categorical network framework provides greater representation power - one of the reasons to be chosen as a statistical model in \Rpackage{catnet}. 
 
-The main goal of the package is to provide some tools for inferring categorical Bayesian networks from 
-data based on the Maximum Likelihood criterion. The problem of learning Bayesian networks has relatively long history with abundance of literature devoted to its subject.  
-See for example \cite{heckeman95}, \cite{cooper92}, \cite{chickeringB}, \cite{friedman99}, \cite{larranaga}, 
-and some more recent articles, \cite{tsamardinos03}, \cite{yara}, \cite{daly}.
-Although the name Bayesian often implies Bayesian inference, in the present package the authors follow a 
-frequentist approach without making assumption on the conditional distributions in form of priors. 
-The \Rpackage{catnet} package follows a score-based approach to network learning. 
+The main goal of the package is to provide tools for inferring categorical Bayesian networks from data based on the maximum likelihood (ML) criterion. The problem of learning Bayesian networks has relatively long history with abundance of literature devoted to its subject.  
+See for example \cite{heckeman95}, \cite{cooper92}, \cite{chickeringB}, \cite{friedman99}, \cite{larranaga}, and some more recent articles, \cite{tsamardinos03}, \cite{yara}, \cite{daly}.
+Although the name Bayesian often implies Bayesian inference, the package follows a frequentist approach without making assumption on the conditional distributions in form of priors, and  
+employs a scoring based approach for network learning. 
 Two main techniques are implemented - finding the best network fitting some data for a predefined node order and stochastic search of optimal networks without constraints on the node order. 
-For a given node order, an efficient exhaustive search is implemented and the exact MLE solution is given. 
-The implemented approach is similar to that in \cite{friedman03} without, however, being Bayesian. 
-The stochastic search in the space node orders is implemented by employing a Simulated Annealing algorithm. 
-\Rpackage{catnet} equips the user not only with graph structure learning abilities but 
-also with probability estimation and prediction utilities. 
-The motivation is to provide more versatile statistical tools for studying 
-networks such as model selection in classes of optimal networks with varying complexity, 
-as proposed in \cite{salzman06}. 
-Despite the diversity and efficiency of the existing algorithms, 
-being strictly structure learning techniques, their selection flexibility is usually very limited. 
-In conclusion, \Rpackage{catnet} does not intend to replace the existing, in many cases much more efficient, learning algorithms but to provide non-heuristic, Maximum Likelihood based, set of tools for statistical inference. 
+For a given node order, an efficient exhaustive search via Dynamic Programming (DP) is implemented and the exact MLE solution is given. 
+The approach is similar to that in \cite{friedman03} without, however, being Bayesian. 
+The stochastic search in the space of node orders is implemented by employing a Simulated Annealing (SA) algorithm. 
+
+A distinct feature of \Rpackage{catnet} is its support of both incomplete data, with some of the records having missing values, and the so called perturbed data. In the latter case, some of the nodes are controlled by breaking the causal influence of their parents. Perturbed data originate naturally from gene expression studies where selected genes are knocked up/down. 
+
+The package equips the user not only with structure learning but also with selection, estimation and prediction functions. For example, in \Rpackage{catnet}, one can perform asymptotically consistent model selection from incomplete or perturbed data, \cite{balov}.  
+The motivating goal is to provide more versatile statistical tools for studying networks such as model selection in classes of optimal networks with varying complexity. Despite the diversity and efficiency of the existing algorithms, being strictly structure learning techniques, their selection flexibility is usually limited. 
+
+Some attention is paid to the computational issues also. Since the size of the space of networks is super-exponential to the number of nodes, the network learning is inherently a very difficult problem. Nevertheless, manageable inference for moderate size networks of up to several hundred nodes is possible if the node parent sets and overall network complexity are constrained. In addition, \Rpackage{catnet} has parallel processing capabilities 
+allowing for times faster stochastic search. 
 
 Although \Rpackage{catnet} is designed as a self-contained package and provides 
 the basic functionality one needs for working with categorical Bayesian networks, 
@@ -81,14 +73,10 @@ The user may benefit from having installed other packages such as
 \Rpackage{graph}, for general graph manipulations, and \Rpackage{Graphviz} or \Rpackage{igraph}
 for graph rendering and visualization.
 
-The complexity of the problem of learning categorical Bayesian networks is related to the size of the space of these networks, which is super-exponential of the number of nodes. 
-In fact, network learning is a NP-Complete problem. The theoretical difficulty of the problem puts  some serious computational limitations on our approach and to relax them, \Rpackage{catnet} provides parallel processing capabilities 
-allowing the user to benefit from substantial increase in performance for networks with limited parent set sizes. 
-
-The authors of \Rpackage{catnet} target reconstruction of gene/protein regulatory networks as a primary application of the package (for overview  on this topic see \cite{paola} and \cite{friedman00}), but its functionality is by no means limited for use to bioinformatics only and hopefully will find much larger application scope.
+The authors of \Rpackage{catnet} target reconstruction of gene/protein regulatory networks as a primary application of the package (for overview  on this topic see \cite{paola} and \cite{friedman00}), but its functionality is by no means limited for use to bioinformatics only and hopefully will find much larger application scope. 
 %For more detailed introduction to Bayesian networks and different learning strategies, we refer to 
 %\cite{neapolitan}, \cite{pearl}, \cite{heckeman95} and \cite{pearl88}. 
-More information on the package functionality and usage can be found in the manual pages. 
+%More information on the package functionality and usage can be found in the manual pages. 
 
 \section{Creating and Manipulating Networks}
 
@@ -102,30 +90,30 @@ For brevity, hereafter we will refer to a \Robject{catNetwork} object simply as 
 Next we present a formal definition of categorical network. 
 Let $\mathcal{V}=\{x_i\}_{i=1}^n$ be a set of $n$ discrete random variables 
 with number of categories $\mathcal{C}=\{c_i\}_{i=1}^n$. 
-A categorical network $\mathcal{G}$ with nodes $\mathcal{V}$ is described by 
+A categorical network $G$ with nodes $\mathcal{V}$ is described by 
 its parenthood structure and conditional probabilities. 
 We denote by $\Pi_i$ the parent set of the $i$-th node, thus, 
 $\Pi_i\subset \mathcal{V}$ and every $x_j\in\Pi_i$ is a parent of $x_i$. The conditional probability of $x_i$ given $\Pi_i$ is denoted $P(x_i|\Pi_i)$ and follows unconstrained categorical distribution.
-Any permutation $\Omega$ of size $n$ defines an order of the nodes $\mathcal{V}$. We say that $\Omega$ is consistent with $\mathcal{G}$ if 
+Any permutation $\Omega$ of size $n$ defines an order of the nodes $\mathcal{V}$. We say that $\Omega$ is consistent with $G$ if 
 \begin{equation}\label{eq:order}
 \Pi_{\Omega(i)} \subset \{\Omega(1),...,\Omega(i-1)\}, \\ i=1,...,n,
 \end{equation}
 thus, the parents of each node appear earlier in the order $\Omega$.  
 Since any categorical network is a DAG and as a such has a consistent node order, 
-the joint probability distribution of $\mathcal{G}$ allows the following factorization 
+the joint probability distribution of $G$ allows the following factorization 
 $$
 P(x_1,...,x_n) = \prod_{i=1}^n P(x_{\Omega(i)} | x_{\Omega(1)},...,x_{\Omega(i-1)}) = 
 \prod_{i=1}^n P(x_{\Omega(i)} | \Pi_{\Omega(i)}).
 $$
 
-Let $\mathcal{X}=\{X^{j}\}_{j=1}^{k}$ be a sample of $k$ observations on variables $\mathcal{V}$. 
+Let $D_m=\{X^{j}\}_{j=1}^{m}$ be a sample of $m$ observations on variables $\mathcal{V}$. 
 Without loss of generality we assume that for all $i$ an $j$, $X_i^j \in \{1,2,...,c_i\}$. 
-Then the likelihood of $\mathcal{X}$ with respect to $\mathcal{G}$ is 
+Then the sample-average log-likelihood of $G$ with respect to $D_m$ is 
 \begin{equation}\label{eq:likelihood}
-\mathcal{L}(\mathcal{X}|\mathcal{G}) = \prod_{i=1}^n \prod_{j=1}^k P(X_{\Omega(i)}^j|\Pi_{\Omega(i)}(X^j)), 
+l(G|D_m) = \frac{1}{m} \sum_{i=1}^n \sum_{j=1}^m \log P(X_{\Omega(i)}^j|\Pi_{\Omega(i)}(X^j)), 
 \end{equation}
 where $\Pi_i(X^j)$ is the realization of the parent set of $x_i$ for the $j$-th sample $X^j$. 
-The network estimation algorithm implemented in \Rpackage{catnet} is based on maximization of $\mathcal{L}$ as a function of $\mathcal{G}$. 
+\Rpackage{Catnet} performs network estimation by maximizing $l$ as a function of $G$. 
 
 \subsection{Creating New Networks}
 
@@ -176,17 +164,12 @@ The latter provides greater number of function for creating and manipulating gra
 A \Robject{graph} object can be created directly by specifying its 
 nodes (\Robject{myNodes}) and edges (\Robject{myEdges}). 
 It contains only a graphical structure description, not a probability one. 
-Then, a \Robject{catNetwork} is created by calling the \Rfunction{cnCatnetFromGraph} function.
+Then, a \Robject{catNetwork} is created by calling the \Rfunction{cnCatnetFromEdges} function.
 
 <<cnet2>>=
-bgraph <- FALSE
-try(bgraph<-require(graph), TRUE)
-if(bgraph) { 
-	myNodes<-c("a","s","p","q","r","t","u")
-	myEdges<-list(a=list(edges=NULL), s=list(edges=c("p","q")), p=list(edges=c("q")), q=list(edges=c("r")), r=list(edges=c("u")), t=list(edges=c("q")),u=list(edges=NULL))
-	g<-new("graphNEL", nodes=myNodes,edgeL=myEdges,edgemode="directed")
-	cnet2 <- cnCatnetFromGraph(g)
-}
+myNodes<-c("a","s","p","q","r","t","u")
+myEdges<-list(a=list(edges=NULL), s=list(edges=c("p","q")), p=list(edges=c("q")), q=list(edges=c("r")), r=list(edges=c("u")), t=list(edges=c("q")),u=list(edges=NULL))
+cnet2 <- cnCatnetFromEdges(nodes=myNodes, edges=myEdges, numCategories=2)
 @
 
 In \Rpackage{catnet} package one is able to import graphs from Simple Interaction Format (SIF) and Bayesian Networks Interchange Format (BIF) files. 
@@ -227,7 +210,7 @@ In addition, the corresponding \Rfunction{cnMatParents} and
 \Rfunction{cnMatEdges} functions return matrices instead of lists. 
 Specifically, \Rfunction{cnMatParents} returns a binary matrix representing the pairwise node connections, 
 and it is especially useful for comparing networks with the same number of nodes. 
-Alternativelly, \Rfunction{cnMatEdges} returns a two-column matrix of 
+Alternatively, \Rfunction{cnMatEdges} returns a two-column matrix of 
 ordered pairs encoding the edges with direction from the first to the second.
 
 <<simplefuns2>>= 
@@ -396,7 +379,7 @@ Grow-Shrink, Incremental Association \cite{yara}, \cite{tsamardinos03} and Hill-
 implement either score or constraint-based algorithms to find good solutions. 
 \Rpackage{catnet} implements a global score algorithm and searches for networks fitting the data exhaustively, according to the MLE criterion - in cases when the topological order of the nodes is known, 
 the package provides a function, \Rfunction{cnSearchOrder}, that finds the exact (if is unique) 
-MLE solution for the estimation problem. Alternativelly, if the order is not known the user may search the space of orders using the stochastic search function \Rfunction{cnSearchSA}. 
+MLE solution for the estimation problem. Alternatively, if the order is not known the user may search the space of orders using the stochastic search function \Rfunction{cnSearchSA}. 
 
 \subsection{Network Estimation for Given Node Order}
 \label{section:search_order}
@@ -414,12 +397,12 @@ The function implements a Dynamic Programming (DP) algorithm for searching
 in the space of networks having a node order specified by the user. 
 The result is a set of networks with increasing complexity up to a given 
 maximum value. 
-In other words, each resulting network is exact the Maximum Likelihood Estimator (MLE) for the corresponding complexity. 
-More formally, for given node order $\Omega$ and complexity number $T$, the function finds  
+In other words, each resulting network is exact the maximum likelihood estimator (MLE) for the corresponding complexity. 
+More formally, for given node order $\Omega$ and complexity number $\alpha$, the function finds  
 $$
-\hat\mathcal{G}_{MLE}(\Omega,T) = argmax \{ \mathcal{L}(\mathcal{X} | \mathcal{G}) \textrm{, such that } Complexity(\mathcal{G})=T\},
+\hat{G}_{MLE}(\Omega,\alpha) = argmax \{ l(G|D_m) \textrm{, such that } Complexity(G)=\alpha\},
 $$
-where the likelihood $\mathcal{L}(\mathcal{X} | \mathcal{G})$ is defined by Eq. \ref{eq:likelihood}. 
+where the log-likelihood $l(G|D_m)$ is defined by Eq. \ref{eq:likelihood}. 
 
 Then the user may proceed by selecting a particular network from the found set of networks by specifying a target complexity or applying some model selection criterion - see the functions \Robject{cnFindAIC} and \Robject{cnFindBIC} discussed below.
 
@@ -455,11 +438,9 @@ the best fitting networks that comply with the following requirements:
 (1) the last node is not a parent to anyone else, and 
 (2) the first two nodes are necessarily parents to all of the rest nodes.
 The search is restricted to the 'true' node order, the one of the network from which the data is generated, as obtained by \Rfunction{cnOrder(cnet)} function.
+%%Finally, we draw the log-likelihood vs. complexity curve for the resultant list of networks.
 
-Finally, we draw the log-likelihood vs. complexity curve for the resultant list of networks.
-
-\begin{center}
-<<ex14, fig=TRUE>>=
+<<ex14>>=
 set.seed(123)
 nnodes <- 12
 cnet <- cnRandomCatnet(numnodes=nnodes, maxParents=5, numCategories=2)
@@ -473,10 +454,8 @@ eval <- cnSearchOrder(data=samples, perturbations=NULL, maxParentSet=2, maxCompl
 	nodeOrder=norder, parentsPool=parPool, fixedParents=fixparPool)
 eval
 ## plot likelihood vs complexity for the resulting list of networks
-plot(eval@complexity, eval@loglik, xlab="Complexity", ylab = "Log-likelihood", 
-main="Model selection curve for the list of networks")
+## plot(eval@complexity, eval@loglik, xlab="Complexity", ylab = "Log-likelihood", main="Model selection curve for the list of networks")
 @
-\end{center}
 
 \subsection{Model Selection with AIC and BIC criteria}
 
@@ -527,41 +506,40 @@ This approach of order factorization is also implemented in
 \cite{friedman03} but in a different, Bayesian, context. The idea of 
 considering order learning as a sub-problem is also followed in \cite{larranaga} and \cite{acid01} 
 with constraint-based algorithms for conditional independence. 
-What makes \Rpackage{catnet}'s approach different is the strictly likelihood based, non-Bayesian, 
-learning framework.
+In addition, \Rpackage{catnet} implements both frequentist, maximum likelihood based, and Bayesian learning frameworks.
 
 The \Robject{catnet} package provides the stochastic search function \Rfunction{cnSearchSA}, 
 which implements a Simulated Annealing (SA) algorithm, \cite{kirk83}, \cite{cerny85}. Simulated Annealing is a global optimization algorithm built on the Metropolis algorithm, \cite{metro53}. 
 
-For a sample $\mathcal{X}$ of observations on variables $\mathcal{V}$ and an order $\Omega$, we have defined $\hat\mathcal{G}(\Omega, T)$ to be the network with complexity $T$ consistent with $\Omega$ 
-that maximizes the likelihood \ref{eq:likelihood}.
+For a sample $D_m$ of observations on variables $\mathcal{V}$ and an order $\Omega$, we have defined $\hat{G}(\Omega, \alpha)$ to be the network with complexity $\alpha$ consistent with $\Omega$ 
+that maximizes the log-likelihood \ref{eq:likelihood}.
 %$$
-%\hat\mathcal{G}(\Omega) = argmax_{\mathcal{G}} \mathcal{L}(\mathcal{X} | \mathcal{G})
+%\hat{G}(\Omega) = argmax_{G} l(G|D_m)
 %$$
-In fact, $\hat\mathcal{G}$ is eventually only one representative network from the set of equivalent networks maximizing the likelihood.  
-Moreover, we assume that $\Omega$ is a random element of the space of all permutations of nodes $\mathcal{V}$ and its probability is 
-$$
-P(\Omega) \propto \mathcal{L}(\mathcal{X} | \hat\mathcal{G}(\Omega, T)).
-$$
+In fact, $\hat{G}$ may be only one representative network from a set of equivalent networks maximizing the likelihood.  
+Moreover, we assume that $\Omega$ is a random element of the space of all permutations of nodes $\mathcal{V}$ and its probability is proportional to the likelihood of $\hat{G}(\Omega, \alpha)$ 
+\begin{equation}\label{eq:pi_omega}
+P(\Omega|D_m) \propto \exp(l(\hat{G}(\Omega, \alpha)|D_m)).
+\end{equation}
 
 The functions \Rfunction{cnSearchSA} implements 
 a Metropolis algorithm with acceptance  probability 
 \begin{equation}\label{eq:cn_mc_accept}
-\pi(\Omega_2|\Omega_1, \beta) \propto 1_{\Omega_2\in\mathcal{S}(\Omega_1)}
-exp(-[\mathcal{L}(\hat\mathcal{N}(\Omega_2, \mathcal{X})) - \mathcal{L}(\hat\mathcal{N}(\Omega_1, \mathcal{X})) ]^+ / \beta), 
+P(\Omega_2|\Omega_1, \beta) \propto 1_{\Omega_2\in\mathcal{N}(\Omega_1)}
+\exp(-\min\{0, l(\hat{G}(\Omega_2,\alpha)| D_m) - l(\hat{G}(\Omega_1,\alpha)| D_m) \} / \beta), 
 \end{equation}
-where $\mathcal{S}(\Omega_1)$ is a neighborhood of $\Omega_1$ and $\beta > 0$ is a parameter which specifies the temperature for the Simulating Annealing. The parameter $\beta$ gradually decreases according to a cooling schedule specified by the function's parameters. 
-The neighborhood $\mathcal{S}(\Omega)$ of an order $\Omega$ 
+where $\mathcal{N}(\Omega_1)$ is a neighborhood of $\Omega_1$ and $\beta > 0$ is a parameter which specifies the temperature for the Simulating Annealing. The parameter $\beta$ gradually decreases according to a cooling schedule specified by the function's parameters. 
+The neighborhood $\mathcal{N}(\Omega)$ of an order $\Omega$ 
 includes all orders obtained from $\Omega$ by repeating \Robject{orderShuffles} number of times the following exchange operation: a node index is randomly selected and exchanged with the next node index in $\Omega$. 
-By varying \Robject{orderShuffles}, the user can control the extent of $\mathcal{S}(\Omega)$.
+By varying \Robject{orderShuffles}, the user can control the extent of $\mathcal{N}(\Omega)$.
 
-The complexity $T$ used in Eq. \ref{eq:cn_mc_accept}, also called target complexity, may vary from one iteration of SA to another. It is determined by a user specified selection criterion, the parameter \Robject{selectMode}. Note that the SA search is only optimal for the series of networks, one for each SA iteration, having complexities $T$. 
+The complexity $\alpha$ used in Eq. \ref{eq:cn_mc_accept}, also called target complexity, may vary from one iteration of SA to another. It is determined by a user specified selection criterion, the parameter \Robject{selectMode}. Note that the SA search is only optimal for the series of networks, one for each SA iteration, having complexities $\alpha$. 
 
 In addition to the parameters of \Rfunction{cnSearchOrder}, \Rfunction{cnSearchSA} function also accepts 
 
 \begin{enumerate}
 \item{
-\Robject{selectMode} - determines how the target network complexity $T$ is defined at each iteration of SA. It can be one of the 'AIC' and 'BIC' criteria. Any other value results in using \Robject{maxComplexity} for $T$. 
+\Robject{selectMode} - determines how the target network complexity $\alpha$ is defined at each iteration of SA. It can be one of the 'AIC' and 'BIC' criteria. Any other value results in using \Robject{maxComplexity} for $\alpha$. 
 }
 \item{
 \Robject{tempStart} - the starting temperature of the annealing process.}
@@ -574,7 +552,7 @@ For example, if \Robject{tempStart} is the temperature in the first step,
 \Robject{tempCheckOrders} - the number of proposals to be checked for given temperature. 
 This is the number of orders, elements of the current order neighborhood, to be proposed at each step before decreasing the temperature. 
 Thus, if $\Omega$ is the current order at some temperature, 
-totally \Robject{tempCheckOrders} orders from  $\mathcal{S}(\Omega)$ will be proposed,  
+totally \Robject{tempCheckOrders} orders from  $\mathcal{N}(\Omega)$ will be proposed,  
 and consequently accepted or rejected, before factoring down the temperature. 
 }
 \item{
@@ -583,9 +561,9 @@ If for example \Robject{maxIter} is 40 and \Robject{tempCheckOrders} is 4,
 then 10 temperature decreasing steps will be eventually performed.
 }
 \item{
-\Robject{orderShuffles} - a number that controls the extent of $\mathcal{S}(\Omega)$, the neighborhood of order $\Omega$.
-The element of $\mathcal{S}(\Omega)$ are obtained from $\Omega$ by 
-\Robject{orderShuffles} switches of two node indices. 
+\Robject{orderShuffles} - a number that controls the extent of $\mathcal{N}(\Omega)$, the neighborhood of order $\Omega$.
+The elements of $\mathcal{N}(\Omega)$ are obtained from $\Omega$ by 
+\Robject{orderShuffles} number of switches of pairs of node indices. 
 }
 \item{
 \Robject{stopDiff} - a stopping criterion. If at a current temperature, 
@@ -614,13 +592,14 @@ In any case, a number of independent runs of \Rfunction{cnSearchSA} are recommen
 The following example theillustrates a typical call of \Rfunction{cnSearchSA}
 <<ex18>>=
 set.seed(345)
+samples <- cnSamples(object=cnet6, numsamples=100, output="matrix")
 netlist <- cnSearchSA(data=samples, perturbations=NULL, 
 	maxParentSet=2, parentSizes=NULL, maxComplexity=20, 
 	parentsPool=NULL, fixedParents=NULL, 
 	tempStart=1, tempCoolFact = 0.9, tempCheckOrders = 4, maxIter = 40, 
 	orderShuffles = 1, stopDiff = 0.0001,
 	priorSearch=NULL)
-bnet <- cnFind(netlist@nets, cnComplexity(cnet))
+bnet <- cnFind(netlist@nets, cnComplexity(cnet6))
 bnet
 @
 
@@ -634,22 +613,22 @@ By its nature, the search for best network according to a likelihood based score
 NP-Complete, thus in general intractable, problem (see \cite{chickeringA}). Inherently, the search functions implemented by \Rpackage{catnet} are highly intensive computationally 
 and some means for processing in cluster environment are necessary.
 
-The \Rfunction{cnSearchSA} function has a multi-threaded design. If $k$ threads are started in parallel (\Robject{numThreads}=$k$), then the MC can run up to $k$ times faster and cover correspondingly larger search space. It works as follows. From the neighborhood of the currently selected node order, $k$ different candidate orders are chosen and exhaustive searches (equivalent to \Rfunction{cnSearchOrder}) for all of them are performed in parallel in one batch. After the batch is processed, based on the search results the acceptance/rejection decision for the candidate orders is taken in sequential manner. If one of these $k$ searches succeeds to be accepted, according to the probability in Eq. (\ref{eq:cn_mc_accept}), the corresponding node order is chosen as a current selection and the rest of the search results are discarded. Let $j\in[1,k]$ be the index of the first accepted order in the batch, then this batch processing step is equivalent to $j$ steps of the baseline MC. On the other hand, if none of the $k$ searches succeeds to be accepted, then, effectively, $k$ steps of the MC are performed simultaneously, resulting in $k$ fold speed up. When the acceptance rate of new node orders is low, as is usually the case, the performance boost is close to $k$ fold. 
+The \Rfunction{cnSearchSA} function has a multi-threaded design. If $k$ threads are started in parallel (\Robject{numThreads}=$k$), then the MC can run up to $k$ times faster and cover correspondingly larger search space. It works as follows. From the neighborhood of the currently selected node order, $k$ different candidate orders are chosen and exhaustive searches (equivalent to \Rfunction{cnSearchOrder}) for all of them are performed in parallel in one batch. After the batch is processed, based on the search results the acceptance/rejection decision for the candidate orders is taken in sequential manner. If one of these $k$ searches succeeds to be accepted, according to the probability in Eq. \ref{eq:cn_mc_accept}, the corresponding node order is chosen as a current selection and the rest of the search results are discarded. Let $j\in[1,k]$ be the index of the first accepted order in the batch, then this batch processing step is equivalent to $j$ steps of the baseline MC. On the other hand, if none of the $k$ searches succeeds to be accepted, then, effectively, $k$ steps of the MC are performed simultaneously, resulting in $k$ fold speed up. When the acceptance rate of new node orders is low, as is usually the case, the performance boost is close to $k$ fold. 
 
-\subsection{Including Prior Edge Probabilities}
+\subsection{Including Prior Probabilities}
 
-The \Rpackage{catnet} package allows some prior information for the node connectivity to be included in the search. Both \Rfunction{cnSearchOrder} and \Rfunction{cnSearchSA} functions have a parameter \Robject{edgeProb}, which is a square numeric matrix with values in the range [0,1]. Its [i,j]-th element specifies the probability for a directed edge from the j-th to the i-th node. From the given edge probability matrix, a prior distribution on the space of networks is constructed based on the assumption that all edges are independent Bernoulli random variables. 
-Formally, let $\mathcal{G}$ be a categorical Bayesian network and let the binary variables $\delta_{ij}\in\{0,1\}$ indicate the presence of edge from the j-th to the i-th nodes. Denote the elements of the edge probability matrix with $q_{ij}$. Then we define the prior probability of $\mathcal{G}$ as 
-$$
-P(\mathcal{G}) \propto \prod_{i=1}^n \prod_{j\ne i} q_{ij}^{\delta_{ij}} (1-q_{ij})^{1-\delta_{ij}}.
-$$
-In the space of all possible networks, not necessarily DAGs, the above is a distribution with normalizing constant 1. In the space of DAGs, however, the network probabilities should be properly normalized. 
-
-Accounting for this prior, the score log-likelihood function changes to a posterior score 
+The estimation functionality of \Rpackage{catnet} can be further facilitated by including some prior node connectivity information.  Both \Rfunction{cnSearchOrder} and \Rfunction{cnSearchSA} functions accepts the parameter \Robject{edgeProb}, which is a square matrix with numeric values in the range [0,1]. The $[i,j]$-th element in \Robject{edgeProb} specifies the probability of directed edge from j-th to i-th node. From a given edge probability matrix, a prior distribution on the space of networks is constructed based on the assumption that all edges are independent Bernoulli random variables. 
+Formally, let $G$ be a categorical Bayesian network and let the binary variables $\delta_{ij}\in\{0,1\}$ indicate the presence of edge from the j-th to the i-th node. Denote the elements of the edge probability matrix with $q_{ij}$. Then we define the prior probability of $G$ as 
+\begin{equation}\label{eq:prior_edge}
+\pi(G) \propto \prod_{i=1}^n \prod_{j\ne i} q_{ij}^{\delta_{ij}} (1-q_{ij})^{1-\delta_{ij}}.
+\end{equation}
+In the space of all possible networks, not necessarily DAGs, the above is a properly normalized distribution. 
+Accordingly, we replace the objective log-likelihood function by the posterior score 
 \begin{equation}\label{eq:posterior}
-\sum_{i=1}^n \sum_{j=1}^k log P(X_{\Omega(i)}^j|\Pi_{\Omega(i)}(X^j)) + 
+\frac{1}{m} \sum_{i=1}^n \sum_{j=1}^m log P(X_{\Omega(i)}^j|\Pi_{\Omega(i)}(X^j)) + 
 \sum_{i=1}^n \sum_{j\ne i} [\delta_{ij} log(q_{ij})  + (1-\delta_{ij})log(1-q_{ij})], 
 \end{equation}
+where $\Omega$ is an order compatible with $G$.
 
 The following example utilize the \Robject{edgeProb} parameter
 <<ex20>>=
@@ -696,10 +675,82 @@ anet9 <- cnFind(res9, cnComplexity(cnet8))
 cnCompare(cnet8, anet9)
 @
 
+The \Robject{dirProb} parameter, only available in the \Rfunction{cnSearchSA} function, specifies directional, also causal, prior information, thus allowing prior probabilities on the space of node orders to be defined. Similarly to \Robject{edgeProb}, \Robject{dirProb} is a square matrix $R$ with numeric values $r_{ij}$ in the range [0,1]. 
+Its [i,j]-th element $r_{ij}$ gives the probability of the j-th node to be before the i-th node. Since there are only two alternatives for each pair of nodes, the conditions $r_{ij} + r_{ji} = 1$ and $r_{ii} = 1$ are mandated. 
+The prior probability of order $\Omega$ is then defined as  
+\begin{equation}\label{eq:prior_edge}
+\pi(\Omega|R) \propto \Pi_{i<j} r_{ij}^{1(x_j\prec_{\Omega}x_i)} r_{ji}^{1(x_i\prec_{\Omega}x_j)}.
+\end{equation}
+Accordingly, the posterior probability of $\Omega$ becomes  
+\begin{equation}\label{eq:pi_omega_posterior}
+P(\Omega|D_m) \propto \exp(l(\hat{G}(\Omega, \alpha)|D_m))\pi(\Omega|R), 
+\end{equation}
+and the acceptance  probability of the Metropolis algorithm changes to  
+\begin{equation}\label{eq:cn_mc_accept_posterior}
+P(\Omega_2|\Omega_1, \beta) \propto 1_{\Omega_2\in\mathcal{N}(\Omega_1)}
+\exp(-\min\{0, h(\hat{G}(\Omega_2,\alpha)| D_m) - h(\hat{G}(\Omega_1,\alpha)| D_m) \} / \beta), 
+\end{equation}
+where $h(\hat{G}(\Omega, \alpha)|D_m) = l(\hat{G}(\Omega, \alpha)|D_m) + \log(\pi(\Omega|R))$. 
+
+The following example illustrates the usage of perturbations to estimate pairwise node directions and feed the \Robject{dirProb} parameter. 
+\begin{center}
+<<ex21, fig=TRUE>>=
+cnSetSeed(3456)
+ncats <- 2
+cn <- cnRandomCatnet(20, 3, ncats, p.delta1=0.1, p.delta2=0.2) 
+norder <- cnOrder(cn)
+numnodes <- cnNumNodes(cn)
+mpars <- cnMatParents(cn)
+numsamples <- 100
+## simulate perturbations
+pert <- as.data.frame(matrix(rbinom(numnodes*numsamples, 1, p=0.25), ncol=numnodes))
+for(j in 1:numsamples) 
+  for(i in 1:numnodes) {
+    if(pert[j,i])
+      pert[j,i] <- 1+floor(runif(1)*ncats)
+    for(ip in cn@parents[[i]]) {
+      if(pert[j,ip]) {
+        pert[j,i] <- 0
+      }
+    }
+  }
+ps <- cnSamples(cn, numsamples, pert, as.index=TRUE)
+## pairwise conditional entropy difference between perturbed and non-perturbed data
+klmat <- cnEdgeDistanceKL(ps, pert)
+fscore1 <- NULL
+fscore2 <- NULL
+for(ntrials in 1:5) {
+  numiter <- 60
+  sares1 <- cnSearchSA(data=ps, perturbations=pert, maxParentSet=2,
+                       parentSizes=NULL, maxComplexity=0,
+                       parentsPool=NULL, fixedParents=NULL,
+                       edgeProb=NULL, dirProb=NULL, selectMode = "AIC",
+                       tempStart=0.1, tempCoolFact=0.9, tempCheckOrders=numiter,
+                       maxIter=numiter, 
+                       orderShuffles=0, stopDiff=0,
+                       numThreads=2, priorSearch=NULL, echo=FALSE)
+  cmp <- cnCompare(cn, cnFind(sares1, cnComplexity(cn)))
+  fscore1 <- c(fscore1, cmp@fscore)
+  sares2 <- cnSearchSA(data=ps, perturbations=pert, maxParentSet=2,
+                       parentSizes=NULL, maxComplexity=0,
+                       parentsPool=NULL, fixedParents=NULL,
+                       edgeProb=NULL, dirProb=t(klmat), selectMode = "AIC",
+                       tempStart=0.1, tempCoolFact=0.9, tempCheckOrders=numiter,
+                       maxIter=numiter, 
+                       orderShuffles=0, stopDiff=0,
+                       numThreads=2, priorSearch=NULL, echo=FALSE)
+  cmp <- cnCompare(cn, cnFind(sares2, cnComplexity(cn)))
+  fscore2 <- c(fscore2, cmp@fscore)
+}
+pl <- list("No Prior"=fscore1, "KL-dist Prior"=fscore2)
+boxplot(pl, ylab="F-score")
+@
+\end{center}
+
 \section{Conclusion}
 
-The \Rpackage{catnet} package for \Robject{R} provides an inference framework for discrete Bayesian networks with the intention to diversify the existing tools for network statistical modeling. Implemented strictly according to the Maximum Likelihood  principle, it targets the more statistical oriented community. It provides MLE solutions for networks with known order of their nodes and is able to perform stochastic search in the space of orders. The inference functions of the package can handle data with missing values and data with perturbations, suitable for micro-array analysis as well as, soft and hard edge constraints on the graph structure. 
-The additional functions for sampling, prediction and network comparison complete the \Rpackage{catnet} package to a self-contained framework for discrete network analysis. 
+\Rpackage{Catnet} package for \Robject{R} provides a framework for categorical Bayesian network inference. It implements a maximum likelihood based estimation with subsequent model selection of choice. Throughout support of data with missing values and perturbations is provided that makes the package suitable for micro-array analysis. A Bayesian structure analysis is possible via hard-edge-constraints or prior distributions on node order and connectivity. 
+A number of additional functions for sampling, prediction and network comparison complete the package to a self-contained tool-set for discrete network analysis. 
 
 \begin{thebibliography}{10}
 
@@ -707,6 +758,11 @@ The additional functions for sampling, prediction and network comparison complet
 Acid, S., Campos, L., Huete, J., 
 \newblock{The Search of Causal Orderings: A Short Cut for Learning Belief Networks.}
 \newblock{2001, In Proc. 8-th conference on Uncertainty in Artificial Intelligence.}
+
+\bibitem[Balov(2011)]{balov}
+Balov, N., 
+\newblock{Consistent Model Selection of Discrete Bayesian Networks from Incomplete Data}
+\newblock{2011, submitted, arxiv: 1105.4507}
 
 \bibitem[Beinlich et al.(1989)]{beinlich}
 Beinlich, I., Suermondth, G., Chavez, R., Cooper, G., 
@@ -800,7 +856,7 @@ Neapolitan, R., E.,
 \newblock{2003, Prentice Hall.}
 
 \bibitem[Pearl \& Verma(1988)]{pearl}
-Pearl, J., Verma, T.S., 
+Pearl, J., Verma,T.S., 
 \newblock{A theory of inferred causation.}
 \newblock{1991, 2-nd Conference on the Principles of Knowledge Representation and Reasoning, Cambridge, MA.}
 

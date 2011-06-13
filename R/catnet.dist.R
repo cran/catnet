@@ -26,7 +26,8 @@ setMethod("initialize", "catNetworkDistance",
 setMethod("show", "catNetworkDistance",
           function(object) {
             if(is(object, "catNetworkDistance"))
-              str <- sprintf(
+              if(object@fscore<1) 
+                str <- sprintf(
 " Edges:
                   TP = %d, 
                   FP = %d, 
@@ -58,6 +59,17 @@ setMethod("show", "catNetworkDistance",
                   object@order.fn,
                   object@markov.fp,
                   object@markov.fn)
+            else
+                str <- sprintf(
+" Edges:
+                  TP = %d, 
+                  FP = %d, 
+	          FN = %d,
+             F-score = %f\n",
+                  object@tp, 
+                  object@fp,
+                  object@fn,
+                  object@fscore)
             cat(str, "\n")
             return(str)
             })
@@ -67,24 +79,24 @@ setMethod("initialize", "catNetworkEvaluate",
             .Object@numnodes <- nnodes
             .Object@numsamples <- numsamples
             .Object@nets <- vector("list", nnets)
-            .Object@complexity <- rep(-1, nnets)
-            .Object@loglik <- rep(-1, nnets)
-            .Object@KLdist <- rep(-1, nnets)
-            .Object@hamm <- rep(-1, nnets)
-            .Object@hammexp <- rep(-1, nnets)
-            .Object@tp <- rep(-1, nnets)
-            .Object@fp <- rep(-1, nnets)
-            .Object@fn <- rep(-1, nnets)
-            .Object@sp <- rep(-1, nnets)
-            .Object@sn <- rep(-1, nnets)
-            .Object@fscore <- rep(-1, nnets)
-            .Object@skel.tp <- rep(-1, nnets)
-            .Object@skel.fp <- rep(-1, nnets)
-            .Object@skel.fn <- rep(-1, nnets)
-            .Object@order.fp <- rep(-1, nnets)
-            .Object@order.fn <- rep(-1, nnets)
-            .Object@markov.fp <- rep(-1, nnets)
-            .Object@markov.fn <- rep(-1, nnets)
+            .Object@complexity <- rep(NA, nnets)
+            .Object@loglik <- rep(NA, nnets)
+            .Object@KLdist <- rep(NA, nnets)
+            .Object@hamm <- rep(NA, nnets)
+            .Object@hammexp <- rep(NA, nnets)
+            .Object@tp <- rep(NA, nnets)
+            .Object@fp <- rep(NA, nnets)
+            .Object@fn <- rep(NA, nnets)
+            .Object@sp <- rep(NA, nnets)
+            .Object@sn <- rep(NA, nnets)
+            .Object@fscore <- rep(NA, nnets)
+            .Object@skel.tp <- rep(NA, nnets)
+            .Object@skel.fp <- rep(NA, nnets)
+            .Object@skel.fn <- rep(NA, nnets)
+            .Object@order.fp <- rep(NA, nnets)
+            .Object@order.fn <- rep(NA, nnets)
+            .Object@markov.fp <- rep(NA, nnets)
+            .Object@markov.fn <- rep(NA, nnets)
             .Object@time <- 0
             return(.Object)
             })
@@ -109,12 +121,15 @@ setMethod("cnPlot", "catNetworkEvaluate",
           function(object, file) {
 
             if(length(object@loglik) > 0 && length(object@complexity) > 0 &&
-               (length(object@tp) == 0 || object@tp[1] == -1)) {
+               (length(object@tp) == 0 || is.na(object@tp[1]))) {
               par(mfrow=c(1,1))
               plot(object@complexity, object@loglik, xlab="complexity", ylab="log(likelihood)", lty=1, 
                    main=paste(object@numsamples, " samples, ", object@numnodes, " nodes.", sep=""))
             }            
             else if(length(object@loglik) > 0 && length(object@complexity) > 0 &&
+                    length(object@tp) > 0 && !is.na(object@tp[1]) && 
+                    length(object@hamm) > 0 && !is.na(object@hamm[1]) &&
+                    length(object@markov.fp) > 0 && !is.na(object@markov.fp[1]) && 
                     length(object@hammexp) > 0 && !is.na(object@hammexp[1])) {
               par(mfrow=c(3,2))
               plot(object@complexity, object@loglik, xlab="complexity", ylab="log(likelihood)", lty=1, 
@@ -138,7 +153,10 @@ setMethod("cnPlot", "catNetworkEvaluate",
                    xlab="complexity", ylab="FN", lty=1,
                    main="False Nagative Directed Edges")
             }
-            else if(length(object@loglik) > 0 && length(object@complexity) > 0) {
+            else if(length(object@loglik) > 0 && length(object@complexity) > 0 &&
+                    length(object@tp) > 0 && !is.na(object@tp[1]) &&
+                    length(object@fp) > 0 && !is.na(object@fp[1]) && 
+                    length(object@hamm) > 0 && !is.na(object@hamm[1]) ) {
               par(mfrow=c(2,2))
               xx <- object@complexity
               plot(xx, object@loglik, xlab="complexity", ylab="log(likelihood)", lty=1, 
@@ -188,7 +206,7 @@ setMethod("cnCompare", c("catNetwork","list"),
 
 setMethod("cnCompare", c("catNetwork","catNetworkEvaluate"),
           function(object1, object2, extended = TRUE) {
-            return(findNetworkDistances(object1, length(object2@nets), object2@nets, extended))
+            return(findNetworkDistances(object1, object2@numsamples, object2@nets, extended))
           })
 
 .compare <- function(object1 ,object2, extended = TRUE) {
@@ -196,7 +214,7 @@ setMethod("cnCompare", c("catNetwork","catNetworkEvaluate"),
   if(!is(object1, "catNetwork"))
     stop("catNetwork should be specified")
   numnodes <- object1@numnodes
-  
+
   if(is(object2, "catNetwork")) {
     if(object1@numnodes != object2@numnodes)
       stop("Only networks with the same number of nodes can be compared")

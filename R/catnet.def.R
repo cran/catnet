@@ -26,15 +26,15 @@ cnRandomCatnet <- function(numnodes, maxParents, numCategories, p.delta1=0.01, p
              as.logical(FALSE), p.delta1, p.delta2 )) 
 }
  
-cnCatnetFromGraph <- function(graph, numCategories = 2, cats = NULL, probs = NULL) { 
-  maxCategories <- numCategories 
-  for(cat in cats) 
-    if(maxCategories < length(cat)) 
-      maxCategories <- length(cat) 
-  object <- new("catNetwork", numnodes=1, maxParents=0, maxCategories=2) 
-  object <- graph2catnet(object, graph, as.integer(maxCategories), cats, probs) 
-  return(object) 
-} 
+#cnCatnetFromGraph <- function(graph, numCategories = 2, cats = NULL, probs = NULL) { 
+#  maxCategories <- numCategories 
+#  for(cat in cats) 
+#    if(maxCategories < length(cat)) 
+#      maxCategories <- length(cat) 
+#  object <- new("catNetwork", numnodes=1, maxParents=0, maxCategories=2) 
+#  object <- graph2catnet(object, graph, as.integer(maxCategories), cats, probs) 
+#  return(object) 
+#} 
  
 cnCatnetFromEdges <- function(nodes, edges, numCategories = 2) { 
   numnodes <- length(nodes) 

@@ -133,18 +133,34 @@ t_elem _gen_std_normal_var() {
 template<class t_elem>
 int _gen_permutation(t_elem *psample, int nsample) {
 	/* psamples takes values in [1,nsample] */
-	int i, j;
+	int i, j, brep, cc;
 	if(nsample < 1 || !psample)
 		return -1;
-	double *paux = (double*)malloc(nsample*sizeof(double));
-	for(i = 0; i < nsample; i++)
-		paux[i] = (double)rand() / (double)RAND_MAX;
-	for(j = 0; j < nsample; j++) {
-		psample[j] = 0;
-		for(i = 0; i < nsample; i++) {
-			if(paux[j] >= paux[i])
-				psample[j]++;
+	int *paux = (int*)malloc(nsample*sizeof(int));
+	cc = 0;
+	while(++cc < 1e5) {
+		brep = 0;
+		for(i = 0; i < nsample; i++)
+			paux[i] = (int)rand();
+		for(j = 0; j < nsample; j++) {
+			psample[j] = 0;
+			for(i = 0; i < nsample; i++) {
+				if(i!=j && paux[j] == paux[i]) {
+					brep = 1;
+					break;
+				}
+				if(paux[j] >= paux[i])
+					psample[j]++;
+			}
+			if(brep)
+				break;
 		}
+		if(!brep)
+			break;
+	}
+	if(cc >= 1e5-1) {
+		for(j = 0; j < nsample; j++)
+			psample[j] = j+1;
 	}
 	free(paux);
 //printf("permutation ");

@@ -64,7 +64,7 @@ public:
 			SEXP rMatEdgeLiks, SEXP rDirProbs, 
 			SEXP rModel, SEXP rStartOrder,
 			SEXP rTempStart, SEXP rTempCoolFact, SEXP rTempCheckOrders, 
-			SEXP rMaxIter, SEXP rOrderShuffles, SEXP rStopDiff, SEXP rStopTime, 
+			SEXP rMaxIter, SEXP rOrderShuffles, SEXP rStopDiff, 
 			SEXP rThreads, SEXP rUseCache, SEXP rEcho);
 
 };

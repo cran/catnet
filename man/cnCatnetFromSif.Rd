@@ -29,6 +29,6 @@ Subsequently, the probability model can be changed by calling \code{cnSetProb} f
 
 \author{N. Balov}
 
-\seealso{\code{\link{cnNew}}, \code{\link{cnCatnetFromGraph}}, \code{\link{cnSetProb}} }
+\seealso{\code{\link{cnNew}}, \code{\link{cnCatnetFromEdges}}, \code{\link{cnSetProb}} }
 
 \keyword{graphs}

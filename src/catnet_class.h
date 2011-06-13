@@ -523,7 +523,7 @@ public:
 	}
 
 	t_prob* sampleLoglikVector(int *psamples, int nsamples, int *pert=0) {
-		int i, j, ipar, npert;
+		int i, j, ipar;
 		/* psamples have categories in the range [1, m_maxCategories] */
 		t_prob *pnodeprob, *ploglik;
 		int nodepars, ncount;
@@ -544,7 +544,6 @@ public:
 
 			ncount = 0;
 			if(pert){
-				npert = 0;
 				for (j = 0; j < nsamples; j++) {
 					// check for perturbation
 					if(pert[j * m_numNodes + i])
@@ -591,7 +590,7 @@ public:
 	}
 
 	t_prob* bySampleLoglikVector(int *psamples, int nsamples, int *pert=0) {
-		int i, j, ipar, npert;
+		int i, j, ipar;
 		/* psamples have categories in the range [1, m_maxCategories] */
 		t_prob *pnodeprob, *ploglik;
 		int nodepars, *pncount;
@@ -615,7 +614,6 @@ public:
 			//memset(pncount, 0, nsamples * sizeof(int));
 
 			if(pert){
-				npert = 0;
 				for (j = 0; j < nsamples; j++) {
 					// check for perturbation
 					if(pert[j * m_numNodes + i])

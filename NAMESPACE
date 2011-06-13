@@ -28,11 +28,11 @@ exportMethods(
 	cnCompare, 
 	cnParHist, 
 	cnCluster, cnClusterSep, 
-	as.graph, as.igraph)
+	as.igraph)
 
 export(
 	cnNew, cnRandomCatnet, 
-	cnCatnetFromGraph, cnCatnetFromSif, cnCatnetFromBif, cnCatnetFromEdges, 
+        cnCatnetFromSif, cnCatnetFromBif, cnCatnetFromEdges, 
 	isDAG, dag2cpdag, 
 	cnNodeSampleLoglik, cnNodeSampleProb, 
 	cnDiscretize, 

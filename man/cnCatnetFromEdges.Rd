@@ -27,6 +27,6 @@ according to it.
 
 \author{N. Balov}
 
-\seealso{\code{\link{cnNew}}, \code{\link{cnCatnetFromSif}}, \code{\link{cnCatnetFromGraph}}, \code{\link{cnSetProb}}}
+\seealso{\code{\link{cnNew}}, \code{\link{cnCatnetFromSif}}, \code{\link{cnSetProb}}}
 
 \keyword{graphs}

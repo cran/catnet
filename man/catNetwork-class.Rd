@@ -16,7 +16,7 @@ Technically, \code{catNetwork} is a S4 type of R-class implemented in object-ori
 
   \code{cnRandomCatnet(numnodes, maxParents, numCategories)}  
 
-  \code{cnCatnetFromGraph(gr, cats, probs)}
+  \code{cnCatnetFromEdges(nodes, edges, numCategories)}
 
   \code{cnCatnetFromSif(file)}
 
@@ -66,8 +66,8 @@ Technically, \code{catNetwork} is a S4 type of R-class implemented in object-ori
 		maxParents="\code{integer}", numCategories="\code{integer}"):
 		Creating a random class object.}
 
-	\item{cnCatnetFromGraph}{\code{signature}(gr="\code{graph}", cats="\code{list}", probs="\code{list}"):
-		Deriving a class object from a \code{graph} object.}
+	\item{cnCatnetFromEdges}{\code{signature}(nodes="\code{vector}", edges="\code{list}", numCategories="\code{integer}"):
+		Deriving a class object from a list of edges.}
 
 	\item{cnCatnetFromSif}{\code{signature}(file="\code{character}"):
 		Creating a class object from a file.}
@@ -114,8 +114,6 @@ Technically, \code{catNetwork} is a S4 type of R-class implemented in object-ori
 	\item{cnPredict}{\code{signature}(object="\code{catNetwork}", psamples="\code{matrix}"):...}
 
 	\item{cnCompare}{\code{signature}(object1="\code{catNetwork}", object2="\code{catNetwork}"):...}
-
-	\item{as.graph}{\code{signature}(object = "\code{catNetwork}"):...}
   }
 }
 
@@ -127,7 +125,7 @@ Although available for direct access, the class components, its slots, should no
 
 \author{N. Balov}
 
-\seealso{\code{\link{cnRandomCatnet}}, \code{\link{cnCatnetFromGraph}}, \code{\link{cnNew}}, 
+\seealso{\code{\link{cnRandomCatnet}}, \code{\link{cnCatnetFromEdges}}, \code{\link{cnNew}}, 
  	\code{\link{cnNodes}}, \code{\link{cnEdges}}, \code{\link{cnComplexity}}, \code{\link{cnPlot}}
 }
 

@@ -173,6 +173,11 @@ cnSearchOrder <- function(data, perturbations = NULL,
   if(numnodes < 1 || numsamples < 1)
     stop("Insufficient data")
 
+  if(is.null(nodeOrder))
+    nodeOrder <- 1:numnodes
+  if(length(nodeOrder) != numnodes)
+    stop("Invalid node order")
+  
   maxParentSet <- as.integer(maxParentSet)
   if(maxParentSet < 1) {
     if(!is.null(parentSizes))
@@ -240,10 +245,7 @@ cnSearchOrder <- function(data, perturbations = NULL,
     maxComplexity <- minComplexity
   }
   maxComplexity <- as.integer(maxComplexity)
-  
-  if(is.null(nodeOrder))
-    nodeOrder <- 1:numnodes
-
+   
   nodenames <- rownames(data)    
   if(length(nodenames) < numnodes)
     nodenames <- seq(1,numnodes)
@@ -323,7 +325,7 @@ cnSearchOrder <- function(data, perturbations = NULL,
                       edgeProb, dirProb, 
                       selectMode, 
                       tempStart, tempCoolFact, tempCheckOrders, 
-                      maxIter, orderShuffles, stopDiff, stopTime, 
+                      maxIter, orderShuffles, stopDiff, 
                       numThreads, echo) {
   
   nodenames <- rownames(data)
@@ -338,7 +340,7 @@ cnSearchOrder <- function(data, perturbations = NULL,
                    edgeProb, dirProb, 
                    selectMode, as.integer(startorder),
                    tempStart, tempCoolFact, as.integer(tempCheckOrders), 
-                   as.integer(maxIter), orderShuffles, stopDiff, stopTime, 
+                   as.integer(maxIter), orderShuffles, stopDiff, 
                    ## threads
                    as.integer(numThreads),
                    ## cache
@@ -356,6 +358,8 @@ cnSearchOrder <- function(data, perturbations = NULL,
     }
     enetnodes <- optnets[[nn]]@nodes
     ord <- sapply(nodenames, function(c) which(enetnodes==c))
+    if(length(ord) != numnodes)
+      stop("wrong node names: ", enetnodes)
     if(sum(ord != 1:numnodes) > 0)    
       optnets[[nn]] <- cnReorderNodes(optnets[[nn]], ord)
     ## now the nodes in the network are ordered as in the data
@@ -393,7 +397,7 @@ cnSearchSA <- function(data, perturbations=NULL,
                        edgeProb = NULL, dirProb = NULL, 
                        selectMode = "BIC", 
                        tempStart = 1, tempCoolFact = 0.9, tempCheckOrders = 10, 
-                       maxIter = 100, orderShuffles = 1, stopDiff = 0, stopTime = 0, 
+                       maxIter = 100, orderShuffles = 1, stopDiff = 0, 
                        numThreads = 2, 
                        priorSearch = NULL,  ## catNetworkEvaluate
                        echo=FALSE) {
@@ -489,16 +493,6 @@ cnSearchSA <- function(data, perturbations=NULL,
     dirProb <-t(klmat)/(klmat+t(klmat))
     rownames(dirProb)<-nodenames
     colnames(dirProb)<-nodenames
-    for(i in 1:numnodes) {
-      for(j in 1:numnodes) {
-        if(is.na(dirProb[i,j]) || dirProb[i,j] < 0 || dirProb[i,j] > 1)
-           dirProb[i,j] <- 0.5
-        if(dirProb[i,j] > 1-1e-8)
-           dirProb[i,j] <- 1-1e-8
-        if(dirProb[i,j] < 1e-8)
-           dirProb[i,j] <- 1e-8
-      }
-    }
   }
 
   if(!is.null(edgeProb)) {
@@ -511,6 +505,17 @@ cnSearchSA <- function(data, perturbations=NULL,
     if(length(colnames(dirProb)) != numnodes || length(rownames(dirProb)) != numnodes)
       stop("dirProb matrix should be with named columns and rows")
     dirProb <- dirProb[nodenames, nodenames]
+    dirProb <- dirProb / (dirProb+t(dirProb))
+    for(i in 1:numnodes) {
+      for(j in 1:numnodes) {
+        if(is.na(dirProb[i,j]) || is.na(dirProb[i,j]) || dirProb[i,j] < 0 || dirProb[i,j] > 1)
+           dirProb[i,j] <- 0.5
+        if(dirProb[i,j] > 1-1e-8)
+           dirProb[i,j] <- 1-1e-8
+        if(dirProb[i,j] < 1e-8)
+           dirProb[i,j] <- 1e-8
+      }
+    }
   }
   
   if(!is.null(fixedParents)) {
@@ -585,7 +590,7 @@ cnSearchSA <- function(data, perturbations=NULL,
                     edgeProb, dirProb, 
                     selectMode, 
                     tempStart, tempCoolFact, as.integer(tempCheckOrders), 
-                    as.integer(maxIter), orderShuffles, stopDiff, stopTime, 
+                    as.integer(maxIter), orderShuffles, stopDiff, 
                     as.integer(numThreads), echo)
   
   t2 <- proc.time()

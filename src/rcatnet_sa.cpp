@@ -196,10 +196,6 @@ int *RCatnetSearchSA::_genOrderFormDirProbs(const int *porder, int numnodes, dou
 			probs[i] = faux;
 			fsum += faux;
 		}
-//printf("%d probs: ", k);
-//for(i = 0; i <= k; i++)
-//printf("%f ", probs[i]/fsum);
-//printf("\n");
 		faux = (double)fsum * ((double) rand() / (double) RAND_MAX);
 		fsum = 0;
 		for(i = 0; i < k; i++) {
@@ -207,7 +203,6 @@ int *RCatnetSearchSA::_genOrderFormDirProbs(const int *porder, int numnodes, dou
 			if(fsum >= faux)
 				break;
 		}
-//printf("[%d] %f\n", i, probs[i]);
 		*pOrderProb *= probs[i];
 		if(i > 0)
 			memcpy(flags, neworder, i*sizeof(int));
@@ -215,10 +210,6 @@ int *RCatnetSearchSA::_genOrderFormDirProbs(const int *porder, int numnodes, dou
 		if(i < k)
 			memcpy(flags + i + 1, neworder + i, (k-i)*sizeof(int));
 		memcpy(neworder, flags, (k+1)*sizeof(int));
-/*printf("%d order: ", i);
-for(i = 0; i <= k; i++)
-printf("%d ", neworder[i]);
-printf("\n");*/
 	}
 	// order should be with indices in [1, numnodes]
 	for(i = 0; i < numnodes; i++)
@@ -227,7 +218,6 @@ printf("\n");*/
 		*pOrderProb = (double)log((double)*pOrderProb);
 	else
 		*pOrderProb = (double)-FLT_MAX;
-//printf("pOrderProb = %f\n", *pOrderProb);
 	CATNET_FREE(flags);
 	CATNET_FREE(probs);
 	return neworder;
@@ -239,7 +229,7 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 		SEXP rMatEdgeLiks, SEXP rDirProbs, 
 		SEXP rModel, SEXP rStartOrder, SEXP rTempStart, SEXP rTempCoolFact,
 		SEXP rTempCheckOrders, SEXP rMaxIter, SEXP rOrderShuffles,
-		SEXP rStopDiff, SEXP rStopTime, SEXP rThreads, SEXP rUseCache, SEXP rEcho) {
+		SEXP rStopDiff, SEXP rThreads, SEXP rUseCache, SEXP rEcho) {
 
 	int n, nn, i, j, k, len, maxComplexity, numnets, inet, echo, maxParentsPool;
 	int *pRsamples, *pRperturbations, *pSamples, *pPerturbations,
@@ -247,7 +237,7 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 	double complx, fLogLik, fOptLogLik, deltaLogLik, ftemp;
 	int tempCheckOrders, minShuffles, bjump, niter, maxIter, nstop,
 			nstopCounter, naccept, stepiters, stepaccept, nLastChangedTemp;
-	double tempCur, tempStart, tempCoolFact, orderShuffles, stopDiff, stopTime, 
+	double tempCur, tempStart, tempCoolFact, orderShuffles, stopDiff, 
 			acceptprob;
 
 	MUTEX m_cache_mutex;
@@ -277,7 +267,6 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 	PROTECT(rMaxIter = AS_INTEGER(rMaxIter));
 	PROTECT(rOrderShuffles = AS_NUMERIC(rOrderShuffles));
 	PROTECT(rStopDiff = AS_NUMERIC(rStopDiff));
-	PROTECT(rStopTime = AS_NUMERIC(rStopTime));
 	PROTECT(rThreads = AS_INTEGER(rThreads));
 	PROTECT(rUseCache = AS_LOGICAL(rUseCache));
 	PROTECT(rModel = AS_CHARACTER(rModel));
@@ -292,7 +281,6 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 	maxIter = INTEGER_POINTER(rMaxIter)[0];
 	orderShuffles = NUMERIC_POINTER(rOrderShuffles)[0];
 	stopDiff = NUMERIC_POINTER(rStopDiff)[0];
-	stopTime = NUMERIC_POINTER(rStopTime)[0];
 	m_nDrives = INTEGER_POINTER(rThreads)[0];
 	if (m_nDrives < 1)
 		m_nDrives = 1;
@@ -311,9 +299,7 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 	if (!strncmp(CHARACTER_VALUE(rModel), "BIC", 3))
 		nModelSel = 2;
 
-	UNPROTECT(14);
-
-	//printf("nDrives = %d, nModelSel = %d, bUseCache = %d\n", m_nDrives, nModelSel, m_bUseCache);
+	UNPROTECT(13);
 
 	PROTECT(rSamples = AS_INTEGER(rSamples));
 	pRsamples = INTEGER(rSamples);
@@ -336,7 +322,7 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 			}
 		}
 	}
-	UNPROTECT(1);
+	UNPROTECT(1); /* rStartOrder */
 
 	pNodeNames = NULL;
 	if (!isNull(rNodeNames)) {
@@ -439,12 +425,6 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 	while (niter < maxIter) {
 
 		for (n = 0; n < m_nDrives; n++) {
-
-			//printf("opt order: ");
-			//for(i=0;i<m_numNodes;i++)
-			//printf("%d ", m_pOptOrder[i]);
-			//printf("\n");
-
 			if (m_pTestOrder[n])
 				CATNET_FREE( m_pTestOrder[n]);
 
@@ -459,9 +439,6 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 			}
 			if (!m_pTestOrder[n])
 				error("_genOrder returns an error");
-//debugging
-//for(i=0;i<m_numNodes;i++)
-//	m_pTestOrder[n][i] = i+1;
 
 			nstop = 0;
 			if (n > 0) {
@@ -477,14 +454,8 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 				}
 			}
 			if (nstop) {
-				//printf("repeated order in %d\n", n);
 				continue;
 			}
-
-			//printf("test order: ");
-			//for(i=0;i<m_numNodes;i++)
-			//printf("%d ", m_pTestOrder[n][i]);
-			//printf("\n");
 
 			for (i = 0; i < m_numNodes; i++)
 				m_pTestOrderInverse[n][m_pTestOrder[n][i] - 1] = i + 1;
@@ -619,7 +590,6 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 
 			m_pSearchParams[n]->m_seed = rand();
 
-			//printf("start thread %d,   params = %p, driver = %p\n", n, m_pSearchParams[n], m_pDrives[n]);
 			m_pDrives[n] -> _start_thread(CatnetSearchSaThreadProc, m_pSearchParams[n]);
 		} // for(n = 0; n < m_nDrives; n++)
 
@@ -696,7 +666,6 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 				if(!pCurNet)
 					continue;
 
-				//printf("pCurNet = %f, %d\n", pCurNet->loglik(), pCurNet->complexity());
 				fLogLik = pCurNet->loglik();
 				if (!pOptNet) {
 					pOptNet = pCurNet;
@@ -704,7 +673,6 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 					if (m_pOptNets) {
 						for (i = 0; i < m_nOptNets; i++)
 							if (m_pOptNets[i]) {
-								//printf("delete m_pOptNets[i] = %p\n", m_pOptNets[i]);
 								delete m_pOptNets[i];
 							}
 						CATNET_FREE( m_pOptNets);
@@ -722,7 +690,6 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 					stepaccept++;
 					ordProb = newOrdProb[n];
 				} else { 
-					
 					deltaLogLik = fLogLik - fOptLogLik;
 					deltaLogLik += (newOrdProb[n] - ordProb);
 					acceptprob = 0;
@@ -765,8 +732,6 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 						stepaccept++;
 						stepiters = n + 1;
 						nstopCounter = 0;
-//printf("%f\n",fLogLik);
-
 					}
 					else {
 						deltaLogLik = 0;
@@ -847,7 +812,6 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 	for (n = 0; n < m_nDrives; n++) {
 		if (m_pSearchParams && m_pSearchParams[n])
 			delete m_pSearchParams[n];
-		//printf("delete driver = %p\n", m_pDrives[n]);
 		if (m_pDrives && m_pDrives[n])
 			delete m_pDrives[n];
 	}
@@ -904,7 +868,7 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 	}
 
 	UNPROTECT(1);
-	
+
 	if (pNodeNames) {
 		for (i = 0; i < m_numNodes; i++) {
 			if (pNodeNames[i])

@@ -406,7 +406,7 @@ setMethod("cnSetProb", "catNetwork",
             catIndices <- NULL
             if(!is.null(nodeCats)) {
               ## the categories are explicitly given and may not come from the data
-              catIndices <- lapply(1:numnodes, function(i) 1:length(object@categories[[i]]))
+              catIndices <- lapply(1:object@numnodes, function(i) 1:length(object@categories[[i]]))
             }
 
 	    fast <- TRUE
