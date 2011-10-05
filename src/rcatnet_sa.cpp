@@ -414,10 +414,10 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 	nLastChangedTemp = 0;
 
 	if (echo && m_numNodes < 32) {
-		printf("Start order: ");
+		Rprintf("Start order: ");
 		for (i = 0; i < m_numNodes; i++)
-			printf("%d ", m_pOptOrder[i]);
-		printf("\n");
+			Rprintf("%d ", m_pOptOrder[i]);
+		Rprintf("\n");
 	}
 
 	ordProb = 0;
@@ -717,15 +717,15 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 						memcpy(m_pOptOrder, m_pTestOrder[n], m_numNodes * sizeof(int));
 
 						if (echo) {
-							printf("Accept order: ");
+							Rprintf("Accept order: ");
 							if(m_numNodes < 32) {
 								for (i = 0; i < m_numNodes; i++)
-									printf("%d ", m_pOptOrder[i]);
+									Rprintf("%d ", m_pOptOrder[i]);
 							}
 							if(deltaLogLik > 0)
-								printf("\n");
+								Rprintf("\n");
 							else
-								printf(" with prob %f < %f\n", ftemp, acceptprob);
+								Rprintf(" with prob %f < %f\n", ftemp, acceptprob);
 						}
 						ordProb = newOrdProb[n];
 
@@ -757,11 +757,11 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 			tempCur *= tempCoolFact;
 			nLastChangedTemp = niter;
 			if (echo) {
-				printf("Set temp to %f\n", tempCur);
+				Rprintf("Set temp to %f\n", tempCur);
 			}
 		}
 		if (echo)
-			printf("Iteration %d\\%d\n", niter, maxIter);
+			Rprintf("Iteration %d\\%d\n", niter, maxIter);
 					
 		if (nstop)
 			break;
@@ -784,7 +784,7 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 		UNPROTECT(1);
 
 	if (echo && niter > 0) {
-		printf("Accepted\\Total Orders %d\\%d, (%f)\n", naccept, niter,
+		Rprintf("Accepted\\Total Orders %d\\%d, (%f)\n", naccept, niter,
 				(double) naccept / (double) niter);
 	}
 

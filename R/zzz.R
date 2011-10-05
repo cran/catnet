@@ -1,12 +1,18 @@
-.onLoad <- function(lib, pkg, where) {
+.onLoad <- function(lib, pkg) {
   dotpath <- as.character(Sys.getenv("R_DOTVIEWER"))
   if(dotpath == "") {
-    try(err <- require(igraph), TRUE)
+    pl <- .packages(all=TRUE)
+    err <- FALSE
+    for(pp in pl)
+      if(pp=="igraph") {
+        err <- TRUE
+        break
+      }
     if(err)
       Sys.setenv(R_CATNET_USE_IGRAPH=TRUE)
     else {
       Sys.setenv(R_CATNET_USE_IGRAPH=FALSE)
-      cat("No plotting capabilities detected. Type 'help(catnet)'\n")
+      packageStartupMessage("No plotting capabilities detected. Type 'help(catnet)'\n")
     }
   }
   else {

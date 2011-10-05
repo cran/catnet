@@ -803,7 +803,7 @@ public:
 		// maximum entropy per configuration
 		My = (t_prob*)CATNET_MALLOC(cy*sizeof(t_prob));
 
-printf("probSize = %d, numCats = %d, cx = %d,  cy = %d, nsamples = %d\n", m_pProbLists[nnode]->nProbSize, m_pProbLists[nnode]->numCats, cx, cy, nsamples);
+		//printf("probSize = %d, numCats = %d, cx = %d,  cy = %d, nsamples = %d\n", m_pProbLists[nnode]->nProbSize, m_pProbLists[nnode]->numCats, cx, cy, nsamples);
 
 		// entropies
 		h = hath = 0;
@@ -838,7 +838,7 @@ printf("probSize = %d, numCats = %d, cx = %d,  cy = %d, nsamples = %d\n", m_pPro
 			hath += (ny[j]*perr2/nsamples);
 
 			k += cx;
-printf("ny[%d] = %d,  My[%d] = %f\n", j, ny[j], j, My[j]);
+			//printf("ny[%d] = %d,  My[%d] = %f\n", j, ny[j], j, My[j]);
 		}
 
 		delta = (h - hath);
@@ -846,7 +846,7 @@ printf("ny[%d] = %d,  My[%d] = %f\n", j, ny[j], j, My[j]);
 		h = -h;
 		hath = -hath;
 
-		printf("h = %f, hath = %f, delta = %f\n", h, hath, delta);
+		//printf("h = %f, hath = %f, delta = %f\n", h, hath, delta);
 		
 		nerrors = 10;//(int)(2*abs(h) / delta) + 1;
 		perror = (t_prob*)CATNET_MALLOC(nerrors*sizeof(t_prob));
@@ -865,7 +865,7 @@ printf("ny[%d] = %d,  My[%d] = %f\n", j, ny[j], j, My[j]);
 				perr2 += faux*My[j]*My[j]*ny[j]*(nsamples-ny[j])/(nsamples*nsamples);
 				k += cx;
 			}
-printf("dd = %f,  faux = %f, perr1 = %f, perr2 = %f\n", dd, faux, perr1, perr2);
+			//printf("dd = %f,  faux = %f, perr1 = %f, perr2 = %f\n", dd, faux, perr1, perr2);
 
 			perror[nerr] = perr1 + perr2;
 		}

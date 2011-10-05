@@ -186,8 +186,6 @@ SEXP show_catnet(SEXP rnodes, SEXP rparents, SEXP rcatlist, SEXP rproblist)
 	PROTECT(rcatlist = AS_LIST(rcatlist));
 	PROTECT(rproblist = AS_LIST(rproblist));
 
-	//printf("Call show_object.\n");
-
 	PROTECT(pstr = allocVector(STRSXP, 3));
 
 	m_numNodes = length(rnodes);
@@ -612,7 +610,7 @@ SEXP catnetNodeLoglik(SEXP cnet, SEXP rNode, SEXP rSamples, SEXP rPerturbations)
 
 	int *pSamples, *pPerturbations;
 	int *psubSamples, numsubsamples;
-	int numsamples, numnodes, j, nnode;
+	int numsamples, numnodes, i, j, nnode, nnodes, *pnodes;
 	double floglik, *pvec;
 	SEXP dim, rvec = R_NilValue;
 
@@ -632,8 +630,12 @@ SEXP catnetNodeLoglik(SEXP cnet, SEXP rNode, SEXP rSamples, SEXP rPerturbations)
 	RCatnet *rnet = new RCatnet(cnet);
 	UNPROTECT(1);
 
+	nnodes = length(rNode);
+	if(nnodes < 1)
+		return rvec;
+	pnodes = (int*)CATNET_MALLOC(nnodes*sizeof(int));
 	PROTECT(rNode = AS_INTEGER(rNode));
-	nnode = INTEGER_POINTER(rNode)[0];
+	memcpy(pnodes, INTEGER_POINTER(rNode), nnodes*sizeof(int));
 	UNPROTECT(1);
 
 	PROTECT(rSamples = AS_INTEGER(rSamples));
@@ -650,38 +652,41 @@ SEXP catnetNodeLoglik(SEXP cnet, SEXP rNode, SEXP rSamples, SEXP rPerturbations)
 		else
 			pSamples[j]--;
 	}
-	nnode--;
 
-	psubSamples = 0;
-	pPerturbations = 0;
-	if(!isNull(rPerturbations)) {
-		PROTECT(rPerturbations = AS_INTEGER(rPerturbations));
-		pPerturbations = INTEGER(rPerturbations);
-		psubSamples = (int*)CATNET_MALLOC(numnodes*numsamples*sizeof(int));
-		numsubsamples = 0;
-		for(j = 0; j < numsamples; j++) {
-			if(!pPerturbations[j * numnodes + nnode]) {
-				memcpy(psubSamples + numsubsamples*numnodes, pSamples + j*numnodes, numnodes*sizeof(int));
-				numsubsamples++;
+	PROTECT(rvec = NEW_NUMERIC(nnodes));
+	pvec = NUMERIC_POINTER(rvec);
+
+	for(i = 0; i < nnodes; i++) { 
+		nnode = pnodes[i] - 1;
+		psubSamples = 0;
+		pPerturbations = 0;
+		if(!isNull(rPerturbations)) {
+			PROTECT(rPerturbations = AS_INTEGER(rPerturbations));
+			pPerturbations = INTEGER(rPerturbations);
+			psubSamples = (int*)CATNET_MALLOC(numnodes*numsamples*sizeof(int));
+			numsubsamples = 0;
+			for(j = 0; j < numsamples; j++) {
+				if(!pPerturbations[j * numnodes + nnode]) {
+					memcpy(psubSamples + numsubsamples*numnodes, pSamples + j*numnodes, numnodes*sizeof(int));
+					numsubsamples++;
+				}
 			}
+			floglik = rnet->sampleNodeLoglik(nnode, psubSamples, numsubsamples);
+			UNPROTECT(1);
+			CATNET_FREE(psubSamples);
 		}
-		floglik = rnet->sampleNodeLoglik(nnode, psubSamples, numsubsamples);
-		UNPROTECT(1);
-		CATNET_FREE(psubSamples);
-	}
-	else
-		floglik = rnet->sampleNodeLoglik(nnode, pSamples, numsamples);
+		else
+			floglik = rnet->sampleNodeLoglik(nnode, pSamples, numsamples);
 
-	UNPROTECT(1);
+		pvec[i] = R_NegInf;
+		if(floglik > -FLT_MAX)
+			pvec[i] =  floglik;
+	}
+	UNPROTECT(1); // rSamples
+	UNPROTECT(1); // rvec
 
 	delete rnet;
-
-	PROTECT(rvec = NEW_NUMERIC(1));
-	pvec = NUMERIC_POINTER(rvec);
-	pvec[0] = R_NegInf;
-	if(floglik > -FLT_MAX)
-		pvec[0] =  floglik;
-	UNPROTECT(1);
+	delete pnodes;	
 
 	//char str[128];
 	//sprintf(str, "Mem Balance  %d\n", (int)g_memcounter);

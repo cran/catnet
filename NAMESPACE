@@ -17,7 +17,8 @@ exportMethods(
 	cnSubNetwork, cnReorderNodes, 
 	cnEdges, cnMatEdges, 
 	cnParents, cnMatParents, 		
-	cnProb, cnPlotProb, cnSetProb, cnNodeMarginalProb, 
+	cnProb, cnPlotProb, cnSetProb, 
+	cnNodeMarginalProb, cnJointProb, cnCondProb, 
 	cnComplexity, cnOrder, 
 	cnPlot, cnDot,
 	cnSamples, 
@@ -40,7 +41,6 @@ export(
 	cnSearchHist,
 	cnEntropy, cnEntropyOrder, 
 	cnEdgeDistanceKL, cnEdgeDistancePearson, 
-	cnClusterMI, 
-	cnPearsonTest,
+	cnClusterMI, cnPearsonTest,
 	cnSetSeed)
 

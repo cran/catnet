@@ -436,8 +436,7 @@ setMethod("cnSetProb", "catNetwork",
             newobject@categories <- object@categories
             newobject@maxCategories <- object@maxCategories
             newobject@complexity <- cnComplexity(object)
-
-            
+        
 	    return(newobject)
           }
 )

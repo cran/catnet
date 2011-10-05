@@ -315,24 +315,27 @@ setMethod("cnNodeLoglik", c("catNetwork"),
             if(prod(tolower(rownames) == tolower(object@nodes)) == 0)
               stop("The data names should correspond to the object nodes.")
 
-            if(is.character(node))
-              node <- which(rownames == node)
-            if(!is.numeric(node) || node < 1 || node > object@nodes)
-              stop("Wrong node")
+            if(is.list(node) || is.vector(node)) {
+              node <- sapply(node, function(nn) return(which(rownames == nn)))
+            }
+            else {
+              if(is.character(node))
+                node <- which(rownames == node)
+              if(!is.numeric(node) || node < 1 || node > object@nodes)
+                stop("Wrong node")
+            }
             node <- as.integer(node)
-              
+ 
             r <- .categorizeSample(data, perturbations, object, ask=FALSE)
             data <- r$data
             perturbations <- r$perturbations
             if(object@maxCategories < r$maxCategories)
               stop("Data has more categories than the object")
-            
-            fast <- TRUE
-            
+             
             numnodes <- dim(data)[1]
             numsamples <- dim(data)[2]
             
-            if(fast) {
+            if(TRUE) {
               loglik <- .Call("ccnNodeLoglik", 
                               object, node, data, perturbations, 
                               PACKAGE="catnet")

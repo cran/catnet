@@ -124,6 +124,60 @@ nodeAncestors <- function(idroot, ppars) {
   return(ancset)
 }
 
+.probTreeAddLeaf <- function(ptree, leafproblist, leafpars, idtree, idleafpars, pcatlist) {
+  if(length(idtree) < 1) {
+    ##cat("idtree: ", idtree,"\n")
+    ##cat("idleafpars: ", idleafpars,"\n")
+    if(length(idleafpars)>0){
+      cat(idleafpars)
+      stop("Length(idleafpars) should be zero.")
+    }
+    ## tree is a scalar, leafproblist is a vector
+    if(is.null(ptree))
+       return(leafproblist)
+    return(ptree*leafproblist)
+  }
+  treenode <- idtree[1]
+  if(length(idleafpars) > 0)
+    leafnode <- leafpars[idleafpars[1]]
+  else
+    leafnode <- 0
+  ##cat("Nodes: ", idtree,"; ", leafnode, idleafpars, "\n")
+  if(length(idtree) > 0 && treenode == leafnode)
+    poutlist <- lapply(seq(1, length(pcatlist[[leafnode]])),
+                       function(cat, ptree, leapproblist, leafpars, idtree, idleafpars, pcatlist)
+                       .probTreeAddLeaf(ptree[[cat]], leafproblist[[cat]], leafpars, idtree, idleafpars, pcatlist), 
+                       ptree, leafproblist, leafpars, idtree[-1], idleafpars[-1], pcatlist
+                       )
+  else
+    poutlist <- lapply(seq(1, length(pcatlist[[treenode]])),
+                       function(cat, ptree, leapproblist, leafpars, idtree, idleafpars, pcatlist)
+                       .probTreeAddLeaf(ptree[[cat]], leafproblist, leafpars, idtree, idleafpars, pcatlist), 
+                       ptree, leafproblist, leafpars, idtree[-1], idleafpars, pcatlist
+                       )
+  return(poutlist)
+}
+
+
+## 
+.probTreeToMatrix <- function(ptree, idx, pcatlist, prob, offset) {
+  if(length(idx) < 1) {
+    prob[offset] <- ptree
+    return(prob)
+  }
+  idnode <- idx[1]
+  nodeoff <- 1
+  for(i in 1:length(pcatlist)) ## number of nodes == length(pcatlist)
+    if(i > idnode)
+      nodeoff <- nodeoff*length(pcatlist[[i]])
+  ##cat(idnode, nodeoff, length(pcatlist), "\n")
+  for(cat in 1:length(pcatlist[[idnode]])) {
+    off <- offset + nodeoff*(cat-1)
+    prob <- .probTreeToMatrix(ptree[[cat]], idx[-1], pcatlist, prob, off)
+  }
+  return(prob)
+}
+
 .nodeMarginalProb <- function(idnode, parents, probabilities, categories) {
 
   if(idnode > length(parents) || is.null(parents[[idnode]])) {
@@ -166,7 +220,7 @@ nodeAncestors <- function(idroot, ppars) {
 
     ##cat("add ", i, ":", nnode, " par: " ,parents[[nnode]], "\n")
     
-    ptree <- probTreeAddLeaf(ptree,
+    ptree <- .probTreeAddLeaf(ptree,
                               probabilities[[nnode]],
                               parents[[nnode]],
                               idtree,
@@ -181,7 +235,7 @@ nodeAncestors <- function(idroot, ppars) {
   idleafpars <- NULL
   if(length(parents[[nnode]]) > 0)
     idleafpars <- 1:length(parents[[nnode]])
-  ptree <- probTreeAddLeaf(ptree,
+  ptree <- .probTreeAddLeaf(ptree,
                            probabilities[[nnode]],
                            parents[[nnode]],
                            idtree,
@@ -195,7 +249,7 @@ nodeAncestors <- function(idroot, ppars) {
     n <- n*length(categories[[parordered[i]]])
   n <- n*length(categories[[idnode]])
   jointprob <- rep(0, n)
-  jointprob <- probTreeToMatrix(ptree, 1:(length(nodepar)+1), parcatlist, jointprob, 1)
+  jointprob <- .probTreeToMatrix(ptree, 1:(length(nodepar)+1), parcatlist, jointprob, 1)
 
   ncat <- length(categories[[idnode]])
   margprob <- rep(0, ncat)

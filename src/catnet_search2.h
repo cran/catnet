@@ -395,13 +395,13 @@ public:
 		for(nnode = 1; nnode < numnodes; nnode++) {
 
 			if(_wait_stop_event(4/*millisecs*/) == 0) {
-				printf("STOP signal detected\n");
+				Rprintf("STOP signal detected\n");
 				break;
 			}
 
 			if(becho) {
-				printf("processing node %d\n", nnode+1);
-				printf("    [#parents][#combinations] = ");
+				Rprintf("processing node %d\n", nnode+1);
+				Rprintf("    [#parents][#combinations] = ");
 			}
 
 			fixparsetsize = 0;
@@ -499,7 +499,7 @@ public:
 					}
 
 					if(becho)
-						printf("[%d]%d  ", d, ncomblist);
+						Rprintf("[%d]%d  ", d, ncomblist);
 
 					fMaxLogLik = -FLT_MAX;
 					ncombMaxLogLik = -1;
@@ -654,7 +654,7 @@ public:
 				}
 			
 				if(becho)
-					printf("[%d]%d  ", d, ncomblist);
+					Rprintf("[%d]%d  ", d, ncomblist);
 
 				fMaxLogLik = -FLT_MAX;
 				ncombMaxLogLik = -1;
@@ -777,7 +777,7 @@ public:
 			} /* if(!bEqualCategories) */
 
 			if(becho)
-				printf("\n");
+				Rprintf("\n");
 
 			for(j = 0; j < m_nCatnets; j++) {
 				if(m_pCatnets[j]) {

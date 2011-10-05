@@ -57,7 +57,7 @@ unsigned int			g_nCacheBits = 0;
 
 void ReleaseCache() {
 	unsigned i;
-	//printf("\nRELEASE CACHE\n");
+	//Rprintf("\nRELEASE CACHE\n");
 	if(g_pcache && g_ncache > 0) {
 		for(i = 0; i < g_ncache; i++) {
 			if(g_pcache[i])
@@ -74,7 +74,7 @@ void ReleaseCache() {
 	
 void InitializeCache(int nslots, int ncachebits) {
 	ReleaseCache();
-	//printf("\nINITIALIZE CACHE %d\n", g_ncache);
+	//Rprintf("\nINITIALIZE CACHE %d\n", g_ncache);
 	if(nslots < 1)
 		nslots = 1;
 	g_ncache = nslots;
@@ -149,10 +149,10 @@ int c_cache::getCachedProb(int *ppool, int poolsize, int node, int *parset, int 
 			return 0;
 #ifdef DEBUG_INFO
 char str[256];
-sprintf(str,"getCachedProb node=%d, pool = ", node);printf(str);
+sprintf(str,"getCachedProb node=%d, pool = ", node);Rprintf(str);
 for(i = 0; i < poolsize; i++) {
-	sprintf(str,"%d  ", ppool[i]);printf(str);
-}printf("\n");
+	sprintf(str,"%d  ", ppool[i]);Rprintf(str);
+}Rprintf("\n");
 #endif
 		node = m_pRorder[node];
 		for(i = 0; i < poolsize; i++)
@@ -160,10 +160,10 @@ for(i = 0; i < poolsize; i++) {
 		_quick_sort<int>(m_parBuff1, poolsize);
 
 #ifdef DEBUG_INFO
-sprintf(str,"    reordered node=%d, pool = ", node);printf(str);
+sprintf(str,"    reordered node=%d, pool = ", node);Rprintf(str);
 for(i = 0; i < poolsize; i++) {
-	sprintf(str,"%d  ", m_parBuff1[i]); printf(str);
-}printf("\n");
+	sprintf(str,"%d  ", m_parBuff1[i]); Rprintf(str);
+}Rprintf("\n");
 #endif
 		nlookup = 1;
 		for(i = 0; i < poolsize; i++) {
@@ -179,7 +179,7 @@ for(i = 0; i < poolsize; i++) {
 			nlookup -= g_ncache;
 
 #ifdef DEBUG_INFO
-sprintf(str,"nlookup=%d\n", nlookup);printf(str);
+sprintf(str,"nlookup=%d\n", nlookup);Rprintf(str);
 #endif
 
 		pCacheEl = g_pcache[nlookup];
@@ -203,13 +203,13 @@ sprintf(str,"nlookup=%d\n", nlookup);printf(str);
 		*pflik = pCacheEl->fLogLik;
 
  //clock_t lt = clock();
- //printf("%ld\n", lt);;
+ //Rprintf("%ld\n", lt);;
 
 #ifdef DEBUG_INFO
-printf("\n    HIT, parset = ");
+Rprintf("\n    HIT, parset = ");
 for(i = 0; i < parsize; i++) {
-	sprintf(str,"%d  ", parset[i]);printf(str);
-}printf("\n");
+	sprintf(str,"%d  ", parset[i]);Rprintf(str);
+}Rprintf("\n");
 #endif
 		return 1;
 	}
@@ -257,16 +257,16 @@ int c_cache::setCachedProb(int *ppool, int poolsize, int node, int *parset, int 
 				i <<= 1;
 			}
 #ifdef DEBUG_INFO
-sprintf(str,"nCacheBits = %d  ", g_nCacheBits); printf(str);
+sprintf(str,"nCacheBits = %d  ", g_nCacheBits); Rprintf(str);
 #endif
 			InitializeCache(nlookup, g_nCacheBits);
 		}
 
 #ifdef DEBUG_INFO
-sprintf(str,"setCachedProb node=%d, poolsize = %d, parsize = %d, pool = ", node, poolsize, parsize); printf(str);
+sprintf(str,"setCachedProb node=%d, poolsize = %d, parsize = %d, pool = ", node, poolsize, parsize); Rprintf(str);
 for(i = 0; i < poolsize; i++) {
-	sprintf(str,"%d  ", ppool[i]);printf(str);
-}printf("\n");
+	sprintf(str,"%d  ", ppool[i]);Rprintf(str);
+}Rprintf("\n");
 #endif
 
 		node = m_pRorder[node];
@@ -278,13 +278,13 @@ for(i = 0; i < poolsize; i++) {
 			m_parBuff2[i] = m_pRorder[parset[i]];
 
 #ifdef DEBUG_INFO
-sprintf(str,"    reordered node=%d, pool = ", node);printf(str);
+sprintf(str,"    reordered node=%d, pool = ", node);Rprintf(str);
 for(i = 0; i < poolsize; i++) {
-	sprintf(str,"%d  ", m_parBuff1[i]);printf(str);
-}printf("\n par = ");
+	sprintf(str,"%d  ", m_parBuff1[i]);Rprintf(str);
+}Rprintf("\n par = ");
 for(i = 0; i < parsize; i++) {
-	sprintf(str,"%d  ", m_parBuff2[i]);printf(str);
-}printf("\n");
+	sprintf(str,"%d  ", m_parBuff2[i]);Rprintf(str);
+}Rprintf("\n");
 #endif
 		CATNET_CACHE_EL<double> *pCacheEl = new CATNET_CACHE_EL<double>(
 			m_parBuff1, poolsize, node, m_parBuff2, parsize, probNode, flik);
@@ -303,7 +303,7 @@ for(i = 0; i < parsize; i++) {
 			nlookup -= g_ncache;	
 
 #ifdef DEBUG_INFO
-sprintf(str,"\nnlookup=%d\n", nlookup);printf(str);
+sprintf(str,"\nnlookup=%d\n", nlookup);Rprintf(str);
 #endif
 		if(g_pcache[nlookup]) {
 
@@ -311,7 +311,7 @@ sprintf(str,"\nnlookup=%d\n", nlookup);printf(str);
 		}
 		g_pcache[nlookup] = pCacheEl;
 		/*clock_t lt = clock();
-		printf("%ld\n", lt);*/
+		Rprintf("%ld\n", lt);*/
 		return 1;
 	}
 

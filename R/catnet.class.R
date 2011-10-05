@@ -111,8 +111,13 @@ setGeneric("as.igraph", function(object)
            )
 
 setGeneric("cnJointProb", 
-          function(object, ...)
+          function(object, nodes)
            standardGeneric("cnJointProb")
+           )
+
+setGeneric("cnCondProb", 
+          function(object,x,y)
+           standardGeneric("cnCondProb")
            )
 
 setGeneric("cnJointKLdist", 

@@ -291,7 +291,7 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 			}
 		}
 		if(nstop) {
-			printf("repeated order in %d\n", n);
+			Rprintf("repeated order in %d\n", n);
 			continue;
 		}
 
@@ -497,7 +497,7 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 
 		niter++;
 		if(echo) {
-			printf("Iteration %d\\%d\n", niter, maxIter);
+			Rprintf("Iteration %d\\%d\n", niter, maxIter);
 		}
 		
 		} // for(n = 0; n < m_nDrives; n++)

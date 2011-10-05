@@ -43,109 +43,6 @@ cnGenOrder <- function(order, shuffles, bjump = FALSE) {
   neworder
 }
 
-cnDiscretize <- function(data, numCategories, mode = "uniform", qlevels = NULL) {
-
-  if(!is.matrix(data) && !is.data.frame(data))
-    stop("data should be a matrix or data frame")
-
-  if(is.matrix(data)) {
-    samples <- data
-    outdataframe <- FALSE
-  }
-  else {
-    samples <- t(data)
-    outdataframe <- TRUE
-  }
-  
-  numnodes <- dim(samples)[1]
-  numsamples <- dim(samples)[2]
-  if(numnodes < 1 || numsamples < 1)
-    stop("No valid sample is specified.")
-
-  if(is.vector(numCategories)) {
-    len <- length(numCategories)
-    numcats <- floor(numCategories[len])
-    numcats <- rep(numcats, numnodes)
-    if(len <= numnodes) {
-      for(j in 1:len)
-        numcats[j] <- numCategories[j]
-    }
-    else {
-      for(j in 1:numnodes)
-        numcats[j] <- numCategories[j]
-    }
-    for(j in 1:numnodes)
-        if(numcats[j] < 2)
-          numcats[j] <- 2
-  }
-  else {
-    numcats <- floor(numCategories)
-    if(numcats < 2) {
-      warning("set numCategories to 2")
-      numcats <- 2
-    }
-    numcats <- rep(numcats, numnodes)
-  }
-
-  if(mode == "quantile") {
-    qlevels <- vector("list", numnodes)
-    for(j in 1:numnodes)
-      qlevels[[j]] <- seq(1:(numcats[j]-1))/numcats[j]
-  }
-  else { 
-    if(is.null(qlevels) || !is.list(qlevels) || length(qlevels) < numnodes) {
-      qlevels <- vector("list", numnodes)
-      for(j in 1:numnodes)
-        qlevels[[j]] <- rep(1, numcats[j])
-    }
-    for(j in 1:numnodes) {
-      sl <- sum(qlevels[[j]])
-      if(length(qlevels[[j]]) < numcats[j] || sl <= 0) {
-        qlevels[[j]] <- rep(1, numcats[j])
-        sl <- sum(qlevels[[j]])
-      }
-      qlevels[[j]] <- qlevels[[j]]/sl
-    }
-  }
-
-  data <- matrix(rep(0, length(samples)), nrow=dim(samples)[1])
-  for(j in 1:numnodes) {
-    col <- samples[j,]
-    ##levs <- levels(col)
-    col <- as.numeric(col)
-    if(!is.numeric(col))
-      stop("data should be numeric")
-    if(mode == "quantile") {
-      qq <- quantile(col, qlevels[[j]])
-    }
-    else { 
-      minc <- min(col)
-      maxc <- max(col)
-      qq <- sapply(1:numcats[j], function(i) minc+(maxc-minc)*sum(qlevels[[j]][1:i]))
-    }
-    for(i in 1:length(col)) {
-      id <- which(qq > col[i])
-      if(length(id)>0)
-        data[j,i] <- min(id)
-      else
-        data[j,i] <- numcats[j]
-      data[j,] <- as.integer(data[j,])
-    }
-  }
-  rownames(data) <- rownames(samples)
-  colnames(data) <- colnames(samples)
-
-  if(outdataframe) {
-    data <- as.data.frame(t(data))
-    ## R converts integer back to numeric, hate it
-    for(j in 1:numnodes)
-      data[,j] <- as.integer(data[,j])
-  }
-  
-  return(data)
-}
-
-
 cnSearchOrder <- function(data, perturbations = NULL,
                           maxParentSet = 0, parentSizes = NULL, 
                           maxComplexity = 0,
@@ -169,14 +66,8 @@ cnSearchOrder <- function(data, perturbations = NULL,
     numnodes <- ncol(data)
     numsamples <- nrow(data)
   }
-
   if(numnodes < 1 || numsamples < 1)
-    stop("Insufficient data")
-
-  if(is.null(nodeOrder))
-    nodeOrder <- 1:numnodes
-  if(length(nodeOrder) != numnodes)
-    stop("Invalid node order")
+    stop("Invalid sample")
   
   maxParentSet <- as.integer(maxParentSet)
   if(maxParentSet < 1) {
@@ -186,11 +77,13 @@ cnSearchOrder <- function(data, perturbations = NULL,
       maxParentSet <- 1
   }
   
-  if(!is.null(parentSizes)) {
+  if(!is.null(parentSizes) && length(parentSizes) == numnodes) {
     parentSizes <- as.integer(parentSizes)
     parentSizes[parentSizes<0] <- 0
     parentSizes[parentSizes>maxParentSet] <- maxParentSet
   }
+  else
+    parentSizes <- NULL
 
   if(!is.null(edgeProb)) {
     if(!is.matrix(edgeProb) || nrow(edgeProb) != numnodes || ncol(edgeProb) != numnodes)
@@ -223,6 +116,9 @@ cnSearchOrder <- function(data, perturbations = NULL,
     }
   }
 
+  if(!is.null(parentsPool) && !is.list(parentsPool) && length(parentsPool) != numnodes)
+    stop("Wrong parentsPool")
+    
   if(!is.null(fixedParents)) {
     for(i in 1:numnodes)
       if(length(fixedParents[[i]]) > maxParentSet) {
@@ -237,6 +133,30 @@ cnSearchOrder <- function(data, perturbations = NULL,
   categories <- r$categories
   maxCategories <- r$maxCategories
 
+  nodenames <- rownames(data)    
+  if(length(nodenames) < numnodes)
+    nodenames <- seq(1,numnodes)
+  if(length(nodenames) > 1)
+    for(i in 2:length(nodenames))
+      if(length(which(nodenames[1:(i-1)] == nodenames[i])) > 0) {
+        stop("Repeated node names ", nodenames[i])
+      }
+
+  if(is.null(nodeOrder))
+    nodeOrder <- 1:numnodes
+  if(!is.null(nodeOrder)) {
+    if(length(nodeOrder) != numnodes)
+      stop("Invalid nodeOrder")
+    if(is.character(nodeOrder)) {
+      nodeOrder <- sapply(nodeOrder, function(str) {
+        id <- which(nodenames == str)
+        if(length(id) <= 0)
+          stop("Invalid nodeOrder")
+        return(id[1])
+        })
+    }
+  }
+
   if(maxComplexity <= 0)
     maxComplexity <- as.integer(numnodes * exp(log(maxCategories)*maxParentSet) * (maxCategories-1))
   minComplexity <- sum(sapply(categories, function(cat) (length(cat)-1)))
@@ -245,11 +165,7 @@ cnSearchOrder <- function(data, perturbations = NULL,
     maxComplexity <- minComplexity
   }
   maxComplexity <- as.integer(maxComplexity)
-   
-  nodenames <- rownames(data)    
-  if(length(nodenames) < numnodes)
-    nodenames <- seq(1,numnodes)
-
+  
   catIndices <- NULL
   if(!is.null(nodeCats)) {
     catIndices <- lapply(1:numnodes, function(i) 1:length(categories[[i]]))
@@ -292,7 +208,8 @@ cnSearchOrder <- function(data, perturbations = NULL,
 
     ## reorder eval@nets[[nn]]'s nodes to match data's nodes
     enetnodes <- bestnets[[i]]@nodes
-    ##cat(enetnodes,"\n")
+    ##cat("nodenames = ", nodenames,"\n")
+    ##cat("enetnodes = ", enetnodes,"\n")
     if(length(nodenames) == numnodes) {
       ord <- sapply(nodenames, function(c) {
         id <- which(enetnodes==c)
@@ -431,6 +348,21 @@ cnSearchSA <- function(data, perturbations=NULL,
     parentSizes <- as.integer(parentSizes)
     parentSizes[parentSizes<0] <- 0
     parentSizes[parentSizes>maxParentSet] <- maxParentSet
+  }
+  else
+    parentSizes <- NULL
+
+  if(!is.null(parentsPool) && !is.list(parentsPool) && length(parentsPool) != numnodes)
+    stop("Wrong parentsPool")
+
+  if(!is.null(fixedParents)) {
+    if(!is.list(fixedParents) && length(fixedParents) != numnodes)
+      stop("Wrong fixedParents")
+    for(i in 1:numnodes)
+      if(length(fixedParents[[i]]) > maxParentSet) {
+        fixedParents[[i]] <- fixedParents[[i]][1:maxParentSet]
+        warning("fixedParents for node ", i, " exceeds the maximum parent size. It's reduced to ", maxParentSet)
+      }
   }
 
   if(!is.null(edgeProb)) {

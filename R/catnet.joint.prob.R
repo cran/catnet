@@ -2,111 +2,219 @@
 # Categorical Network Class Methods
 # Joint Probability Calculations
 
-probTreeAddLeaf <- function(ptree, leafproblist, leafpars, idtree, idleafpars, pcatlist) {
-  if(length(idtree) < 1) {
-    ##cat("idtree: ", idtree,"\n")
-    ##cat("idleafpars: ", idleafpars,"\n")
-    if(length(idleafpars)>0){
-      cat(idleafpars)
-      stop("Length(idleafpars) should be zero.")
+probMatAddNode <- function(object, node, pmat, imat) {
+  pars <- object@parents[[node]]
+  ncats <- length(object@categories[[node]])
+  id <- which(colnames(pmat)==node)
+  if(!is.null(pmat) && nrow(pmat) > exp(log(2)*14)) {
+    warning("The table exceeds ", nrow(pmat), " rows.")
+    return(NULL)
+  }
+  if(length(id) > 0)
+    return(list(pmat,imat))    
+  if(is.null(pars)) {
+    pm <- pmat
+    im <- imat
+    pmat <- NULL
+    imat <- NULL
+    for(c in 1:ncats) {
+      if(is.null(pm)) {
+        pmc <- cbind(pm, object@probabilities[[node]][c])
+        imc <- cbind(im, c)
+      }
+      else {
+        pmc <- cbind(pm, rep(object@probabilities[[node]][c], nrow(pm)))
+        imc <- cbind(im, rep(c, nrow(pm)))
+      }
+      pmat <- rbind(pmat, pmc)
+      imat <- rbind(imat, imc)
     }
-    ## tree is a scalar, leafproblist is a vector
-    if(is.null(ptree))
-       return(leafproblist)
-    return(ptree*leafproblist)
+    colnames(pmat) <- c(colnames(pm), node)
+    colnames(imat) <- c(colnames(im), node)
+    return(list(pmat,imat))
   }
-  treenode <- idtree[1]
-  if(length(idleafpars) > 0)
-    leafnode <- leafpars[idleafpars[1]]
-  else
-    leafnode <- 0
-  ##cat("Nodes: ", idtree,"; ", leafnode, idleafpars, "\n")
-  if(length(idtree) > 0 && treenode == leafnode)
-    poutlist <- lapply(seq(1, length(pcatlist[[leafnode]])),
-                       function(cat, ptree, leapproblist, leafpars, idtree, idleafpars, pcatlist)
-                       probTreeAddLeaf(ptree[[cat]], leafproblist[[cat]], leafpars, idtree, idleafpars, pcatlist), 
-                       ptree, leafproblist, leafpars, idtree[-1], idleafpars[-1], pcatlist
-                       )
-  else
-    poutlist <- lapply(seq(1, length(pcatlist[[treenode]])),
-                       function(cat, ptree, leapproblist, leafpars, idtree, idleafpars, pcatlist)
-                       probTreeAddLeaf(ptree[[cat]], leafproblist, leafpars, idtree, idleafpars, pcatlist), 
-                       ptree, leafproblist, leafpars, idtree[-1], idleafpars, pcatlist
-                       )
-  return(poutlist)
+  ipar <- NULL
+  for(par in pars) {
+    id <- which(colnames(pmat)==par)
+    if(length(id) < 1) {
+      res <- probMatAddNode(object, par, pmat, imat)
+      if(is.null(res))
+        break
+      pmat <- res[[1]]
+      imat <- res[[2]]
+      id <- ncol(pmat)
+    }
+    ipar <- c(ipar, id[1])
+  }
+  if(is.null(res))
+    return(NULL)
+  pm <- pmat
+  im <- imat
+  pmat <- NULL
+  imat <- NULL
+  for(j in 1:nrow(pm)) {
+    prow <- pm[j,]
+    irow <- im[j,]
+    pl <- object@probabilities[[node]]
+    for(k in 1:length(pars)) {
+      pl <- pl[[im[j,ipar[k]]]]
+    }
+    for(nc in 1:ncats) {
+      pmat <- rbind(pmat, c(prow, pl[nc]))
+      imat <- rbind(imat, c(irow, nc))
+    }
+  }
+  colnames(pmat) <- c(colnames(pm), node)
+  colnames(imat) <- c(colnames(im), node)
+  return(list(pmat,imat))
 }
-
-
-## 
-probTreeToMatrix <- function(ptree, idx, pcatlist, prob, offset) {
-  if(length(idx) < 1) {
-    prob[offset] <- ptree
-    return(prob)
-  }
-  idnode <- idx[1]
-  nodeoff <- 1
-  for(i in 1:length(pcatlist)) ## number of nodes == length(pcatlist)
-    if(i > idnode)
-      nodeoff <- nodeoff*length(pcatlist[[i]])
-  ##cat(idnode, nodeoff, length(pcatlist), "\n")
-  for(cat in 1:length(pcatlist[[idnode]])) {
-    off <- offset + nodeoff*(cat-1)
-    prob <- probTreeToMatrix(ptree[[cat]], idx[-1], pcatlist, prob, off)
-  }
-  return(prob)
-}
-
-
-.jointProb <- function(numnodes, nodes, parents, probabilities, categories) {
-  ##cat(nodes, "\n")
-  nodesOrder <- orderNodesDescend(parents)
-  while(length(nodesOrder) < numnodes) {
-    i <- 1
-    while(sum(nodesOrder==i)>0)
-      i <- i + 1
-    nodesOrder <- c(nodesOrder, i)
-  }
-  if(length(parents) < numnodes) {
-    parents <- c(parents, vector("list", numnodes-length(parents)))
-  }
-  ##cat("\nJointProb" , numnodes, length(parents), nodesOrder, "\n")
-
-  proc.time()
-  
-  for(i in 1:numnodes) {
-    nnode <- nodesOrder[i]
-    ptree <- NULL
-    idtree <- NULL
-    if(i > 1)
-      idtree <- nodesOrder[1:(i-1)]
-    idleafpars <- NULL
-    if(length(parents[[nnode]]) > 0)
-      idleafpars <- 1:length(parents[[nnode]])
-    ##cat("add ", i, ":", nnode, " " ,parents[[nnode]], "\n")
-    ptree <- probTreeAddLeaf(ptree,
-                              probabilities[[nnode]],
-                              parents[[nnode]],
-                              idtree,
-                              idleafpars, 
-                              categories)
-  }
-
-  ## list the joint prob in a matrix
-  n <- 1
-  for(i in 1:numnodes)
-    n <- n*length(categories[[i]])
-  prob <- rep(0, n)
-  prob <- probTreeToMatrix(ptree, nodesOrder, categories, prob, 1)
-  proc.time()
-  return(prob)
-}
-
 
 setMethod("cnJointProb", "catNetwork",
-          function(object) {
+          function(object, nodes) {
             if(!is(object, "catNetwork"))
               stop("catNetwork object is required.")
-            return(.jointProb(object@numnodes, object@nodes, object@parents, object@probabilities, object@categories))
+
+            if(is.character(nodes))
+              nodes <- sapply(nodes, function(cc) {
+                id <- which(object@nodes == cc)
+                if(length(id)>0)
+                  return(id[1])
+                return(-1)
+              })
+            nodes <- as.integer(nodes)
+            for(node in nodes)
+              if(node < 0 || nodes > object@numnodes)
+                stop("Invalid nodes")
+              
+            pmat <- NULL
+            imat <- NULL
+            for(node in nodes) {
+              res <- probMatAddNode(object, node, pmat, imat)
+              if(is.null(res))
+                break
+              pmat <- res[[1]]
+              imat <- res[[2]]
+            }
+            if(is.null(res)) 
+              return(NULL)
+            pjoint <- cbind(imat, p=apply(pmat, 1, "prod"))
+            return(pjoint)
+          })
+
+## calculates P(x|y)
+## x and y should be named
+setMethod("cnCondProb", "catNetwork",
+          function(object, x, y) {
+            if(!is(object, "catNetwork"))
+              stop("catNetwork object is required.")
+
+            xnodes <- names(x)
+            ynodes <- names(y)
+            if(is.character(xnodes))
+              xnodes <- sapply(xnodes, function(cc) {
+                id <- which(object@nodes == cc)
+                if(length(id)>0)
+                  return(id[1])
+                return(-1)
+              })
+            xnodes <- as.integer(xnodes)
+            if(length(xnodes) < 1)
+              stop("x cannot be empty")
+            if(is.character(ynodes))
+              ynodes <- sapply(ynodes, function(cc) {
+                id <- which(object@nodes == cc)
+                if(length(id)>0)
+                  return(id[1])
+                return(-1)
+              })
+            ynodes <- as.integer(ynodes)
+            for(i in 1:length(ynodes)) {
+              id <- which(xnodes == ynodes[i])
+              if(length(id) >= 1) {
+                if(x[id[1]] != y[i])
+                  stop("Wrong expression")
+                ## P(X, z=a|Y, z=a) = P(X|Y), remove z
+                x <- x[-id[1]]
+                y <- y[-i]
+                xnodes <- xnodes[-id[1]]
+                ynodes <- ynodes[-i]
+              }
+            }
+            nodes <- c(xnodes, ynodes)
+            vals <- c(x, y)
+            for(i in 1:length(nodes)) {
+              node <- nodes[i]
+              if(node < 0 || nodes > object@numnodes)
+                stop("Invalid nodes")
+              if(is.character(vals[i])) {
+                id <- which(object@categories[[node]] == vals[i])
+                if(length(id) < 0)
+                  stop("Invalid value for node ", node)
+                vals[i] <- id[1]
+              }
+              vals[i] <- as.integer(vals[i])
+              if(vals[i] < 0 || vals[i] > length(object@categories[[node]]))
+                stop("Invalid value for node ", node)
+            }
+            xvals <- vals[1:length(xnodes)]
+            yvals <- NULL
+            if(length(xnodes) < length(nodes))
+              yvals <- vals[(length(xnodes)+1):length(nodes)]
+            
+            pmat <- NULL
+            imat <- NULL
+            for(node in nodes) {
+              res <- probMatAddNode(object, node, pmat, imat)
+              if(is.null(res))
+                break
+              pmat <- res[[1]]
+              imat <- res[[2]]
+            }
+
+            if(!is.null(res)) {
+              pjoint <- apply(pmat, 1, "prod")
+              ixnodes <- sapply(xnodes, function(nn) which(colnames(imat)==nn)[1])
+              iynodes <- sapply(ynodes, function(nn) which(colnames(imat)==nn)[1])
+              
+              py <- 1
+              if(length(iynodes) > 0) {
+                jy <- NULL
+                for(j in 1:nrow(imat))
+                  if(prod(imat[j,iynodes] == yvals))
+                    jy <- c(jy, j)
+                py <- sum(pjoint[jy])
+                jx <- NULL
+                for(j in 1:nrow(imat))
+                  if(prod(imat[j,ixnodes] == xvals)*prod(imat[j,iynodes] == yvals))
+                    jx <- c(jx, j)
+              }
+              else {
+                jx <- NULL
+                for(j in 1:nrow(imat))
+                  if(prod(imat[j,ixnodes] == xvals))
+                    jx <- c(jx, j)
+              }
+              px <- sum(pjoint[jx])
+              return(px/py)
+            }
+
+            ## approximate from a sample
+            warning("The required probability will be approximated")
+            ps <- cnSamples(object, floor(1024*exp(log(object@maxCategories)*(1+object@maxParents))), as.index = TRUE)
+            px <- 0
+            py <- 0
+            for(j in 1:nrow(ps)) {
+              if(prod(ps[j, ynodes] == yvals)) {
+                py <- py+1
+                if(prod(ps[j,xnodes] == xvals))
+                  px <- px+1
+              }
+            }
+            if(py < 1) {
+              warning("Can't calculate the probability")
+              return(-1)
+            }
+            return(px/py)
           })
 
 setMethod("cnJointKLdist", "catNetwork",
@@ -115,8 +223,10 @@ setMethod("cnJointKLdist", "catNetwork",
               stop("catNetwork object is required.")
             if(object1@numnodes != object2@numnodes)
               stop("Number of nodes should be equal.")
-            p1 <- .jointProb(object1)
-            p2 <- .jointProb(object2)
+            pm1 <- cnJointProb(object1)
+            pm2 <- cnJointProb(object2)
+            p1 <- pm1[,ncol(pm1)]
+            p2 <- pm2[,ncol(pm2)]
             probs <- p1
             probs[p2==0] <- 0
             p2[p2==0] <- 1

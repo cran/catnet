@@ -45,12 +45,13 @@ static const R_CallMethodDef R_CallDef[] = {
 void R_init_catnet(DllInfo *info)
 {
 	R_registerRoutines(info,NULL,R_CallDef,NULL,NULL);
-	//printf("ccnInit\n");
+	//Rprintf("ccnInit\n");
 	g_memcounter = 0;
 }
 
 void R_unload_catnet(DllInfo *info)
 {
-	//printf("ccnUnload\n");
+	//Rprintf("ccnUnload\n");
 	catnetReleaseCache();
 }
+
