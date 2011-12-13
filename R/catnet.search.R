@@ -68,6 +68,25 @@ cnSearchOrder <- function(data, perturbations = NULL,
   }
   if(numnodes < 1 || numsamples < 1)
     stop("Invalid sample")
+
+  if(!is.null(nodeCats))
+    if(!is.list(nodeCats) || length(nodeCats) != numnodes)
+      stop("Wrong nodeCats parameter")
+
+  r <- .categorizeSample(data, perturbations, object=NULL, nodeCats=nodeCats, ask=TRUE)
+  data <- r$data
+  perturbations <- r$perturbations
+  categories <- r$categories
+  maxCategories <- r$maxCategories
+
+  nodenames <- rownames(data)    
+  if(length(nodenames) < numnodes)
+    nodenames <- seq(1,numnodes)
+  if(length(nodenames) > 1)
+    for(i in 2:length(nodenames))
+      if(length(which(nodenames[1:(i-1)] == nodenames[i])) > 0) {
+        stop("Repeated node names ", nodenames[i])
+      }
   
   maxParentSet <- as.integer(maxParentSet)
   if(maxParentSet < 1) {
@@ -116,31 +135,42 @@ cnSearchOrder <- function(data, perturbations = NULL,
     }
   }
 
-  if(!is.null(parentsPool) && !is.list(parentsPool) && length(parentsPool) != numnodes)
-    stop("Wrong parentsPool")
+  if(!is.null(parentsPool)) {
+    if(!is.list(parentsPool) || length(parentsPool) != numnodes)
+      stop("Wrong parentsPool parameter")
+    for(i in 1:numnodes)
+      if(is.character(parentsPool[[i]])) {
+        ids <- NULL
+	for(ch in parentsPool[[i]]) {
+          id <- which(nodenames == ch)
+          if(length(id) <= 0)
+            stop("Invalid parentsPool")
+          ids <- c(ids, id[1])
+        }
+        parentsPool[[i]] <- as.integer(ids)
+      }
+  }
     
   if(!is.null(fixedParents)) {
-    for(i in 1:numnodes)
+    if(!is.list(fixedParents) || length(fixedParents) != numnodes)
+      stop("Wrong fixedParents parameter")
+    for(i in 1:numnodes) {
       if(length(fixedParents[[i]]) > maxParentSet) {
         fixedParents[[i]] <- fixedParents[[i]][1:maxParentSet]
         warning("fixedParents for node ", i, " exceeds the maximum parent size. It's reduced to ", maxParentSet)
       }
-  }
-
-  r <- .categorizeSample(data, perturbations, object=NULL, nodeCats=nodeCats, ask=TRUE)
-  data <- r$data
-  perturbations <- r$perturbations
-  categories <- r$categories
-  maxCategories <- r$maxCategories
-
-  nodenames <- rownames(data)    
-  if(length(nodenames) < numnodes)
-    nodenames <- seq(1,numnodes)
-  if(length(nodenames) > 1)
-    for(i in 2:length(nodenames))
-      if(length(which(nodenames[1:(i-1)] == nodenames[i])) > 0) {
-        stop("Repeated node names ", nodenames[i])
+      if(is.character(fixedParents[[i]])) {
+        ids <- NULL
+	for(ch in fixedParents[[i]]) {
+          id <- which(nodenames == ch)
+          if(length(id) <= 0)
+            stop("Invalid fixedParents")
+          ids <- c(ids, id[1])
+        }
+        fixedParents[[i]] <- as.integer(ids)
       }
+    }
+  }
 
   if(is.null(nodeOrder))
     nodeOrder <- 1:numnodes
@@ -336,6 +366,25 @@ cnSearchSA <- function(data, perturbations=NULL,
   if(numnodes < 1 || numsamples < 1)
     stop("Insufficient data")
 
+  if(!is.null(nodeCats))
+    if(!is.list(nodeCats) || length(nodeCats) != numnodes)
+      stop("Wrong nodeCats parameter")
+
+  r <- .categorizeSample(data, perturbations, object=NULL, nodeCats=nodeCats, ask=TRUE)
+  data <- r$data
+  perturbations <- r$perturbations
+  categories <- r$categories
+  maxCategories <- r$maxCategories
+
+  nodenames <- rownames(data)
+  if(length(nodenames) < numnodes)
+    nodenames <- seq(1, numnodes)
+  if(length(nodenames) > 1)
+    for(i in 2:length(nodenames))
+      if(length(which(nodenames[1:(i-1)] == nodenames[i])) > 0) {
+        stop("Repeated node names ", nodenames[i])
+      }
+
   maxParentSet <- as.integer(maxParentSet)
   if(maxParentSet < 1) {
     if(!is.null(parentSizes))
@@ -352,25 +401,40 @@ cnSearchSA <- function(data, perturbations=NULL,
   else
     parentSizes <- NULL
 
-  if(!is.null(parentsPool) && !is.list(parentsPool) && length(parentsPool) != numnodes)
-    stop("Wrong parentsPool")
+  if(!is.null(parentsPool)) {
+    if(!is.list(parentsPool) || length(parentsPool) != numnodes)
+      stop("Wrong parentsPool parameter")
+    for(i in 1:numnodes)
+      if(is.character(parentsPool[[i]])) {
+        ids <- NULL
+	for(ch in parentsPool[[i]]) {
+          id <- which(nodenames == ch)
+          if(length(id) <= 0)
+            stop("Invalid parentsPool")
+          ids <- c(ids, id[1])
+        }
+        parentsPool[[i]] <- as.integer(ids)
+      }
+  }
 
   if(!is.null(fixedParents)) {
-    if(!is.list(fixedParents) && length(fixedParents) != numnodes)
-      stop("Wrong fixedParents")
-    for(i in 1:numnodes)
+    if(!is.list(fixedParents) || length(fixedParents) != numnodes)
+      stop("Wrong fixedParents parameter")
+    for(i in 1:numnodes) {
       if(length(fixedParents[[i]]) > maxParentSet) {
         fixedParents[[i]] <- fixedParents[[i]][1:maxParentSet]
         warning("fixedParents for node ", i, " exceeds the maximum parent size. It's reduced to ", maxParentSet)
       }
-  }
-
-  if(!is.null(edgeProb)) {
-    if(!is.matrix(edgeProb) || nrow(edgeProb) != numnodes || ncol(edgeProb) != numnodes)
-      stop("edgeProb should be square matrix of length the number of nodes")
-    for(i in 1:numnodes) {
-      edgeProb[i, edgeProb[i,] < 0] <- 0
-      edgeProb[i, edgeProb[i,] > 1] <- 1
+      if(is.character(fixedParents[[i]])) {
+        ids <- NULL
+	for(ch in fixedParents[[i]]) {
+          id <- which(nodenames == ch)
+          if(length(id) <= 0)
+            stop("Invalid fixedParents")
+          ids <- c(ids, id[1])
+        }
+        fixedParents[[i]] <- as.integer(ids)
+      }
     }
   }
   
@@ -401,16 +465,6 @@ cnSearchSA <- function(data, perturbations=NULL,
     warning("maxIter is set to tempCheckOrders")
     maxIter <- tempCheckOrders
   }
-
-  r <- .categorizeSample(data, perturbations, object=NULL, nodeCats=nodeCats, ask=TRUE)
-  data <- r$data
-  perturbations <- r$perturbations
-  categories <- r$categories
-  maxCategories <- r$maxCategories
-
-  nodenames <- rownames(data)
-  if(length(nodenames) < numnodes)
-    nodenames <- seq(1, numnodes)
 
   catIndices <- NULL
   if(!is.null(nodeCats)) {

@@ -145,39 +145,47 @@ cnNodeSampleLoglik <- function(node, parents, data, perturbations = NULL) {
   if(!is.matrix(data) && !is.data.frame(data))
     stop("data should be a matrix or data frame of node categories")
 
+  if(is.numeric(data) && !is.integer(data))
+      stop("only categorical data is accepted")
+  
   if(is.matrix(data)) {
     numnodes <- dim(data)[1]
-    numsamples <- dim(data)[2]
+    numSamples <- dim(data)[2]
     nodenames <- rownames(data)
   }
   else {
     numnodes <- dim(data)[2]
-    numsamples <- dim(data)[1]
+    numSamples <- dim(data)[1]
     nodenames <- colnames(data)
   }
-  
-  if(numsamples < 1)
+  if(!is.character(nodenames) || length(nodenames) != numnodes)
+    stop("Named nodes are expected")
+ 
+  if(numSamples < 1)
     stop("No samples are given\n")
 
   if(length(parents) == 0)
     parents <- NULL
-     
+   
   r <- .categorizeSample(data, perturbations)
   data <- r$data
   perturbations <- r$perturbations
   categories <- r$categories
   maxCategories <- r$maxCategories
 
-  if(length(nodenames) > 0) {
-    if(is.character(node))
-      node <- which(nodenames == node)
-    if(length(parents)>0 && is.character(parents))
-      parents <- sapply(parents, function(par) which(nodenames == par))
-  }
-
-  if(!is.list(node) && !is.list(parents)) {
+  if(is.character(node))
+    node <- sapply(node, function(nn) return(which(nodenames == nn)))
+  if(!is.numeric(node) || sum(node < 1) || sum(node > numnodes))
+    stop("Incorect node ",node)
+  node <- as.integer(node)
+  
+  if(length(node)==1 && !is.list(parents)) {
     if(node < 1 || node > numnodes)
       stop("Incorrect node ", node)
+    if(length(parents)>0 && is.character(parents))
+      parents <- sapply(parents, function(pp) which(nodenames == pp))
+    parents <- as.integer(parents)
+    
     loglik <- -Inf
     if(!is.null(perturbations)) {      
       subdata <- data[, perturbations[node,]==0]
@@ -191,14 +199,17 @@ cnNodeSampleLoglik <- function(node, parents, data, perturbations = NULL) {
     return(loglik)
   }
 
-  if(is.list(node) && is.list(parents)) {
+  if(length(node) > 1 && is.list(parents)) {
     if(length(node) != length(parents))
       stop("`node' and `parents' lists should be of equal length")
     loglik <- rep(-Inf, length(node))
     for(i in 1:length(node)) {
       nod <- node[[i]]
       par <- parents[[i]]
-      ##cat("nod=", nod, ", par=", par, "\n")
+      if(length(par)>0 && is.character(par))
+        par <- sapply(par, function(pp) which(nodenames == pp))
+      par <- as.integer(par)
+      
       if(nod < 1 || nod > numnodes)
         stop("Incorrect node ", nod)
       if(!is.null(perturbations)) {
@@ -224,20 +235,25 @@ cnNodeSampleProb <- function(node, parents, data, perturbations = NULL) {
   if(!is.matrix(data) && !is.data.frame(data))
     stop("data should be a matrix or data frame of node categories")
 
+  if(is.numeric(data) && !is.integer(data))
+      stop("only categorical data is accepted")
+  
   if(is.matrix(data)) {
     numnodes <- dim(data)[1]
-    numsamples <- dim(data)[2]
+    numSamples <- dim(data)[2]
     nodenames <- rownames(data)
   }
   else {
     numnodes <- dim(data)[2]
-    numsamples <- dim(data)[1]
+    numSamples <- dim(data)[1]
     nodenames <- colnames(data)
   }
   
-  if(numsamples < 1)
+  if(numSamples < 1)
     stop("No samples are given\n")
-
+  if(length(node) != 1 || length(parents) != 1)
+    stop("Only one node is expected\n")
+  
   if(length(parents) == 0)
     parents <- NULL
   
@@ -248,12 +264,16 @@ cnNodeSampleProb <- function(node, parents, data, perturbations = NULL) {
       parents <- sapply(parents, function(par) which(nodenames == par))
   }
 
+  if(is.character(node))
+    node <- sapply(node, function(nn) return(which(nodenames == nn)))
   node <- as.integer(node)
   if(!is.integer(node))
     stop("Not valid node")
   if(node < 1 || node > numnodes)
     stop("Incorrect node ", node)
   if(!is.null(parents)) {
+    if(length(parents)>0 && is.character(parents))
+      parents <- sapply(parents, function(pp) which(nodenames == pp))
     parents <- as.integer(parents)
     if(!is.integer(parents))
       stop("Not valid parents")
@@ -266,7 +286,7 @@ cnNodeSampleProb <- function(node, parents, data, perturbations = NULL) {
   maxCategories <- r$maxCategories
   
   nodeprob <- initSampleProb(node, parents, categories, seq(1,length(parents)))
-  for(j in (1:numsamples)) {
+  for(j in (1:numSamples)) {
     ps <- data[,j]
     ## increment frequency
     nodeprob <- updateSampleProb(node, parents, categories,
@@ -309,21 +329,16 @@ setMethod("cnNodeLoglik", c("catNetwork"),
               norder <- order(object@nodes)
               object <- cnReorderNodes(object, norder)
               if(is.numeric(node))
-                node <- which(norder == node)
+                node <- sapply(node, function(nn) return(which(norder == nn)))
             }
             
             if(prod(tolower(rownames) == tolower(object@nodes)) == 0)
               stop("The data names should correspond to the object nodes.")
 
-            if(is.list(node) || is.vector(node)) {
+            if(is.character(node))
               node <- sapply(node, function(nn) return(which(rownames == nn)))
-            }
-            else {
-              if(is.character(node))
-                node <- which(rownames == node)
-              if(!is.numeric(node) || node < 1 || node > object@nodes)
-                stop("Wrong node")
-            }
+            if(!is.numeric(node) || sum(node < 1) || sum(node > object@numnodes))
+              stop("Wrong node")
             node <- as.integer(node)
  
             r <- .categorizeSample(data, perturbations, object, ask=FALSE)

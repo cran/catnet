@@ -6,8 +6,8 @@
   ## make sure data and object's nodes are the same
   
   if(is.matrix(data)) {
-    numnodes <- nrow(data)
-    numsamples <- ncol(data)
+    numNodes <- nrow(data)
+    numSamples <- ncol(data)
 
     ## save row/column names
     samplenames <- dimnames(data)
@@ -16,8 +16,8 @@
     ##}
     
     maxCategories <- 1
-    categories <- vector("list", numnodes)
-    for(i in 1:numnodes) {
+    categories <- vector("list", numNodes)
+    for(i in 1:numNodes) {
 
       ids <- !is.na(data[i,])
 
@@ -50,8 +50,7 @@
       lencat <- length(cats)
       
       if(is.numeric(data[i,ids]) && is.null(object)) {
-        if(!is.integer(data[i,ids]))
-          data[i,ids] <- as.integer(data[i,ids]) - min(data[i,ids]) + 1
+        data[i,ids] <- as.integer(data[i,ids]) - min(data[i,ids], cats) + 1
         data[i,data[i,ids]<1] <- 1
         data[i,data[i,ids]>lencat] <- lencat
       }
@@ -65,7 +64,7 @@
         maxCategories <- lencat
     }
     
-    data <- matrix(as.integer(data), nrow=numnodes)
+    data <- matrix(as.integer(data), nrow=numNodes)
     dimnames(data) <- samplenames
     
     if(!is.null(perturbations) && !is.matrix(perturbations))
@@ -74,15 +73,15 @@
   } ## is.matrix
   else {
     ## data is data.frame format
-    numnodes <- ncol(data)
-    numsamples <- nrow(data)
+    numNodes <- ncol(data)
+    numSamples <- nrow(data)
     
     fdata <- data
-    data <- matrix(rep(NA, numnodes*numsamples), nrow=numnodes)
+    data <- matrix(rep(NA, numNodes*numSamples), nrow=numNodes)
     
     maxCategories <- 1
-    categories <- vector("list", numnodes)
-    for(i in 1:numnodes) {
+    categories <- vector("list", numNodes)
+    for(i in 1:numNodes) {
 
       ids <- !is.na(fdata[,i])
 
@@ -115,7 +114,7 @@
 
       if(is.numeric(fdata[ids,i]) && is.null(object)) {
         ## fdata is actually indices
-        data[i,ids] <- as.integer(fdata[ids,i]) - min(fdata[ids,i]) + 1
+        data[i,ids] <- as.integer(fdata[ids,i]) - min(fdata[ids,i], cats) + 1
         data[i, data[i,ids]<1] <- 1
         data[i, data[i,ids]>lencat] <- lencat
       }
@@ -139,13 +138,14 @@
     }
   }
 
-  if(length(rownames(data)) < numnodes)
-    rownames(data) <- 1:numnodes
+  if(length(rownames(data)) < numNodes)
+    rownames(data) <- 1:numNodes
   
-  if(ask && maxCategories*maxCategories > numsamples) {
-    cat("The sample size is too small. Continue? ('y' or 'n')\n")
-    if(scan("", what="character", nmax=1, quiet=TRUE) != "y" ) 
-      stop("Operation canceled")
+  if(ask && maxCategories*maxCategories > numSamples) {
+    #cat("The sample size is too small. Continue? ('y' or 'n')\n")
+    #if(scan("", what="character", nmax=1, quiet=TRUE) != "y" ) 
+    #  stop("Operation canceled")
+    warning("Small sample size")
   }
 
   if(ask && maxCategories > 16) {
@@ -162,6 +162,6 @@
       stop("Incompatible perturbation dimensions.\n")
   }
   
-  return(list(data=data, categories=categories, maxCategories=maxCategories, perturbations=perturbations))
+  return(list(data=data, categories=categories, maxCategories=as.integer(maxCategories), perturbations=perturbations))
 }
 

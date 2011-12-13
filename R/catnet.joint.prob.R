@@ -34,6 +34,7 @@ probMatAddNode <- function(object, node, pmat, imat) {
     return(list(pmat,imat))
   }
   ipar <- NULL
+  res <- TRUE
   for(par in pars) {
     id <- which(colnames(pmat)==par)
     if(length(id) < 1) {
