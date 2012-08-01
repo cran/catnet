@@ -261,8 +261,8 @@ the \Rfunction{dot} executable from Graphviz or directly visualized by \Rfunctio
 There is an auxiliary to \Rfunction{cnPlot} function called \Rfunction{cnDot} that generates and saves dot-files specifically. 
 
 \begin{verbatim}
-cnPlot(cnet1)
-cnDot(cnet1, "cnet1.dot")
+#cnPlot(cnet1)
+#cnDot(cnet1, "cnet1.dot")
 \end{verbatim}
 
 \subsection{Topological Node Order}
@@ -798,6 +798,7 @@ Chickering, D. M.,
 Cooper, G. F., Herskovitz, E.,
 \newblock{A Bayesian method for the induction of probabilistic networks from data.}
 \newblock{1992, Mach. Learn., 9, pp. 309-347}
+
 
 \bibitem[Daly \& Shen(2007)]{daly}
 Daly, R., Shen, Q., 

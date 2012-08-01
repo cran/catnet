@@ -1,7 +1,7 @@
 .onLoad <- function(lib, pkg) {
   dotpath <- as.character(Sys.getenv("R_DOTVIEWER"))
   if(dotpath == "") {
-    pl <- .packages(all=TRUE)
+    pl <- .packages(all.available=TRUE)
     err <- FALSE
     for(pp in pl)
       if(pp=="igraph") {
