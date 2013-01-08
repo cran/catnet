@@ -10,10 +10,8 @@
       }
     if(err)
       Sys.setenv(R_CATNET_USE_IGRAPH=TRUE)
-    else {
+    else 
       Sys.setenv(R_CATNET_USE_IGRAPH=FALSE)
-      packageStartupMessage("No plotting capabilities detected. Type 'help(catnet)'\n")
-    }
   }
   else {
     Sys.setenv(R_CATNET_USE_IGRAPH=FALSE)

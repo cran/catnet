@@ -27,7 +27,7 @@ cnEdgeDistancePearson <- function(data, perturbations) {
   mat <- .Call("ccnPearsonPairwise", 
                   data, perturbations, 
                   PACKAGE="catnet")
-  klmat <- matrix(mat, numnodes, numnodes)
+  klmat <- matrix(mat, nrow=numnodes, ncol=numnodes)
   rownames(klmat)<-nodenames
   colnames(klmat)<-nodenames
   return(klmat)

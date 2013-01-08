@@ -1,12 +1,7 @@
 
-importClassesFrom(methods, ANY, character, list, logical, matrix,
-                  missing, "NULL", numeric, oldClass, vector)
-importMethodsFrom(methods, coerce, initialize, show)
-importFrom(methods, "@<-", as, callGeneric, is, isVirtualClass, new,
-           slot, "slot<-", slotNames, validObject)
-importFrom(stats, as.dist, dhyper, phyper, runif)
-importFrom(tools, package.dependencies)
-importFrom(utils, CRAN.packages, modifyList)
+importClassesFrom(methods, ANY, character, list, logical, matrix, missing, "NULL", numeric, vector)
+importFrom(methods, as, is, new, validObject)
+importFrom(stats, runif)
 
 exportClasses(catNetwork, catNetworkEvaluate, catNetworkDistance, CPDAG)
 
@@ -16,7 +11,7 @@ exportMethods(
 	cnNumNodes, cnNodes, 
 	cnSubNetwork, cnReorderNodes, 
 	cnEdges, cnMatEdges, 
-	cnParents, cnMatParents, 		
+	cnParents, cnMatParents, 
 	cnProb, cnPlotProb, cnSetProb, 
 	cnNodeMarginalProb, cnJointProb, cnCondProb, 
 	cnComplexity, cnOrder, 

@@ -475,7 +475,7 @@ cnSearchSA <- function(data, perturbations=NULL,
     mat <- .Call("ccnKLPairwise", 
                   data, perturbations, 
                   PACKAGE="catnet")
-    klmat <- matrix(mat, numnodes, numnodes)
+    klmat <- matrix(mat, nrow=numnodes, ncol=numnodes)
     dirProb <-t(klmat)/(klmat+t(klmat))
     rownames(dirProb)<-nodenames
     colnames(dirProb)<-nodenames

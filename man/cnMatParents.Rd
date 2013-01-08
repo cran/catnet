@@ -31,4 +31,3 @@ cnMatParents(object, nodeorder)
 \seealso{\code{\link{cnParents}}, \code{\link{cnMatEdges}} }
 
 \keyword{methods}
-\keyword{graphs}

@@ -130,7 +130,7 @@ cnSearchHist <- function(data, perturbations=NULL,
                   echo, 
                   PACKAGE="catnet")
   
-  mhisto <- matrix(vhisto, numnodes, numnodes)
+  mhisto <- matrix(vhisto, nrow=numnodes, ncol=numnodes)
   rownames(mhisto)<-nodenames
   colnames(mhisto)<-nodenames
 

@@ -330,7 +330,7 @@ setMethod("cnMatEdges", "catNetwork",
             } 
             if(is.null(mout)) 
               return(NULL) 
-            return(matrix(mout, nc=2, byrow=TRUE)) 
+            return(matrix(mout, ncol=2, byrow=TRUE)) 
           }) 
  
 # returns list 
@@ -377,7 +377,7 @@ setMethod("cnParents", c("catNetwork", "vector"),
  
 matParents <- function(object, nodeorder) { 
             n <- object@numnodes 
-            mat <- matrix(rep(0, n*n), n, n) 
+            mat <- matrix(rep(0, n*n), nrow=n, ncol=n) 
             for(j in 1:length(object@parents)) { 
               plist <- object@parents[[j]] 
               if(length(plist) == 0) 

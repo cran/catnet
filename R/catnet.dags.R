@@ -323,3 +323,117 @@ setMethod("dag2cpdag", "catNetwork",
           return(cpdag)
 	})  
   
+##setMethod("cnMarParents", "catNetwork",   
+##	function(object) {
+cnMarparents <- function(object) {
+          flags <- NULL
+          n <- object@numnodes
+	  if(!is.null(flags) && length(flags) != n)
+            flags <- NULL
+          an <- object@parents
+          head <- an
+          brep <- TRUE
+          while(brep) {
+            brep <- FALSE
+            newhead <- vector("list",n)
+            for(nh in 1:n) {
+              vh <- head[[nh]]
+              if(length(vh)>0) {
+                pars <- NULL
+                for(nvh in vh) {
+                  for(pp in object@parents[[nvh]]) {
+                    if(sum(an[[nh]]==pp)>0)
+                      next
+                    an[[nh]] <- c(an[[nh]], pp)
+                    pars <- c(pars, pp)
+                  }
+                }
+                if(!is.null(pars)) {
+                  newhead[[nh]] <- pars
+                  brep <- TRUE
+                }
+              }
+            }
+            head <- newhead
+          }
+          if(!is.null(flags)) {
+            head <- lapply(1:n, function(i) if(flags[i]) return(an[[i]]) else return(NULL))
+            an <- head
+          }
+          
+#for(i in 1:n)
+#cat(i, ": ", an[[i]], "\n")
+
+          tn <- lapply(1:n, function(i) return(i))
+          head <- tn
+          brep <- TRUE
+          while(brep) {
+            brep <- FALSE
+            newhead <- vector("list",n)
+            for(nh in 1:n) {
+              vh <- head[[nh]]
+              if(length(vh)>0) {
+                childs <- NULL
+                for(nvh in vh) {
+                  for(pp in 1:n) {                    
+                    if(sum(object@parents[[pp]]==nvh)<1)
+                      next
+                    if(sum(tn[[nh]]==pp)>0)
+                      next
+                    tn[[nh]] <- c(tn[[nh]], pp)
+                    childs <- c(childs, pp)
+                  }
+                }
+                if(!is.null(childs)) {
+                  newhead[[nh]] <- childs
+                  brep <- TRUE
+                }
+              }
+            }
+            head <- newhead
+          }
+
+#for(i in 1:n)
+#cat(i, ": ", tn[[i]], "\n")
+
+          for(i in 1:n)
+            if(length(an[[i]]) > 0)
+              tn[[i]] <- c(an[[i]], tn[[i]])
+
+          b <- vector("list",n)
+          for(k in 1:n) {
+            for(i in 1:n) {
+              if(k==i || sum(an[[k]]==i)>0) 
+                next
+              for(pp in tn[[i]]) {
+                if(sum(b[[k]]==pp)>0)
+                  next
+                b[[k]] <- c(b[[k]], pp)
+              }
+            }
+          }
+          
+          r <- vector("list",n)
+          for(k in 1:n) {
+            for(i in 1:n) {
+              if(k == i || sum(b[[k]]==i)>0)
+                next
+              ins <- FALSE
+              for(pp in an[[i]])
+                if(sum(b[[k]]==pp)>0) {
+                  ins <- TRUE
+                  break
+                }
+              if(ins)
+                next
+              r[[k]] <- c(r[[k]],i)
+            }
+          }
+          
+          names(r) <- object@nodes
+          r <- lapply(r, function(rr) object@nodes[rr])
+          return(r)
+}
+##	})  
+  
+
