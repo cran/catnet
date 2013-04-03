@@ -50,7 +50,6 @@ SEXP catnetParHistogram(SEXP rSamples, SEXP rPerturbations,
 			SEXP rThreads, SEXP rUseCache, SEXP rEcho);
 SEXP catnetLoglik(SEXP cnet, SEXP rSamples, SEXP rPerturbations, SEXP rBySample);
 SEXP catnetNodeLoglik(SEXP cnet, SEXP rNode, SEXP rSamples, SEXP rPerturbations);
-SEXP catnetNodeLoglikError(SEXP cnet, SEXP rNode, SEXP rSamples, SEXP rPerturbations);
 SEXP catnetSetProb(SEXP cnet, SEXP rSamples, SEXP rPerturbations);
 SEXP catnetEntropyPairwise(SEXP rSamples, SEXP rPerturbations);
 SEXP catnetEntropyOrder(SEXP rSamples, SEXP rPerturbations);

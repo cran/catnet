@@ -34,7 +34,6 @@ static const R_CallMethodDef R_CallDef[] = {
 	{"ccnEntropyOrder", (DL_FUNC)&catnetEntropyOrder, 2},
 	{"ccnKLPairwise", (DL_FUNC)&catnetKLpairwise, 2},
 	{"ccnPearsonPairwise", (DL_FUNC)&catnetPearsonPairwise, 2},
-	{"ccnNodeLoglikError", (DL_FUNC)&catnetNodeLoglikError, 4},
 	{"ccnMarginalProb", (DL_FUNC)&catnetMarginalProb, 2},
 	{"ccnReleaseCache", (DL_FUNC)&catnetReleaseCache, 0},
 	{"ccnSamples", (DL_FUNC)&catnetSamples, 4},

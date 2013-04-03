@@ -1,4 +1,4 @@
-95ae6edf6c7fb1a2b2ade2300a250d99 *DESCRIPTION
+0f578ab1e3fae04923143724fc3184ea *DESCRIPTION
 7c469ae7c5c49658e280e458bf8afa42 *NAMESPACE
 30f6b8421f766a30eed028b8f00523dd *R/catnet.bif.R
 76450f24cc00da5805820d576f6edd4e *R/catnet.categor.R
@@ -11,7 +11,7 @@ a02c5f6c3e984371e42744d0b85a55aa *R/catnet.def.R
 2686c0a344d9c97f881f528f7d80b8f1 *R/catnet.entropy.R
 8529a85b3adaeb288ba81fbad7f069bd *R/catnet.find.R
 77a2c390517f69334534ede60ff6967b *R/catnet.histo.R
-36d89e8af90c390c44eb7ebf07a75c7b *R/catnet.joint.prob.R
+8ebbf10faee1100ac8f9394bf9cae712 *R/catnet.joint.prob.R
 c03b21c66fbfcd3c8737293073f7a526 *R/catnet.loglik.R
 c4c60ae37dc393c8d35eb2b99e3f80d4 *R/catnet.marginal.prob.R
 0843f349a1dc778a985b277503c59eec *R/catnet.pathway.R
@@ -38,7 +38,7 @@ c5b5774ff52bc0098957e4711d09aab8 *demo/cvKfold.r
 f8e8fc0ce46ca2b18f42072afafb585c *demo/novartis.r
 d7879b76868ea0fb3fd6cbd3c6f2e668 *demo/test.r
 ea3c668c537c6ea5cbb04be343208b57 *inst/doc/catnet.Rnw
-1054cce791a3876a03825633956fa926 *inst/doc/catnet.pdf
+1ac4d5f6ca07f749029f2eb2b33221bc *inst/doc/catnet.pdf
 8bca945f144976a95f10ff82bf9bbc2b *man/CPDAG-class.Rd
 1741c26de00a8a2a5af219dfd84d370a *man/alarm.Rd
 e26cba19153475e04a14ac849c163590 *man/as.igraph.Rd
@@ -92,16 +92,16 @@ cfa59ee09d662efbb4d642b035ebade1 *man/novartis.Rd
 eceb0a7e3ff3d19b813b06d0fdf6b4af *src/Makevars.win
 a2f6e5fc1c6e6be5bff5824c8aa50c4d *src/cache.cpp
 a788e809b4fa2d3d69c920160b3309f5 *src/cache.h
-a02bf63d376fd35814e5e83f28ae2aae *src/catnet_class.h
+846fa2ba25adc761d1493a0b4ced15e7 *src/catnet_class.h
 024833bb4f2057e813456044dfa319df *src/catnet_entropy.cpp
-c829fce419e439796b4428b4c7366d64 *src/catnet_rexport.cpp
-18b80cff860c4cd5758ad06d259f8a23 *src/catnet_rexport.h
+61c1f5c62a5be86cf10c33beb29495a6 *src/catnet_rexport.cpp
+95d52d5a81df06c1a5f64107903360b0 *src/catnet_rexport.h
 be78b3395eb7a3ab01305b7657d6ee1e *src/catnet_search.h
 ab699176688d26388b5bd302f60cd3d8 *src/catnet_search2.h
-bc05cd91a484c7269d242be0849d8239 *src/ccnInit.c
+c9c6190258bf73af85bf108e023c0473 *src/ccnInit.c
 d40b7bdd11ada87e5358ce68fafab5b1 *src/problist.h
 d72402465bb8c275a0b3352404442e99 *src/pthread.cpp
-6ad481a0013e0491981179cb0a344ccd *src/rcatnet.cpp
+9b2aa363023fb835b07c1ce3a865fbc6 *src/rcatnet.cpp
 d7537ebf7a6787295fa2ce9fc083a73d *src/rcatnet.h
 a32188122d319859c76e988a36aedc1a *src/rcatnet_hist.cpp
 07421940e337e85f615ff508aff2e59f *src/rcatnet_hist.h

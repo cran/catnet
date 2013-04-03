@@ -287,7 +287,8 @@ SEXP RCatnet::genRcatnet(const char * objectName = (const char*)"catNetwork") {
 	PROTECT(pint = NEW_INTEGER(m_numNodes));
 	INTEGER_POINTER(pint)[0] = m_numNodes;
 	for(node = 0; node < m_numNodes; node++) {
-		INTEGER_POINTER(pint)[node] = m_pProbLists[node]->sampleSize;
+		if(m_pProbLists[node])
+			INTEGER_POINTER(pint)[node] = m_pProbLists[node]->sampleSize;
 	}
 	SET_SLOT(cnet, install("nodeSampleSizes"), pint);
 	UNPROTECT(1);

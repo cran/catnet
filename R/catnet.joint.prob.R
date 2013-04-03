@@ -6,8 +6,8 @@ probMatAddNode <- function(object, node, pmat, imat) {
   pars <- object@parents[[node]]
   ncats <- length(object@categories[[node]])
   id <- which(colnames(pmat)==node)
-  if(!is.null(pmat) && nrow(pmat) > exp(log(2)*14)) {
-    warning("The table exceeds ", nrow(pmat), " rows.")
+  if(!is.null(pmat) && nrow(pmat) > exp(log(2)*15)) {
+    warning("The table exceeds ", nrow(pmat), " rows")
     return(NULL)
   }
   if(length(id) > 0)
@@ -73,7 +73,7 @@ probMatAddNode <- function(object, node, pmat, imat) {
 setMethod("cnJointProb", "catNetwork",
           function(object, nodes) {
             if(!is(object, "catNetwork"))
-              stop("catNetwork object is required.")
+              stop("catNetwork object is required")
 
             if(is.character(nodes))
               nodes <- sapply(nodes, function(cc) {
