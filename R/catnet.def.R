@@ -553,7 +553,7 @@ setMethod("cnComplexity", signature("catNetwork"), function(object, node=NULL, i
     return(as.integer(sum(pc))) 
   }
   if(is.character(node))
-    node <- which(object@nodes == node)
+    node <- sapply(node, function(str) which(object@nodes == str))
   cmplx <- 0
   if(!is.numeric(node)) { 
     pc <- sapply(1:object@numnodes, function(x) {
@@ -568,10 +568,12 @@ setMethod("cnComplexity", signature("catNetwork"), function(object, node=NULL, i
   } 
   else {
     if(include.unif)
-      cmplx <- as.integer(nodeComplexity(object, as.integer(node)))
+      cmplx <- sapply(node, function(i) as.integer(nodeComplexity(object, as.integer(i))))
     else {
-      idx <- 1:length(object@parents[[node]])
-      cmplx <- condNonUnifComplexity(node,object@parents[[node]], object@categories, object@probabilities[[node]], idx)
+      cmplx <- sapply(node, function(i) {
+        idx <- 1:length(object@parents[[i]])
+        condNonUnifComplexity(i,object@parents[[i]], object@categories, object@probabilities[[i]], idx)
+      })
     }
   }
   return(cmplx)

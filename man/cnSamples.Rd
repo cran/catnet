@@ -7,7 +7,8 @@
 \description{Generates samples from of a \code{catNetwork} object.}
 
 \usage{
-cnSamples(object, numsamples = 1, perturbations = NULL, output="frame", as.index=FALSE, naRate=0)
+cnSamples(object, numsamples = 1, perturbations = NULL, output="frame", 
+	as.index=FALSE, naRate=0)
 }
 
 \arguments{

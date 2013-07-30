@@ -625,7 +625,6 @@ SEXP catnetNodeLoglik(SEXP cnet, SEXP rNode, SEXP rSamples, SEXP rPerturbations)
 	// Danger Ahead
 	// We don's check that sample nodes actually correspond to the cnet's nodes
 	// Missmatch of categories possible
-
 	PROTECT(cnet);
 	RCatnet *rnet = new RCatnet(cnet);
 	UNPROTECT(1);
@@ -652,7 +651,6 @@ SEXP catnetNodeLoglik(SEXP cnet, SEXP rNode, SEXP rSamples, SEXP rPerturbations)
 		else
 			pSamples[j]--;
 	}
-
 	PROTECT(rvec = NEW_NUMERIC(nnodes));
 	pvec = NUMERIC_POINTER(rvec);
 
@@ -686,11 +684,11 @@ SEXP catnetNodeLoglik(SEXP cnet, SEXP rNode, SEXP rSamples, SEXP rPerturbations)
 	UNPROTECT(1); // rvec
 
 	delete rnet;
-	delete pnodes;	
+	CATNET_FREE(pnodes);
 
 	//char str[128];
 	//sprintf(str, "Mem Balance  %d\n", (int)g_memcounter);
-	//printf(str);
+	//Rprintf(str);
 
 	return rvec;
 

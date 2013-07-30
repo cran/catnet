@@ -1,4 +1,4 @@
-0f578ab1e3fae04923143724fc3184ea *DESCRIPTION
+e897b81b152f96efac37ed3fde539fe5 *DESCRIPTION
 7c469ae7c5c49658e280e458bf8afa42 *NAMESPACE
 30f6b8421f766a30eed028b8f00523dd *R/catnet.bif.R
 76450f24cc00da5805820d576f6edd4e *R/catnet.categor.R
@@ -6,7 +6,7 @@ cafc337bc0f812c28f453ea67e484de3 *R/catnet.chisq.R
 2b727a791f4b3bbf57a780c2bdbb7eab *R/catnet.class.R
 9aadf57d9c798cd4f124c351bf812608 *R/catnet.cluster.R
 e097d9a4872cd6a54dfea6202324b2cf *R/catnet.dags.R
-a02c5f6c3e984371e42744d0b85a55aa *R/catnet.def.R
+70173164a5ce13cba461a0987a539dbb *R/catnet.def.R
 43859253d0afbbf0ace215a183725123 *R/catnet.dist.R
 2686c0a344d9c97f881f528f7d80b8f1 *R/catnet.entropy.R
 8529a85b3adaeb288ba81fbad7f069bd *R/catnet.find.R
@@ -37,8 +37,9 @@ c5b5774ff52bc0098957e4711d09aab8 *demo/cvKfold.r
 1b10d8e4a7221c650af11f9a5f5db26e *demo/lungLoad.r
 f8e8fc0ce46ca2b18f42072afafb585c *demo/novartis.r
 d7879b76868ea0fb3fd6cbd3c6f2e668 *demo/test.r
+b2764486fced43eac53e0854ad668cb1 *inst/doc/catnet.R
 ea3c668c537c6ea5cbb04be343208b57 *inst/doc/catnet.Rnw
-1ac4d5f6ca07f749029f2eb2b33221bc *inst/doc/catnet.pdf
+08f6c38146db36955be013a303c9e08f *inst/doc/catnet.pdf
 8bca945f144976a95f10ff82bf9bbc2b *man/CPDAG-class.Rd
 1741c26de00a8a2a5af219dfd84d370a *man/alarm.Rd
 e26cba19153475e04a14ac849c163590 *man/as.igraph.Rd
@@ -78,23 +79,21 @@ a82a9ec1babcc2f1827ae7b5f07fb6e9 *man/cnPredict.Rd
 6d74fa36f711e54b160714fa2daebdbc *man/cnProb.Rd
 e2b0206cb912b746da28be634f7179b5 *man/cnRandomCatnet.Rd
 c1c671755e89bebeae8bbaa3a48fe51a *man/cnReorderNodes.Rd
-a17fa6f927fa4b0001b1d770f1f06be8 *man/cnSamples.Rd
+2496a60aef16f28ede7301a31a459653 *man/cnSamples.Rd
 31cff1175aa03388a33318c3f0c2751c *man/cnSearchHist.Rd
 65657011ee9d4e5f23806b0a67661371 *man/cnSearchOrder.Rd
-c45b3c429c4f4045b3bb872d3c2fcae0 *man/cnSearchSA.Rd
+1882349878195711d2ac6cb1f395fef0 *man/cnSearchSA.Rd
 3164b7bd37e81ff93bdadf4669b7cb37 *man/cnSetProb.Rd
 240fc886e2be14522a38ea8de9cb09ce *man/cnSetSeed.Rd
 a4cca48f368326175bc0a131861d9636 *man/cnSubNetwork.Rd
 35ebef466a2edc66d31734c429d86399 *man/dag2cpdag.Rd
 d71d7a1a3266dd29f0690f4536cd7f7a *man/isDAG.Rd
 cfa59ee09d662efbb4d642b035ebade1 *man/novartis.Rd
-2819223e78fdeb3dbec844eb39d3a716 *src/Makevars
-eceb0a7e3ff3d19b813b06d0fdf6b4af *src/Makevars.win
 a2f6e5fc1c6e6be5bff5824c8aa50c4d *src/cache.cpp
 a788e809b4fa2d3d69c920160b3309f5 *src/cache.h
 846fa2ba25adc761d1493a0b4ced15e7 *src/catnet_class.h
 024833bb4f2057e813456044dfa319df *src/catnet_entropy.cpp
-61c1f5c62a5be86cf10c33beb29495a6 *src/catnet_rexport.cpp
+f0bd56324c36b951200594b5d96158e9 *src/catnet_rexport.cpp
 95d52d5a81df06c1a5f64107903360b0 *src/catnet_rexport.h
 be78b3395eb7a3ab01305b7657d6ee1e *src/catnet_search.h
 ab699176688d26388b5bd302f60cd3d8 *src/catnet_search2.h
@@ -113,3 +112,4 @@ d89b8c792467046cd2c5f2d38c406666 *src/search_params.h
 e22b880f0b5e26faa2cc9189053a12b7 *src/thread.h
 f8481dbdd6161c220b967986630b02ea *src/utils.cpp
 5e0e65c5dc31abdb2a3bb3c9e7fe61fb *src/utils.h
+ea3c668c537c6ea5cbb04be343208b57 *vignettes/catnet.Rnw

@@ -1,12 +1,11 @@
 Package: catnet
 Title: Categorical Bayesian Network Inference
-Version: 1.13.8
+Version: 1.14.2
 Author: Nikolay Balov, Peter Salzman
-Description: A package that handles discrete Bayesian network models
-        and provides inference using the frequentist approach
-Maintainer: Nikolay Balov <nikolay_balov@urmc.rochester.edu>
+Description: A package that handles discrete Bayesian network models and provides inference using the frequentist approach
+Maintainer: Nikolay Balov <nhbalov@gmail.com>
 License: GPL (>= 2)
-Depends: R (>= 2.10.0), methods
+Depends: R (>= 2.14.0), methods
 Imports: methods, stats, tools, utils
 Suggests: igraph
 Collate: catnet.class.R catnet.def.R graph2catnet.R catnet.dags.R
@@ -18,6 +17,6 @@ Collate: catnet.class.R catnet.def.R graph2catnet.R catnet.dags.R
         zzz.R
 LazyLoad: yes
 Repository: CRAN
-Date/Publication: 2013-04-03 22:54:17
-Packaged: 2013-04-03 18:22:34 UTC; root
+Date/Publication: 2013-07-31 17:58:55
+Packaged: 2013-07-30 14:42:15 UTC; nhb
 NeedsCompilation: yes

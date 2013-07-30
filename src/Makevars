@@ -1,2 +1,0 @@
-PKG_LIBS = -lpthread
-PKG_FLAGS = -Wall -pedantic
