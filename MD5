@@ -1,4 +1,4 @@
-e897b81b152f96efac37ed3fde539fe5 *DESCRIPTION
+b94446e52ad41d1e79beee80d93cc04b *DESCRIPTION
 7c469ae7c5c49658e280e458bf8afa42 *NAMESPACE
 30f6b8421f766a30eed028b8f00523dd *R/catnet.bif.R
 76450f24cc00da5805820d576f6edd4e *R/catnet.categor.R
@@ -23,6 +23,7 @@ b1d44ead4d0106a378c748d857299898 *R/catnet.samples.R
 2d4ace737ad78b12ed9f44079bdf482d *R/catnet.search.R
 264fd782faa843d4d9552243da97f757 *R/graph2catnet.R
 e34dd81d4cb155174c2166692687e552 *R/zzz.R
+88ec215a04a549d1462c3de154410dfd *build/vignette.rds
 bd5592b60ed5d59c4279eeac9a78b080 *data/alarmnet.rda
 2d8a4c5989cfec7b88c3c1baa387266f *data/breast.rda
 beba276be7f5956333ec4b4a7d2109c4 *data/novartis.rda
