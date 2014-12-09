@@ -120,42 +120,6 @@ setRandomProbMatrixForm <- function(idroot, ppars, pcatlist, idx, poutlist) {
 }
 
 
-## generate a DAG graph
-## returns a graphNEL object
-#genRandomGraph <- function(numnodes, maxparents) {
-#  idx <- sample(seq(1, numnodes))
-#  pars <- vector("list", numnodes)
-#  for(i in (2:numnodes)) {
-#    npars <- floor(maxparents*runif(1,0,1) + 0.5)
-#    if(npars == 0)
-#      next;
-#    if(npars > i-1)
-#      npars <- i - 1
-#    pars[[idx[i]]] <- sample(idx[1:(i-1)], npars)
-#  }
-#  nodes <- sapply(seq(1,numnodes), function(i) paste("N", i ,sep=""))
-#  edges <- vector("list", numnodes)
-#  for(i in (1:numnodes)) {
-#    for(j in (1:numnodes)) {
-#       if(is.null(pars[[j]]))
-#         next
-#       ll <- which(pars[[j]]==i)
-#       if(is.na(ll[1]))
-#         next
-#       edges[[i]] <- c(edges[[i]], nodes[j])
-#     }
-#  }
-#  edges<-setNames(edges, rep("edges", numnodes))
-#  edgesL <- sapply(1:numnodes, function(j, edges) {
-#    list(edges[j])
-#  }, edges)
-#  edgesL <- setNames(edgesL, nodes)
-#  if(require("graph"))
-#    return(try(new("graphNEL", nodes=nodes, edgeL=edgesL, edgemode="directed")))
-#  else
-#    return(NULL)
-#}
-
 listGraphEdges <- function(object) {
   if(!is(object, "catNetwork") || object@numnodes < 1)
     return(NULL)
@@ -180,43 +144,4 @@ listGraphEdges <- function(object) {
   edgesL <- setNames(edgesL, nodes)
   return(edgesL)
 }
-
-#setMethod("as.graph", "catNetwork", 
-#          function(object) {
-#            if(!require("graph"))
-#              return(NULL)
-#            numnodes <- object@numnodes
-#            nodes <- as.character(object@nodes)
-#            pars <- object@parents
-#            edges <- vector("list", numnodes)
-#            for(i in (1:numnodes)) {
-#              for(j in (1:numnodes)) {
-#                if(is.null(pars[[j]]))
-#                  next
-#                ll <- which(pars[[j]]==i)
-#                if(is.na(ll[1]))
-#                  next
-#                edges[[i]] <- c(edges[[i]], nodes[j])
-#              }
-#            }
-#            edges<-setNames(edges, rep("edges", numnodes))
-#            edgesL <- sapply(1:numnodes, function(j, edges) {
-#              list(edges[j])
-#            }, edges)
-#            edgesL <- setNames(edgesL, nodes)
-#            if(require("graph"))
-#              return(try(new("graphNEL", nodes=nodes, edgeL=edgesL, edgemode="directed")))
-#            else
-#              return(NULL)
-#          })
-
-setMethod("as.igraph", "catNetwork", 
-          function(object) {
-            if(!require("igraph"))
-              return(NULL)
-            medges <- cnMatEdges(object)
-            if(is.null(medges))
-              return(NULL)
-            return(graph.edgelist(medges))
-          })
 

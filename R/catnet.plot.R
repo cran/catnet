@@ -229,36 +229,12 @@ setMethod("cnDot", "matrix", function(object, file="", format="ps", style=NULL) 
  
 setMethod("cnPlot", "catNetwork", 
         function(object, file = NULL) { 
-	    err <- FALSE  
-            err <- as.logical(Sys.getenv("R_CATNET_USE_IGRAPH"))
-            if(err) { 
-              err <- FALSE 
-              try(err <- require(igraph), TRUE)
-              if(err) { 
-                medges <- cnMatEdges(object) 
-                if(is.null(medges)) 
-                  err <- FALSE 
-                else { 
-                  igr <- graph.edgelist(medges)
-                  nodenames <- get.vertex.attribute(igr, "name")
-
-                  caps <- capabilities()
-                  id <- which(names(caps)=="tcltk")
-                  usetcltk <- FALSE
-                  if(length(id)>0)
-                    usetcltk <- caps[id]
-                  if(usetcltk)
-                    tkplot(igr, vertex.label=nodenames)
-                  else
-                    plot(igr, vertex.label=nodenames) 
-                } 
-              }
-            }
-            if(!err) { 
-              if(is.null(file) || file == "") 
-                return(cnDot(object, "unknown", "pdf")) 
+	    dotpath <- as.character(Sys.getenv("R_DOTVIEWER"))
+            if(dotpath == "") 
+                return()
+	    if(is.null(file) || file == "") 
+                return(cnDot(object, "unknown", "pdf"))
               else 
-                return(cnDot(object, file, "pdf")) 
-            } 
+                return(cnDot(object, file, "pdf"))        
           }) 
 

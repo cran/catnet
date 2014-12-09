@@ -98,6 +98,8 @@ int *RCatnetSearchHist::_genOrder(const int *porder, int norder, int shuffles, i
 	if (norder < 1)
 		return 0;
 	neworder = (int*) CATNET_MALLOC(norder * sizeof(int));
+	if (!neworder)
+		return 0;
 	if (shuffles <= 0) {
 		_gen_permutation<int> (neworder, norder);
 		return neworder;
@@ -105,15 +107,20 @@ int *RCatnetSearchHist::_genOrder(const int *porder, int norder, int shuffles, i
 	if (!porder || shuffles < 0)
 		return 0;
 	int *torder = (int*) CATNET_MALLOC(norder * sizeof(int));
+	if (!torder) {
+		CATNET_FREE(neworder);
+		return 0;
+	}
 	memcpy(neworder, porder, norder * sizeof(int));
+	GetRNGstate();
 	for (sh = 0; sh < shuffles; sh++) {
 		memcpy(torder, neworder, norder * sizeof(int));
-		u = (double) rand() / (double) RAND_MAX;
+		u = (double) unif_rand();
 		n1 = (int) (u * norder);
 		if (bjump) {
 			n2 = n1;
 			while (n2 == n1) {
-				u = (double) rand() / (double) RAND_MAX;
+				u = (double) unif_rand();
 				n2 = (int) (u * norder);
 			}
 		} else {
@@ -143,6 +150,7 @@ int *RCatnetSearchHist::_genOrder(const int *porder, int norder, int shuffles, i
 					neworder[i] = torder[i];
 		}
 	}
+	PutRNGstate();
 	CATNET_FREE(torder);
 	return neworder;
 }
@@ -208,9 +216,6 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 
 	UNPROTECT(8);
 
-//printf("nDrives = %d, nModelSel = %d, bUseCache = %d\n", m_nDrives, nModelSel, m_bUseCache);
-//printf("maxComplexity = %d\n", maxComplexity);
-
 	PROTECT(rSamples = AS_INTEGER(rSamples));
 	pRsamples = INTEGER(rSamples);
 
@@ -226,7 +231,8 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 	memset(pMatHisto, 0, m_numNodes*m_numNodes*sizeof(double));
 
 	m_pTestOrder = (int**)CATNET_MALLOC(m_nDrives*sizeof(int*));
-	memset(m_pTestOrder, 0, m_nDrives*sizeof(int*));
+	if (m_pTestOrder)
+		memset(m_pTestOrder, 0, m_nDrives*sizeof(int*));
 	m_pTestOrderInverse = (int**)CATNET_MALLOC(m_nDrives*sizeof(int*));
 	for(n = 0; n < m_nDrives; n++) {
 		m_pTestOrderInverse[n] = (int*)CATNET_MALLOC(m_numNodes*sizeof(int));
@@ -304,7 +310,8 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 
 		if(!isNull(rParentSizes) && length(rParentSizes) == m_numNodes) {
 			pParentSizes = m_pSearchParams[n]->m_pParentSizes;
-			memcpy(pParentSizes, INTEGER(rParentSizes), m_numNodes*sizeof(int));
+			if (pParentSizes && INTEGER(rParentSizes))
+				memcpy(pParentSizes, INTEGER(rParentSizes), m_numNodes*sizeof(int));
 			for(i = 0; i < m_numNodes; i++)
 				pParentSizes[i] = INTEGER(rParentSizes)[m_pTestOrder[n][i] - 1];
 		}
@@ -401,8 +408,6 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 				}
 			}
 		}
-
-		m_pSearchParams[n]->m_seed = rand();
 
 		m_pDrives[n] -> _start_thread(CatnetSearchHistThreadProc, (void*)m_pSearchParams[n]);
 
@@ -555,9 +560,6 @@ SEXP RCatnetSearchHist::search(SEXP rSamples, SEXP rPerturbations,
 	if(m_bUseCache) {
 		MUTEX_DESTROY(m_cache_mutex);
 	}
-
-//printf("rmat[5,17] = %f\n", pMatHisto[4*m_numNodes+16]);
-//printf("rmat[17,5] = %f\n", pMatHisto[16*m_numNodes+4]);
 
 	UNPROTECT(1);//rmat
 

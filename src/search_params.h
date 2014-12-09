@@ -72,8 +72,10 @@ struct SEARCH_PARAMETERS {
 		m_pParentSizes = 0;
 		if(hasParentSizes) { 
 			m_pParentSizes = (int*)CATNET_MALLOC(m_numNodes*sizeof(int));
-			for(i = 0; i < m_numNodes; i++) 
-				m_pParentSizes[i] = m_maxParentSet;
+			if (m_pParentSizes) {
+				for(i = 0; i < m_numNodes; i++) 
+					m_pParentSizes[i] = m_maxParentSet;
+			}
 		}
 
 		m_pSamples = (int*)CATNET_MALLOC(m_numNodes*m_numSamples*sizeof(int));
@@ -82,9 +84,11 @@ struct SEARCH_PARAMETERS {
 		m_pNodeCats = 0;
 		if(hasCats) { 
 			m_pNodeNumCats = (int*)CATNET_MALLOC(m_numNodes*sizeof(int));
+			if (m_pNodeNumCats)
+				memset(m_pNodeNumCats, 0, m_numNodes*sizeof(int));
 			m_pNodeCats = (int**)CATNET_MALLOC(m_numNodes*sizeof(int*));
-			memset(m_pNodeNumCats, 0, m_numNodes*sizeof(int));
-			memset(m_pNodeCats, 0, m_numNodes*sizeof(int*));
+			if (m_pNodeCats)
+				memset(m_pNodeCats, 0, m_numNodes*sizeof(int*));
 		}
 
 		m_pPerturbations = 0;
@@ -102,29 +106,29 @@ struct SEARCH_PARAMETERS {
 		m_parentsPool = 0;
 		if(hasParentsPool) {
 			m_parentsPool = (int**)CATNET_MALLOC(m_numNodes*sizeof(int*));
-			for(i = 0; i < m_numNodes; i++) {
-				m_parentsPool[i] = (int*)CATNET_MALLOC(m_numNodes*sizeof(int));
+			if (m_parentsPool) {
+				for(i = 0; i < m_numNodes; i++) {
+					m_parentsPool[i] = (int*)CATNET_MALLOC(m_numNodes*sizeof(int));
+				}
 			}
 		}
 
 		m_fixedParentsPool = 0;
 		if(hasFixedParentsPool) {
 			m_fixedParentsPool = (int**)CATNET_MALLOC(m_numNodes*sizeof(int*));
-			for(i = 0; i < m_numNodes; i++) {
-				m_fixedParentsPool[i] = (int*)CATNET_MALLOC(m_numNodes*sizeof(int));
+			if (m_fixedParentsPool) {
+				for(i = 0; i < m_numNodes; i++) {
+					m_fixedParentsPool[i] = (int*)CATNET_MALLOC(m_numNodes*sizeof(int));
+				}
 			}
 		}
 		
 		m_matEdgeLiks = 0;
 		if(hasEdgeLiks) {
 			m_matEdgeLiks = (double*)CATNET_MALLOC(m_numNodes*m_numNodes*sizeof(double));
-		//printf("matEdgeLiks = malloc %d\n", m_numNodes*m_numNodes*sizeof(double));
 		}
 
 		m_seed = nSeed;
-		if(nSeed == 0) {
-			m_seed = rand();
-		}
 	}
 
 	~SEARCH_PARAMETERS() {

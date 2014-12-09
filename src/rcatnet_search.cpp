@@ -92,6 +92,17 @@ SEXP RCatnetSearch::estimateCatnets(SEXP rSamples, SEXP rPerturbations,
 		CATNET_FREE(m_pRorderInverse);
 	m_pRorderInverse = (int*)CATNET_MALLOC(m_numNodes*sizeof(int));
 
+	if(!m_pRorder || !m_pRorderInverse) {
+		if(m_pRorder)
+			CATNET_FREE(m_pRorder);
+		m_pRorder = 0;
+		if(m_pRorderInverse)
+			CATNET_FREE(m_pRorderInverse);
+		m_pRorderInverse = 0;
+		UNPROTECT(1);
+		return R_NilValue;
+	}
+
 	PROTECT(rOrder = AS_INTEGER(rOrder));
 	if(length(rOrder) < m_numNodes) {
 		warning("Invalid nodeOrder parameter - reset to default node order.");
@@ -99,7 +110,8 @@ SEXP RCatnetSearch::estimateCatnets(SEXP rSamples, SEXP rPerturbations,
 			m_pRorder[i] = i + 1;
 	}
 	else {
-		memcpy(m_pRorder, INTEGER(rOrder), m_numNodes*sizeof(int));
+		if (INTEGER(rOrder))
+			memcpy(m_pRorder, INTEGER(rOrder), m_numNodes*sizeof(int));
 	}
 	for(i = 0; i < m_numNodes; i++) {
 		if(m_pRorder[i] <= 0 || m_pRorder[i] > m_numNodes) {
@@ -274,7 +286,6 @@ SEXP RCatnetSearch::estimateCatnets(SEXP rSamples, SEXP rPerturbations,
 	}
 
 	PROTECT(cnetlist = allocVector(VECSXP, numnets));
-
 	inet = 0;
 	for(i = 0; i < m_nCatnets; i++) {
 		if(!m_pCatnets[i])
@@ -291,7 +302,7 @@ SEXP RCatnetSearch::estimateCatnets(SEXP rSamples, SEXP rPerturbations,
 		inet++;
 	}
 
-	UNPROTECT(1);
+	UNPROTECT(1);//cnetlist
 
 	return cnetlist;
 }

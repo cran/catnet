@@ -81,22 +81,28 @@ struct PROB_LIST {
 		pBlockSize = 0;
 		if(numPars > 0) {
 			numParCats = (int*) CATNET_MALLOC(numPars * sizeof(int));
-			memset(numParCats, 0, numPars * sizeof(int));
-			if (plist.numParCats)
-				memcpy(numParCats, plist.numParCats, numPars * sizeof(int));
+			if (numParCats) {
+				memset(numParCats, 0, numPars * sizeof(int));
+				if (plist.numParCats)
+					memcpy(numParCats, plist.numParCats, numPars * sizeof(int));
+			}
 			pBlockSize = (int*) CATNET_MALLOC(numPars * sizeof(int));
-			memset(pBlockSize, 0, numPars * sizeof(int));
-			if (plist.pBlockSize)
-				memcpy(pBlockSize, plist.pBlockSize, numPars * sizeof(int));
+			if (pBlockSize) {
+				memset(pBlockSize, 0, numPars * sizeof(int));
+				if (plist.pBlockSize)
+					memcpy(pBlockSize, plist.pBlockSize, numPars * sizeof(int));
+			}
 		}
 		nProbSize = plist.nProbSize;
 		if (pProbs)
 			CATNET_FREE(pProbs);
 		pProbs = (t_prob*) CATNET_MALLOC(nProbSize * sizeof(t_prob));
 		memset(pProbs, 0, nProbSize * sizeof(t_prob));
-		if (plist.pProbs && nProbSize > 0) {
-			for(int i = 0; i < nProbSize; i++)
-				pProbs[i] = plist.pProbs[i];
+		if (pProbs) {
+			if (plist.pProbs && nProbSize > 0) {
+				for(int i = 0; i < nProbSize; i++)
+					pProbs[i] = plist.pProbs[i];
+			}
 		}
 		loglik = plist.loglik;
 		priorlik = plist.priorlik;
@@ -120,33 +126,41 @@ struct PROB_LIST {
 		sampleSize = samples;
 		if (numPars > 0) {
 			numParCats = (int*) CATNET_MALLOC(numPars * sizeof(int));
-			if (parcats)
-				memcpy(numParCats, parcats, numPars * sizeof(int));
-			else
-				for (i = 0; i < numPars; i++)
-					numParCats[i] = nmaxcats;
-			pBlockSize = (int*) CATNET_MALLOC(numPars * sizeof(int));
-			pBlockSize[numPars - 1] = ncats;
-			for (i = numPars - 1; i > 0; i--) {
-				if (parcats[i] < 1 || parcats[i] > nmaxcats) {
-					CATNET_FREE(pBlockSize);
-					pBlockSize = 0;
-					numPars = 0;
-					return;
-				}
-				pBlockSize[i - 1] = parcats[i] * pBlockSize[i];
+			if (numParCats) {
+				if (parcats)
+					memcpy(numParCats, parcats, numPars * sizeof(int));
+				else
+					for (i = 0; i < numPars; i++)
+						numParCats[i] = nmaxcats;
 			}
-			nProbSize = pBlockSize[0] * parcats[0];
-		} else
+			pBlockSize = (int*) CATNET_MALLOC(numPars * sizeof(int));
+			if (pBlockSize) {
+				pBlockSize[numPars - 1] = ncats;
+				for (i = numPars - 1; i > 0; i--) {
+					if (parcats[i] < 1 || parcats[i] > nmaxcats) {
+						CATNET_FREE(pBlockSize);
+						pBlockSize = 0;
+						numPars = 0;
+						return;
+					}
+					pBlockSize[i - 1] = parcats[i] * pBlockSize[i];
+				}
+				nProbSize = pBlockSize[0] * parcats[0];
+			}
+		}
+		else {
 			nProbSize = ncats;
+		}
 
 		pProbs = (t_prob*) CATNET_MALLOC(nProbSize * sizeof(t_prob));
-		memset(pProbs, 0, nProbSize * sizeof(t_prob));
-		if (pProbs && pprobs) {
-			if (probsize != nProbSize) {
-				return;
+		if (pProbs) {
+			memset(pProbs, 0, nProbSize * sizeof(t_prob));
+			if (pProbs && pprobs) {
+				if (probsize != nProbSize) {
+					return;
+				}
+				memcpy(pProbs, pprobs, nProbSize * sizeof(t_prob));
 			}
-			memcpy(pProbs, pprobs, nProbSize * sizeof(t_prob));
 		}
 	}
 

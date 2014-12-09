@@ -101,15 +101,6 @@ setGeneric("cnKLComplexity", function(object, node=NULL)
            standardGeneric("cnKLComplexity")
            )
 
-## returns a graph object
-setGeneric("as.graph", function(object)
-           standardGeneric("as.graph")
-           )
-
-setGeneric("as.igraph", function(object)
-           standardGeneric("as.igraph")
-           )
-
 setGeneric("cnJointProb", 
           function(object, nodes)
            standardGeneric("cnJointProb")

@@ -40,13 +40,13 @@
 #include <Rdefines.h>
 
 #ifndef CATNET_PI
-#define CATNET_PI	(double)3.14159265358979323846264338327950288
+#define CATNET_PI		(double)3.14159265358979323846264338327950288
 #endif
 #ifndef CATNET_PI2
-#define CATNET_PI2	(2*(double)CATNET_PI)
+#define CATNET_PI2		(2*(double)CATNET_PI)
 #endif
 
-#define CATNET_NAN	INT_MAX
+#define CATNET_NAN		INT_MAX
 
 #define CATNET_ERR_OK		0
 #define CATNET_ERR_MEM		-10
@@ -63,6 +63,8 @@ void _quick_sort(t_elem *plist, int nlist){
 	if(nlist <= 1)
 		return;
 	t_elem *paux = (t_elem*)malloc(nlist*sizeof(t_elem));
+	if (!paux)
+		return;
 	nless = 0;
 	ngreater = nlist-1;
 	pivot = plist[0];
@@ -79,7 +81,8 @@ void _quick_sort(t_elem *plist, int nlist){
 	_quick_sort<t_elem>(paux, nless);
 	_quick_sort<t_elem>(paux + ngreater + 1, nlist - ngreater - 1);
 	paux[nless] = pivot;
-	memcpy(plist, paux, nlist*sizeof(t_elem));
+	if (plist)
+		memcpy(plist, paux, nlist*sizeof(t_elem));
 	free(paux);
 	return;
 }
@@ -90,6 +93,8 @@ void _order(t_elem *plist, int nlist, int *porder, int decreasing = 1){
 		return;
 	int j, i;
 	t_elem *paux = (t_elem*)malloc(nlist*sizeof(t_elem));
+	if (!paux)
+		return;
 	memcpy(paux, plist, nlist*sizeof(t_elem));
 
 	_quick_sort<t_elem>(plist, nlist);
@@ -124,10 +129,10 @@ template<class t_elem>
 t_elem _gen_std_normal_var() {
 	/* ISO C pseudo random generator */
 	/* include stdlib.h and math.h */
-	t_elem u, v;
-	u = (t_elem)rand() / (t_elem)RAND_MAX;
-	v = (t_elem)rand() / (t_elem)RAND_MAX;
-	return(sqrt(-2*log(u)) * cos(CATNET_PI2*v));
+	GetRNGstate();
+	t_elem u = (t_elem)norm_rand();
+	PutRNGstate();
+	return(u);
 }
 
 template<class t_elem>
@@ -138,10 +143,11 @@ int _gen_permutation(t_elem *psample, int nsample) {
 		return -1;
 	int *paux = (int*)malloc(nsample*sizeof(int));
 	cc = 0;
+	GetRNGstate();
 	while(++cc < 1e5) {
 		brep = 0;
 		for(i = 0; i < nsample; i++)
-			paux[i] = (int)rand();
+			paux[i] = (int)(nsample*nsample*unif_rand());
 		for(j = 0; j < nsample; j++) {
 			psample[j] = 0;
 			for(i = 0; i < nsample; i++) {
@@ -158,15 +164,12 @@ int _gen_permutation(t_elem *psample, int nsample) {
 		if(!brep)
 			break;
 	}
+	PutRNGstate();
 	if(cc >= 1e5-1) {
 		for(j = 0; j < nsample; j++)
 			psample[j] = j+1;
 	}
 	free(paux);
-//printf("permutation ");
-//for(i=0;i<nsample;i++)
-//printf("%d ", psample[i]);
-//printf("\n");
 	return 0;
 }
 
@@ -176,10 +179,12 @@ int _gen_binomial(int size, t_elem prob) {
 	if(size < 1 || prob <= 0)
 		return 0;
 	r = 0;
+	GetRNGstate();
 	for(i = 0; i < size; i++) {
-		if((t_elem)rand() / (t_elem)RAND_MAX <= prob)
+		if((t_elem)unif_rand() <= prob)
 			r++;
 	}
+	PutRNGstate();
 	return r;
 }
 

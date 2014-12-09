@@ -194,7 +194,6 @@ orderEdges <- function(object) {
           if(y <= 0 || nodeorder[y] > nodeorder[k])
             y <- k
     }
-    #cat("y = ", y,"\n")
     if(y <= 0)
       break
     ## find the highest odered node x for which with edge x->y not ordered 
@@ -241,7 +240,6 @@ labelEdges <- function(object) {
       break
     y <- miny
     x <- object@parents[[miny]][minx]
-    ##cat(x, "->", y, minx, miny, "\n")
     bnextcycle <- FALSE
     ## check all compelled edges w->x
     if(length(label[[x]]) > 0) {
@@ -360,10 +358,6 @@ cnMarparents <- function(object) {
             head <- lapply(1:n, function(i) if(flags[i]) return(an[[i]]) else return(NULL))
             an <- head
           }
-          
-#for(i in 1:n)
-#cat(i, ": ", an[[i]], "\n")
-
           tn <- lapply(1:n, function(i) return(i))
           head <- tn
           brep <- TRUE
@@ -392,10 +386,6 @@ cnMarparents <- function(object) {
             }
             head <- newhead
           }
-
-#for(i in 1:n)
-#cat(i, ": ", tn[[i]], "\n")
-
           for(i in 1:n)
             if(length(an[[i]]) > 0)
               tn[[i]] <- c(an[[i]], tn[[i]])
@@ -434,6 +424,5 @@ cnMarparents <- function(object) {
           r <- lapply(r, function(rr) object@nodes[rr])
           return(r)
 }
-##	})  
   
 

@@ -101,10 +101,10 @@ protected:
 				if(parset[i] <= ancestor)
 					continue;
 				int **pnewlist = (int**)CATNET_MALLOC((nlist+1)*sizeof(int*));
-				if(nlist > 0)
+				if(pnewlist && nlist > 0)
 					memcpy(pnewlist, plist, nlist*sizeof(int*));
 				pnewlist[nlist] = (int*)CATNET_MALLOC(parsize*sizeof(int));
-				if(curset) {
+				if(pnewlist[nlist] && curset) {
 					memcpy(pnewlist[nlist], curset, (parsize-1)*sizeof(int));
 				}
 				pnewlist[nlist][parsize-1] = parset[i];
@@ -123,7 +123,7 @@ protected:
 			if(parset[i] <= ancestor)
 				continue;
 			int *pnewset = (int*)CATNET_MALLOC((parid+1)*sizeof(int));
-			if(curset && parid > 0)
+			if(pnewset && curset && parid > 0)
 				memcpy(pnewset, curset, parid*sizeof(int));
 			pnewset[parid] = parset[i];
 			combinationSets(plist, nlist, pnewset, parset, nparset, parid+1, parsize);
@@ -176,15 +176,23 @@ public:
 		maxCategories = 0;
 
 		m_pNodeNumCats = (int*)CATNET_MALLOC(numnodes*sizeof(int));
+		if (!m_pNodeNumCats)
+			return CATNET_ERR_MEM;
 		m_pNodeCats = (int**)CATNET_MALLOC(numnodes*sizeof(int*));
-		memset(m_pNodeCats, 0, numnodes*sizeof(int*));
+		if (!m_pNodeCats) {
+			CATNET_FREE(m_pNodeNumCats);
+			return CATNET_ERR_MEM;
+		}
+		memset(m_pNodeCats,    0, numnodes*sizeof(int*));
 		memset(m_pNodeNumCats, 0, numnodes*sizeof(int));
 
 		if(pestim->m_pNodeNumCats && pestim->m_pNodeCats) {
-			memcpy(m_pNodeNumCats, pestim->m_pNodeNumCats, numnodes*sizeof(int));
+			if (m_pNodeNumCats)
+				memcpy(m_pNodeNumCats, pestim->m_pNodeNumCats, numnodes*sizeof(int));
 			for(i = 0; i < numnodes; i++) {
 				m_pNodeCats[i] = (int*)CATNET_MALLOC(m_pNodeNumCats[i]*sizeof(int));
-				memcpy(m_pNodeCats[i], pestim->m_pNodeCats[i], m_pNodeNumCats[i]*sizeof(int));
+				if (m_pNodeCats[i] && pestim->m_pNodeCats[i])
+					memcpy(m_pNodeCats[i], pestim->m_pNodeCats[i], m_pNodeNumCats[i]*sizeof(int));
 			}
 		}
 		else { 
@@ -242,13 +250,12 @@ public:
 				bEqualCategories = 0;
 		}
 
-		parset = (int*)CATNET_MALLOC(numnodes*sizeof(int));
-		idparset = (int*)CATNET_MALLOC(numnodes*sizeof(int));
+		parset    = (int*)CATNET_MALLOC(numnodes*sizeof(int));
+		idparset  = (int*)CATNET_MALLOC(numnodes*sizeof(int));
 		fixparset = (int*)CATNET_MALLOC(numnodes*sizeof(int));
 
 		m_nCatnets = maxComplexity + 1;
 		m_pCatnets = (CATNET<t_node, t_node_size, t_prob>**)CATNET_MALLOC(m_nCatnets*sizeof(CATNET<t_node, t_node_size, t_prob>*));
-		memset(m_pCatnets, 0, m_nCatnets*sizeof(CATNET<t_node, t_node_size, t_prob>*));
 
 		pCurCatnetList = (CATNET<t_node, t_node_size, t_prob>**)CATNET_MALLOC(m_nCatnets*sizeof(CATNET<t_node, t_node_size, t_prob>*));
 
@@ -260,6 +267,33 @@ public:
 		/* create a network without edges*/
 		pNewNet = new CATNET<t_node, t_node_size, t_prob>
 				(numnodes, 0/*maxParentSet*/, maxCategories, 0, 0, 0, m_pNodeNumCats);
+
+		if (!parset || !idparset || !fixparset || !m_pCatnets || !pNewNet || !pCurCatnetList) {
+			if (parset) 
+				CATNET_FREE(parset);
+			if (idparset) 
+				CATNET_FREE(idparset);
+			if (fixparset) 
+				CATNET_FREE(fixparset);
+			if (m_pNodeCats)
+				CATNET_FREE(m_pNodeCats);
+			m_pNodeCats = 0;
+			if (m_pNodeNumCats)
+				CATNET_FREE(m_pNodeNumCats);
+			m_pNodeNumCats = 0;
+			if (m_pCatnets)
+				CATNET_FREE(m_pCatnets);
+			m_pCatnets = 0;
+			if (pCurCatnetList)
+				CATNET_FREE(pCurCatnetList);
+			if (psubsamples)
+				CATNET_FREE(psubsamples);
+			if (pNewNet)
+				delete pNewNet;
+			return CATNET_ERR_MEM;
+		}
+
+		memset(m_pCatnets, 0, m_nCatnets*sizeof(CATNET<t_node, t_node_size, t_prob>*));
 
 		/* set parents */
 		for(nnode = 0; nnode < numnodes; nnode++) {
@@ -299,7 +333,7 @@ public:
 
 		// set sample probabilities and calculate log-likelihood
 		for(nnode = 0; nnode < numnodes; nnode++) {
-			if(perturbations) {
+			if(perturbations && psubsamples) {
 				numsubsamples = 0;
 				for(j = 0; j < numsamples; j++) {
 					if(!perturbations[j * numnodes + nnode]) {
@@ -360,7 +394,8 @@ public:
 				}
 			}
 			/* extend the content before sending to cache; parsetsize + fixparsetsize < numnodes */
-			memcpy(parset + parsetsize, fixparset, fixparsetsize*sizeof(int));
+			if (parset && fixparset && fixparsetsize > 0)
+				memcpy(parset + parsetsize, fixparset, fixparsetsize*sizeof(int));
 
 			/* check out wheather the parent pool has equal number of categories */
 			bEqualCategories = 1;
@@ -405,14 +440,18 @@ public:
 				        if(fixparsetsize > 0) {
 				        	if(!pcomblist || ncomblist < 1) {
 				        	    	pcomblist = (int**)CATNET_MALLOC(1*sizeof(int*));
+							if (!pcomblist)
+								return CATNET_ERR_MEM;
 				            		pcomblist[0] = 0;	
 				            		ncomblist = 1;
 				          	}
 				        	for(k = 0; k < ncomblist; k++) {
 				            		paux = (int*)CATNET_MALLOC(d*sizeof(int));
+							if (!paux)
+								return CATNET_ERR_MEM;
 							for(j = 0; j < fixparsetsize; j++)
 				            			paux[j] = fixparset[j];
-					        	if(pcomblist[k] && d > fixparsetsize) {
+					        	if(paux && pcomblist[k] && d > fixparsetsize) {
 				            			memcpy(paux + fixparsetsize, pcomblist[k], (d-fixparsetsize)*sizeof(int));
 							}
 				            		if(pcomblist[k])
@@ -433,7 +472,7 @@ public:
 						baseCatnet.setParents(nnode, pcomblist[ncomb], d);
 			     
 						// add perturbation
-						if(perturbations) {
+						if(perturbations && psubsamples) {
 							numsubsamples = 0;
 							for(j = 0; j < numsamples; j++) {
 								if(!perturbations[j * numnodes + nnode]) {
@@ -456,7 +495,7 @@ public:
 						}
 					} /* for ncomb */
 
-					if(ncombMaxLogLik >= 0)
+					if(idparset && ncombMaxLogLik >= 0 && d > 0)
 						memcpy(idparset, pcomblist[ncombMaxLogLik], d*sizeof(int));
 
 					/* release combination set */
@@ -529,14 +568,18 @@ public:
 				if(fixparsetsize > 0) {
 					if(!pcomblist || ncomblist < 1) {
 					    	pcomblist = (int**)CATNET_MALLOC(1*sizeof(int*));
+						if (!pcomblist)
+							return CATNET_ERR_MEM;
 			         		pcomblist[0] = 0;	
 						ncomblist = 1;
 					}
 					for(k = 0; k < ncomblist; k++) {
 				        	paux = (int*)CATNET_MALLOC(d*sizeof(int));
+						if (!paux)
+							return CATNET_ERR_MEM;
 						for(j = 0; j < fixparsetsize; j++)
 				            		paux[j] = fixparset[j];
-					        if(pcomblist[k] && d > fixparsetsize) {
+					        if(paux && pcomblist[k] && d > fixparsetsize) {
 				            		memcpy(paux + fixparsetsize, pcomblist[k], (d-fixparsetsize)*sizeof(int));
 						}
 				            	if(pcomblist[k])
@@ -565,12 +608,13 @@ public:
 					}
 
 					if(nocache) { 
-						memcpy(idparset, pcomblist[ncomb], d*sizeof(int));
+						if (idparset && pcomblist[ncomb] && d > 0)
+							memcpy(idparset, pcomblist[ncomb], d*sizeof(int));
 						// add pcomplist[j] parent set to nnode
 						baseCatnet.setParents(nnode, idparset, d);
 			     
 						// add perturbation
-						if(perturbations) {
+						if(perturbations && psubsamples) {
 							numsubsamples = 0;
 							for(j = 0; j < numsamples; j++) {
 								if(!perturbations[j * numnodes + nnode]) {
@@ -617,6 +661,8 @@ public:
 							pProbNode->loglik + fMaxLogLik;
 						if(!pCurCatnetList[complx] && tempLogLik > -FLT_MAX) {
 							pCurCatnetList[complx] = new CATNET<t_node, t_node_size, t_prob>;
+							if (!pCurCatnetList[complx])
+								return CATNET_ERR_MEM;
 						}
 						if(pCurCatnetList[complx] && 
 							pCurCatnetList[complx]->loglik() < tempLogLik) {
@@ -735,8 +781,14 @@ public:
 		maxCategories = 0;
 
 		m_pNodeNumCats = (int*)CATNET_MALLOC(numnodes*sizeof(int));
+		if (!m_pNodeNumCats)
+			return CATNET_ERR_MEM;
 		m_pNodeCats = (int**)CATNET_MALLOC(numnodes*sizeof(int*));
-		memset(m_pNodeCats, 0, numnodes*sizeof(int*));
+		if (!m_pNodeCats) {
+			CATNET_FREE(m_pNodeNumCats);
+			return CATNET_ERR_MEM;
+		}
+		memset(m_pNodeCats,    0, numnodes*sizeof(int*));
 		memset(m_pNodeNumCats, 0, numnodes*sizeof(int));
 
 		for(i = 0; i < numnodes; i++) {
@@ -789,7 +841,6 @@ public:
 
 		m_nCatnets = maxComplexity + 1;
 		m_pCatnets = (CATNET<t_node, t_node_size, t_prob>**)CATNET_MALLOC(m_nCatnets*sizeof(CATNET<t_node, t_node_size, t_prob>*));
-		memset(m_pCatnets, 0, m_nCatnets*sizeof(CATNET<t_node, t_node_size, t_prob>*));
 
 		pCurCatnetList = (CATNET<t_node, t_node_size, t_prob>**)CATNET_MALLOC(m_nCatnets*sizeof(CATNET<t_node, t_node_size, t_prob>*));
 
@@ -801,6 +852,33 @@ public:
 		/* create a network without edges*/
 		pNewNet = new CATNET<t_node, t_node_size, t_prob>
 				(numnodes, 0/*maxParentSet*/, maxCategories, 0, 0, 0, m_pNodeNumCats);
+
+		if (!parset || !idparset || !fixparset || !m_pCatnets || !pNewNet || !pCurCatnetList) {
+			if (parset) 
+				CATNET_FREE(parset);
+			if (idparset) 
+				CATNET_FREE(idparset);
+			if (fixparset) 
+				CATNET_FREE(fixparset);
+			if (m_pNodeCats)
+				CATNET_FREE(m_pNodeCats);
+			m_pNodeCats = 0;
+			if (m_pNodeNumCats)
+				CATNET_FREE(m_pNodeNumCats);
+			m_pNodeNumCats = 0;
+			if (m_pCatnets)
+				CATNET_FREE(m_pCatnets);
+			m_pCatnets = 0;
+			if (pCurCatnetList)
+				CATNET_FREE(pCurCatnetList);
+			if (psubsamples)
+				CATNET_FREE(psubsamples);
+			if (pNewNet)
+				delete pNewNet;
+			return CATNET_ERR_MEM;
+		}
+
+		memset(m_pCatnets, 0, m_nCatnets*sizeof(CATNET<t_node, t_node_size, t_prob>*));
 
 		/* set parents */
 		for(nnode = 0; nnode < numnodes; nnode++) {
@@ -840,7 +918,7 @@ public:
 
 		// set sample probabilities and calculate log-likelihood
 		for(nnode = 0; nnode < numnodes; nnode++) {
-			if(perturbations) {
+			if(perturbations && psubsamples) {
 				numsubsamples = 0;
 				for(j = 0; j < numsamples; j++) {
 					if(!perturbations[j * numnodes + nnode]) {
@@ -901,7 +979,8 @@ public:
 				}
 			}
 			/* extend the content before sending to cache; parsetsize + fixparsetsize < numnodes */
-			memcpy(parset + parsetsize, fixparset, fixparsetsize*sizeof(int));
+			if (parset && fixparset && fixparsetsize > 0)
+				memcpy(parset + parsetsize, fixparset, fixparsetsize*sizeof(int));
 
 			/* check out wheather the parent pool has equal number of categories */
 			bEqualCategories = 1;
@@ -946,14 +1025,18 @@ public:
 				        if(fixparsetsize > 0) {
 				        	if(!pcomblist || ncomblist < 1) {
 				        	    	pcomblist = (int**)CATNET_MALLOC(1*sizeof(int*));
+							if (!pcomblist)
+								return CATNET_ERR_MEM;
 				            		pcomblist[0] = 0;	
 				            		ncomblist = 1;
 				          	}
 				        	for(k = 0; k < ncomblist; k++) {
 				            		paux = (int*)CATNET_MALLOC(d*sizeof(int));
+							if (!paux)
+								return CATNET_ERR_MEM;
 							for(j = 0; j < fixparsetsize; j++)
 				            			paux[j] = fixparset[j];
-					        	if(pcomblist[k] && d > fixparsetsize) {
+					        	if(paux && pcomblist[k] && d > fixparsetsize) {
 				            			memcpy(paux + fixparsetsize, pcomblist[k], (d-fixparsetsize)*sizeof(int));
 							}
 				            		if(pcomblist[k])
@@ -974,7 +1057,7 @@ public:
 						baseCatnet.setParents(nnode, pcomblist[ncomb], d);
 			     
 						// add perturbation
-						if(perturbations) {
+						if(perturbations && psubsamples) {
 							numsubsamples = 0;
 							for(j = 0; j < numsamples; j++) {
 								if(!perturbations[j * numnodes + nnode]) {
@@ -997,7 +1080,7 @@ public:
 						}
 					} /* for ncomb */
 
-					if(ncombMaxLogLik >= 0)
+					if(idparset && ncombMaxLogLik >= 0 && d > 0)
 						memcpy(idparset, pcomblist[ncombMaxLogLik], d*sizeof(int));
 
 					/* release combination set */
@@ -1070,14 +1153,18 @@ public:
 				if(fixparsetsize > 0) {
 					if(!pcomblist || ncomblist < 1) {
 					    	pcomblist = (int**)CATNET_MALLOC(1*sizeof(int*));
+						if (!pcomblist)
+							return CATNET_ERR_MEM;
 			         		pcomblist[0] = 0;	
 						ncomblist = 1;
 					}
 					for(k = 0; k < ncomblist; k++) {
 				        	paux = (int*)CATNET_MALLOC(d*sizeof(int));
+						if (!paux)
+							return CATNET_ERR_MEM;
 						for(j = 0; j < fixparsetsize; j++)
 				            		paux[j] = fixparset[j];
-					        if(pcomblist[k] && d > fixparsetsize) {
+					        if(paux && pcomblist[k] && d > fixparsetsize) {
 				            		memcpy(paux + fixparsetsize, pcomblist[k], (d-fixparsetsize)*sizeof(int));
 						}
 				            	if(pcomblist[k])
@@ -1111,7 +1198,7 @@ public:
 						baseCatnet.setParents(nnode, idparset, d);
 			     
 						// add perturbation
-						if(perturbations) {
+						if(perturbations && psubsamples) {
 							numsubsamples = 0;
 							for(j = 0; j < numsamples; j++) {
 								if(!perturbations[j * numnodes + nnode]) {
@@ -1158,6 +1245,8 @@ public:
 							pProbNode->loglik + fMaxLogLik;
 						if(!pCurCatnetList[complx] && tempLogLik > -FLT_MAX) {
 							pCurCatnetList[complx] = new CATNET<t_node, t_node_size, t_prob>;
+							if (!pCurCatnetList[complx])
+								return CATNET_ERR_MEM;
 						}
 						if(pCurCatnetList[complx] && 
 							pCurCatnetList[complx]->loglik() < tempLogLik) {

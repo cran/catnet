@@ -30,7 +30,7 @@
 }
 
 \begin{document}
-\title{How To Use catnet Package}
+\title{How to use the {\bf catnet} package}
 
 \author{Nikolay Balov, Peter Salzman
 }

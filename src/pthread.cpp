@@ -75,17 +75,13 @@ void c_thread::_unlock() {
 
 int c_thread::_wait_stop_event(int milliseconds) {
 	int res;
-	//printf("wait(%d)...", (int)m_hStopThreadEvent);
 	res = WaitForSingleObject(m_hStopThreadEvent, milliseconds);
-	//printf("%d\n", res);
 	return res;
 }
 
 int c_thread::_join_thread() {
 	int res;
-	//printf("wait job(%d)...", (int)m_hStopThreadEvent);
 	res = WaitForSingleObject(m_hJobDoneEvent, WAIT_INFINITE);
-	//printf("jobe done %d\n", res);
 	return ERR_OK;
 }
 
@@ -107,8 +103,6 @@ int c_thread::_start_thread(THREAD_PROC ThreadProc, LPVOID lpParam) {
 		_unlock();
 	}
 	__END_FINALLY
-	
-	//printf("jobe done %d\n", res);
 	
 	return ((res != 0) ? ERR_OK : ERR_THREAD);
 }

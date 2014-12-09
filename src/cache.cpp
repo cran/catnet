@@ -57,7 +57,6 @@ unsigned int			g_nCacheBits = 0;
 
 void ReleaseCache() {
 	unsigned i;
-	//Rprintf("\nRELEASE CACHE\n");
 	if(g_pcache && g_ncache > 0) {
 		for(i = 0; i < g_ncache; i++) {
 			if(g_pcache[i])
@@ -74,12 +73,12 @@ void ReleaseCache() {
 	
 void InitializeCache(int nslots, int ncachebits) {
 	ReleaseCache();
-	//Rprintf("\nINITIALIZE CACHE %d\n", g_ncache);
 	if(nslots < 1)
 		nslots = 1;
 	g_ncache = nslots;
 	g_pcache = (CATNET_CACHE_EL<double>**)CATNET_MALLOC(g_ncache*sizeof(CATNET_CACHE_EL<double>*));
-	memset(g_pcache, 0, g_ncache*sizeof(CATNET_CACHE_EL<double>*));
+	if (g_pcache)
+		memset(g_pcache, 0, g_ncache*sizeof(CATNET_CACHE_EL<double>*));
 	g_nCacheBits = ncachebits;
 }
 
@@ -123,10 +122,12 @@ void c_cache::setCacheParams(int numNodes, int maxParentSet, int *pRorder, int *
 	m_maxParentSet = maxParentSet;
 	if(!m_pRorder)
 		m_pRorder = (int*)CATNET_MALLOC(m_numNodes*sizeof(int));
-	memcpy(m_pRorder, pRorder, m_numNodes*sizeof(int));
+	if(m_pRorder && pRorder)
+		memcpy(m_pRorder, pRorder, m_numNodes*sizeof(int));
 	if(!m_pRorderInverse)
 		m_pRorderInverse = (int*)CATNET_MALLOC(m_numNodes*sizeof(int));
-	memcpy(m_pRorderInverse, pRorderInverse, m_numNodes*sizeof(int));
+	if (m_pRorderInverse && pRorderInverse)
+		memcpy(m_pRorderInverse, pRorderInverse, m_numNodes*sizeof(int));
 	if(!m_parBuff1)
 		m_parBuff1 = (int*)CATNET_MALLOC(m_numNodes*sizeof(int));
 	if(!m_parBuff2)
@@ -201,10 +202,6 @@ sprintf(str,"nlookup=%d\n", nlookup);Rprintf(str);
 		}
 		*probNode = *pCacheEl->pNodeProb;
 		*pflik = pCacheEl->fLogLik;
-
- //clock_t lt = clock();
- //Rprintf("%ld\n", lt);;
-
 #ifdef DEBUG_INFO
 Rprintf("\n    HIT, parset = ");
 for(i = 0; i < parsize; i++) {
