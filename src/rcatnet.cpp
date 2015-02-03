@@ -253,8 +253,9 @@ SEXP RCatnet::genRcatnet(const char * objectName = (const char*)"catNetwork") {
 				continue;
 			PROTECT(pnodeprobs = NEW_NUMERIC(m_pProbLists[node]->nProbSize));
 			pf = NUMERIC_POINTER(pnodeprobs);
-			if (pf && m_pProbLists[node]->pProbs)
+			if (pf && m_pProbLists[node]->pProbs) {
 				memcpy(pf, m_pProbLists[node]->pProbs, m_pProbLists[node]->nProbSize * sizeof(double));
+			}
 			SET_VECTOR_ELT(plist, node, pnodeprobs);
 			UNPROTECT(1);
 		}
@@ -289,6 +290,7 @@ SEXP RCatnet::genRcatnet(const char * objectName = (const char*)"catNetwork") {
 		NUMERIC_POINTER(pint)[0] = floglik;
 	else
 		NUMERIC_POINTER(pint)[0] = R_NegInf;
+
 	SET_SLOT(cnet, install("likelihood"), pint);
 	UNPROTECT(1); /* pint */
 
@@ -317,8 +319,9 @@ SEXP RCatnet::genProbList(int node, int paridx, int *pcats) {
 		pslot = m_pProbLists[node]->find_slot(0, pcats, 0);
 		PROTECT(problist = NEW_NUMERIC(m_numCategories[node]));
 		pp = NUMERIC_POINTER(problist);
-		if (pp && pslot)
+		if (pp && pslot) {
 			memcpy(pp, pslot, m_numCategories[node]*sizeof(double));
+		}
 		return problist;
 	}
 

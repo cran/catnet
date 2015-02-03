@@ -175,6 +175,15 @@ struct PROB_LIST {
 		priorlik = 0;
 	}
 
+	void printf() {
+		int i;
+		Rprintf("pProbs = ");
+		for (i = 0; i < nProbSize; i++) {
+			Rprintf("%f  ", pProbs[i]);
+		}
+		Rprintf("\n");
+	}
+
 	void normalize() {
 		int i, k;
 		t_prob pp;
@@ -183,8 +192,9 @@ struct PROB_LIST {
 		k = 0;
 		while (k < nProbSize) {
 			pp = 0;
-			for (i = 0; i < numCats; i++)
+			for (i = 0; i < numCats; i++) {
 				pp += pProbs[k + i];
+			}
 			if (pp > 0) {
 				pp = 1 / pp;
 				for (i = 0; i < numCats; i++)

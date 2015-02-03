@@ -546,8 +546,9 @@ public:
 						}
 					}
 
-					if(becho)
+					if(becho) {
 						Rprintf("[%d]%d  ", d, ncomblist);
+					}
 
 					fMaxLogLik = -FLT_MAX;
 					ncombMaxLogLik = -1;
@@ -705,8 +706,9 @@ public:
 					}
 				}
 			
-				if(becho)
+				if(becho) {
 					Rprintf("[%d]%d  ", d, ncomblist);
+				}
 
 				fMaxLogLik = -FLT_MAX;
 				ncombMaxLogLik = -1;
@@ -832,8 +834,9 @@ public:
 
 			} /* if(!bEqualCategories) */
 
-			if(becho)
+			if(becho) {
 				Rprintf("\n");
+			}
 
 			for(j = 0; j < m_nCatnets; j++) {
 				if(m_pCatnets[j]) {
@@ -866,7 +869,6 @@ public:
 
 		if(psubsamples)
 			CATNET_FREE(psubsamples);
-
 		for(j = 0; j < m_nCatnets; j++) {
 			if(m_pCatnets[j]) {
 				m_pCatnets[j] -> normalizeProbabilities();
