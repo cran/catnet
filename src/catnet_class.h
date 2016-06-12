@@ -330,11 +330,8 @@ public:
 		if (m_numParents[node] < 0 || m_numParents[node] > m_maxParents)
 			return;
 		int *parcats = (int*) CATNET_MALLOC(m_maxParents * sizeof(int));
-		if (!parcats)
-			return;
 		for (int i = 0; i < m_numParents[node]; i++) {
-			parcats[i] = m_numCategories[m_parents[node][i]];
-			//cout << "parcats[i] = " << parcats[i] << "\n";
+		        parcats[i] = m_numCategories[m_parents[node][i]];
 		}
 		m_pProbLists[node] = new PROB_LIST<t_prob> (m_numCategories[node],
 				m_maxCategories, m_numParents[node], parcats, pcondprob,

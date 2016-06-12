@@ -14,8 +14,7 @@ cnMatEdges(object)
 \item{object}{a \code{catNetwork} object}
 }
 
-\details{The resulting matrix has two columns and the number of edges rows. Edges are given as ordered pairs 
-of the elements of the first and second columns.}
+\details{The resulting matrix has two columns and the number of edges rows. Edges are given as ordered pairs of the elements of the first and second columns.}
 
 \value{A matrix of characters.}
 

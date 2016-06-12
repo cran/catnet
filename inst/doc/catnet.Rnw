@@ -30,6 +30,7 @@
 }
 
 \begin{document}
+\SweaveOpts{concordance=TRUE}
 \title{How to use the {\bf catnet} package}
 
 \author{Nikolay Balov, Peter Salzman
@@ -39,23 +40,23 @@
 
 \section*{Introduction}
 
-The \Rpackage{catnet} package for \Robject{R} implements a \underline{cat}egorical Bayesian \underline{net}work inference framework.
-Bayesian networks are graphical statistical models representing causal dependencies between random variables.
-A Bayesian network has two components: Directed Acyclic Graph (DAG) with nodes the variables of interest and a probability structure given as a set of conditional distributions, 
+The \Robject{R} package \Rpackage{catnet} provides an inference framework for \underline{cat}egorical Bayesian \underline{net}works.
+Bayesian networks are graphical statistical models that represent causal dependencies between random variables.
+A Bayesian network has two components: a Directed Acyclic Graph (DAG) with nodes representing random variables and a probability structure specified by conditional distributions, 
 one for each node in the graph. Any Bayesian network satisfies 
-the so called {\it local Markov property}, stating that 
-each node in the network is independent of its non-descendants given its parent nodes. This  property implies a factorization of the joint distribution of the node-variables that greatly facilitates the statistical inference. 
+the so called {\it local Markov property} that requires each node in the network to be independent of its non-descendants given its parent nodes. This  property implies a factorization of the joint distribution of the random variables that greatly facilitates the statistical inference. 
 
-Two classes of Bayesian networks are among the most used in practice: linear Gaussian networks and categorical ones (also called discrete Bayesian networks). In a linear Gaussian network, the nodes represent continuous variables with Gaussian conditional distributions and the expected value of each node is a linear combination of its parent nodes. Gaussian networks benefit from strong analytical properties and inference methodology. However, their usage is not justified when the linearity and normality assumptions on the observed variables are violated.  
-On the other hand, in a categorical Bayesian network, each node takes value in a fixed set of categories and the conditional distributions are multinomial with no additional parametric constraints. Consequently, when the data of interest is genuinely categorical or the node marginals follow some multi-modal distributions suitable for discretization, the categorical network framework provides greater representation power - one of the reasons to be chosen as a statistical model in \Rpackage{catnet}. 
+Two classes of Bayesian networks are among the most used in practice: linear Gaussian networks and categorical ones (also called discrete Bayesian networks). In a linear Gaussian network, the nodes represent continuous variables with Gaussian conditional distributions such that the expected value of each node is a linear combination of its parent nodes. Gaussian networks benefit from strong analytical properties and inference methodology. However, their usage is not justified when the linearity and normality assumptions on the observed variables are violated.  
+In a categorical Bayesian network, each node takes values in a fixed set of categories and the conditional distributions are multinomial with no additional parametric constraints. 
+Categorical Bayesian networks are capable of representing non-linear relationships between random variables and are suitable when the data is genuinely categorical or the marginal distributions follow some multi-modal distributions suitable for discretization.  
 
-The main goal of the package is to provide tools for inferring categorical Bayesian networks from data based on the maximum likelihood (ML) criterion. The problem of learning Bayesian networks has relatively long history with abundance of literature devoted to its subject.  
-See for example \cite{heckeman95}, \cite{cooper92}, \cite{chickeringB}, \cite{friedman99}, \cite{larranaga}, and some more recent articles, \cite{tsamardinos03}, \cite{yara}, \cite{daly}.
-Although the name Bayesian often implies Bayesian inference, the package follows a frequentist approach without making assumption on the conditional distributions in form of priors, and  
-employs a scoring based approach for network learning. 
-Two main techniques are implemented - finding the best network fitting some data for a predefined node order and stochastic search of optimal networks without constraints on the node order. 
+The problem of learning Bayesian networks has relatively long history with abundance of literature devoted to its subject.  
+See for example \cite{heckeman95}, \cite{cooper92}, \cite{chickeringB}, \cite{friedman99}, \cite{larranaga}, and some more recent articles, \cite{tsamardinos03}, \cite{yara}, \cite{daly}. 
+The main goal of the \Rpackage{catnet} package is to provide tools for inferring categorical Bayesian networks from data based on the maximum likelihood (ML) estimation. 
+The inference employs a scoring-based network learning and does not include any assumptions on the marginal or conditional distributions of the nodes in form of priors. 
+Two main techniques are implemented - finding the best network fitting some data for a predefined node order and stochastic search of optimal networks without constraints on the order of the nodes. 
 For a given node order, an efficient exhaustive search via Dynamic Programming (DP) is implemented and the exact MLE solution is given. 
-The approach is similar to that in \cite{friedman03} without, however, being Bayesian. 
+The approach is similar to the one in \cite{friedman03}, the latter however employs full Bayesian inference. 
 The stochastic search in the space of node orders is implemented by employing a Simulated Annealing (SA) algorithm. 
 
 A distinct feature of \Rpackage{catnet} is its support of both incomplete data, with some of the records having missing values, and the so called perturbed data. In the latter case, some of the nodes are controlled by breaking the causal influence of their parents. Perturbed data originate naturally from gene expression studies where selected genes are knocked up/down. 

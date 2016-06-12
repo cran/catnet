@@ -462,6 +462,8 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 		Rprintf("\n");
 	}
 
+Rprintf("search\n");
+
 	ordProb = 0;
 	niter = 0;
 	while (niter < maxIter) {
@@ -486,18 +488,18 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 			if (n > 0) {
 				for (nn = 0; nn < n; nn++) {
 					nstop = 1;
-					for (i = 0; i < m_numNodes; i++)
+					for (i = 0; i < m_numNodes; i++) {
 						if (m_pTestOrder[nn][i] != m_pTestOrder[n][i]) {
 							nstop = 0;
 							break;
 						}
+					}
 					if (nstop)
 						break;
 				}
 			}
-			if (nstop) {
+			if (nstop) 
 				continue;
-			}
 
 			for (i = 0; i < m_numNodes; i++)
 				m_pTestOrderInverse[n][m_pTestOrder[n][i] - 1] = i + 1;
@@ -512,8 +514,7 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 					memcpy(pParentSizes, INTEGER(rParentSizes), m_numNodes
 						* sizeof(int));
 				for (i = 0; i < m_numNodes; i++)
-					pParentSizes[i] = INTEGER(rParentSizes)[m_pTestOrder[n][i]
-							- 1];
+					pParentSizes[i] = INTEGER(rParentSizes)[m_pTestOrder[n][i]-1];
 			}
 
 			pSamples = m_pSearchParams[n]->m_pSamples;
@@ -743,15 +744,17 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 						pOptNet = pCurNet;
 						fOptLogLik = fLogLik;
 						if (m_pOptNets) {
-							for (i = 0; i < m_nOptNets; i++)
-								if (m_pOptNets[i]) {
-									delete m_pOptNets[i];
-								}
-							CATNET_FREE( m_pOptNets);
+						    for (i = 0; i < m_nOptNets; i++) {
+						        if (m_pOptNets[i]) {
+						            delete m_pOptNets[i];
+						        }
+						    }
+						    CATNET_FREE( m_pOptNets);
 						}
+
 						m_nOptNets = nCatnets;
 						m_pOptNets = (CATNET<char, MAX_NODE_NAME, double>**) CATNET_MALLOC(
-										nCatnets * sizeof(CATNET<char, MAX_NODE_NAME, double>*));
+									nCatnets * sizeof(CATNET<char, MAX_NODE_NAME, double>*));
 						if (m_pOptNets && pCatnets)
 							memcpy(m_pOptNets, pCatnets, nCatnets * sizeof(CATNET<
 								char, MAX_NODE_NAME, double>*));
@@ -813,7 +816,7 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 	} //while(niter < maxIter)
 	
 	UNPROTECT(1); // rSamples
-
+Rprintf("free\n");
 	if (!isNull(rParentSizes) && length(rParentSizes) == m_numNodes)
 		UNPROTECT(1);
 	if (!isNull(rPerturbations))
@@ -874,7 +877,7 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 		CATNET_FREE( m_pDrives);
 	m_pDrives = 0;
 	m_nDrives = 0;
-	
+Rprintf("mutex\n");	
 	if (m_bUseCache) {
 		MUTEX_DESTROY(m_cache_mutex);
 	}
@@ -923,7 +926,7 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 		CATNET_FREE(pNodeNames);
 		pNodeNames = 0;
 	}
-
+Rprintf("search exit\n");
 	return cnetlist;
 }
 
