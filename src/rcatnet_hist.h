@@ -24,6 +24,10 @@
  *      Author: nbalov
  */
 
+/* 
+ * version 1.15.1  12dec2016
+ */
+
 #ifndef RCATNET_SEARCH_HIST_H
 #define RCATNET_SEARCH_HIST_H
 

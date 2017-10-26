@@ -24,6 +24,10 @@
  *      Author: nbalov
  */
 
+/* 
+ * version 1.15.1  12dec2016
+ */
+
 #ifndef RCATNET_H_
 #define RCATNET_H_
 

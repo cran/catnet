@@ -24,9 +24,15 @@
  *      Author: nbalov
  */
 
+/* 
+ * version 1.15.1  12dec2016
+ */
+
 #include "utils.h"
 #include "catnet_class.h"
 #include "rcatnet.h"
+
+using namespace std;
 
 RCatnet::RCatnet() {
 }

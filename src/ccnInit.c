@@ -17,6 +17,9 @@
  *  http://www.gnu.org/licenses/gpl-2.0.html
  */
 
+/* 
+ * version 1.15.1  12dec2016
+ */
 
 #include "catnet_rexport.h"
 
@@ -44,13 +47,12 @@ static const R_CallMethodDef R_CallDef[] = {
 void R_init_catnet(DllInfo *info)
 {
 	R_registerRoutines(info,NULL,R_CallDef,NULL,NULL);
-	//Rprintf("ccnInit\n");
+	R_useDynamicSymbols(info, TRUE);
 	g_memcounter = 0;
 }
 
 void R_unload_catnet(DllInfo *info)
 {
-	//Rprintf("ccnUnload\n");
 	catnetReleaseCache();
 }
 

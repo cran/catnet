@@ -720,8 +720,8 @@ ps <- cnSamples(cn, numsamples, pert, as.index=TRUE)
 klmat <- cnEdgeDistanceKL(ps, pert)
 fscore1 <- NULL
 fscore2 <- NULL
-for(ntrials in 1:5) {
-  numiter <- 60
+for(ntrials in 1:4) {
+  numiter <- 24
   sares1 <- cnSearchSA(data=ps, perturbations=pert, maxParentSet=2,
                        parentSizes=NULL, maxComplexity=0,
                        parentsPool=NULL, fixedParents=NULL,

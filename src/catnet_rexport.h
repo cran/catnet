@@ -17,6 +17,10 @@
  *  http://www.gnu.org/licenses/gpl-2.0.html
  */
 
+/* 
+ * version 1.15.1  12dec2016
+ */
+
 #include <Rinternals.h>
 #include <Rdefines.h>
 #include <Rmath.h>

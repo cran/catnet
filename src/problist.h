@@ -24,8 +24,14 @@
  *      Author: Nikolay Balov
  */
 
+/* 
+ * version 1.15.1  12dec2016
+ */
+
 #ifndef PROBLIST_H_
 #define PROBLIST_H_
+
+using namespace std;
 
 template<class t_prob>
 struct PROB_LIST {

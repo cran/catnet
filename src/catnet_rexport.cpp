@@ -24,6 +24,10 @@
  *      Author: nbalov
  */
 
+/* 
+ * version 1.15.1  12dec2016
+ */
+
 #include "utils.h"
 #include "rcatnet.h"
 #include "rcatnet_search.h"
@@ -191,23 +195,17 @@ SEXP show_catnet(SEXP rnodes, SEXP rparents, SEXP rcatlist, SEXP rproblist)
 
 	m_numNodes = length(rnodes);
 	sprintf(str, "Nodes = %d: ", m_numNodes);
-	//printf(str);
 
 	for(nnode = 0; nnode < m_numNodes; nnode++) {
 		PROTECT(pf = VECTOR_ELT(rnodes, nnode));
 		if(IS_VECTOR(pf)) {
 			sprintf(str, "%s%s, ", str, CHAR(STRING_ELT(pf, 0)));
-			//printf(str);
-		}
-		else {
-			//printf("");
 		}
 		UNPROTECT(1);
 	}
 	sprintf(str, "%s\n", str);
 	SET_STRING_ELT(pstr, 0, mkChar(str));
 
-	//printf("\n\nParents:\n");
 	sprintf(str, "Parents:\n");
 
 	for(nnode = 0; nnode < m_numNodes; nnode++) {
@@ -217,7 +215,6 @@ SEXP show_catnet(SEXP rnodes, SEXP rparents, SEXP rcatlist, SEXP rproblist)
 			for(i = 0; i < length(pf); i++)
 				sprintf(str, "%s%d, ", str, INTEGER_POINTER(pf)[i]-1);
 			sprintf(str, "%s\n", str);
-			//printf(str);
 		}
 		else
 			sprintf(str, "%s\n", str);
@@ -225,7 +222,6 @@ SEXP show_catnet(SEXP rnodes, SEXP rparents, SEXP rcatlist, SEXP rproblist)
 	}
 	SET_STRING_ELT(pstr, 1, mkChar(str));
 
-	//printf("\nCategories:\n");
 	sprintf(str, "Categories:\n");
 
 	for(nnode = 0; nnode < m_numNodes; nnode++) {
@@ -234,10 +230,6 @@ SEXP show_catnet(SEXP rnodes, SEXP rparents, SEXP rcatlist, SEXP rproblist)
 			for(i = 0; i < length(pf); i++)
 				sprintf(str, "%s%s, ", str, CHAR(STRING_ELT(pf,i)));
 			sprintf(str, "%s\n", str);
-			//printf(str);
-		}
-		else {
-			//printf("null\n");
 		}
 		UNPROTECT(1);
 	}

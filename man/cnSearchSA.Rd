@@ -95,10 +95,10 @@ See the vignettes for more details on the algorithm.}
 \author{N. Balov, P. Salzman}
 
 \examples{
-  cnet <- cnRandomCatnet(numnodes=8, maxParents=2, numCategories=2)
+  cnet <- cnRandomCatnet(numnodes=6, maxParents=2, numCategories=2)
   psamples  <- cnSamples(object=cnet, numsamples=100)
   nets <- cnSearchSA(data=psamples, perturbations=NULL, 
-		maxParentSet=1, maxComplexity=36)
+		maxParentSet=1, maxComplexity=16)
   cc <- cnComplexity(object=cnet)
   cnFind(object=nets, complexity=cc)
 }

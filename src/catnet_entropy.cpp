@@ -18,10 +18,14 @@
  */
 
 /*
- * rcatnet_kl.cpp
+ * rcatnet_entropy.cpp
  *
  *  Created on: Sep 21, 2009
  *      Author: nbalov
+ */
+
+/* 
+ * version 1.15.1  12dec2016
  */
 
 #include "utils.h"

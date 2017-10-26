@@ -22,6 +22,11 @@
  *
  *  Created on: Sep 18, 2009
  *      Author: nbalov
+ *
+ */
+
+/* 
+ * version 1.15.1  12dec2016
  */
 
 #include "utils.h"
@@ -30,7 +35,7 @@
 #ifndef CATNET_CLASS_H_
 #define CATNET_CLASS_H_
 
-//#define DEBUG_ON	1 
+using namespace std;
 
 template<class t_node, int t_node_size, class t_prob>
 class CATNET {

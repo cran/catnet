@@ -24,6 +24,10 @@
  *      Author: nbalov
  */
 
+/* 
+ * version 1.15.1  12dec2016
+ */
+
 #include "utils.h"
 #include "catnet_class.h"
 #include "thread.h"
@@ -32,6 +36,8 @@
 
 #ifndef CATNET_SEARCH_H
 #define CATNET_SEARCH_H
+
+using namespace std;
 
 template<class t_node, int t_node_size, class t_prob>
 class CATNET_SEARCH:  public c_thread, public c_cache {

@@ -24,9 +24,15 @@
  *      Author: nbalov
  */
 
+/* 
+ * version 1.15.1  12dec2016
+ */
+
 #include "utils.h"
 #include "rcatnet_hist.h"
 #include "rcatnet.h"
+
+using namespace std;
 
 THREAD_PROC_DEFINE(CatnetSearchHistThreadProc, pParam) {
 	SEARCH_PARAMETERS *pSearchParams = (SEARCH_PARAMETERS*)pParam;

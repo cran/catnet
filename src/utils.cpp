@@ -24,7 +24,13 @@
  *      Author: Nikolay Balov
  */
 
+/* 
+ * version 1.15.1  12dec2016
+ */
+
 #include "utils.h"
+
+using namespace std;
 
 extern size_t g_memcounter;
 

@@ -24,10 +24,16 @@
  *      Author: nbalov
  */
 
+/* 
+ * version 1.15.1  12dec2016
+ */
+
 #include "utils.h"
 #include "catnet_class.h"
 #include "rcatnet_search.h"
 #include "rcatnet.h"
+
+using namespace std;
 
 RCatnetSearch::RCatnetSearch() {
 	m_pRorder = 0;
@@ -73,7 +79,6 @@ SEXP RCatnetSearch::estimateCatnets(SEXP rSamples, SEXP rPerturbations,
 
 	PROTECT(rUseCache = AS_LOGICAL(rUseCache));
 	m_bUseCache = LOGICAL(rUseCache)[0];
-	//printf("bUseCache = %d\n", m_bUseCache);
 	UNPROTECT(1);
 
 	PROTECT(rEcho = AS_LOGICAL(rEcho));
@@ -294,7 +299,6 @@ SEXP RCatnetSearch::estimateCatnets(SEXP rSamples, SEXP rPerturbations,
 		rcatnet = *m_pCatnets[i];
 
 		//rcatnet.setCategoryIndices(m_pNodeNumCats, m_pNodeCats);
-
 		PROTECT(cnetnode = rcatnet.genRcatnet("catNetwork"));
 
 		SET_VECTOR_ELT(cnetlist, inet, cnetnode);

@@ -24,9 +24,15 @@
  *      Author: nbalov
  */
 
+/* 
+ * version 1.15.1  12dec2016
+ */
+
 #include "utils.h"
 #include "rcatnet_sa.h"
 #include "rcatnet.h"
+
+using namespace std;
 
 THREAD_PROC_DEFINE(CatnetSearchSaThreadProc, pParam) {
 	SEARCH_PARAMETERS *pSearchParams = (SEARCH_PARAMETERS*)pParam;
@@ -462,8 +468,6 @@ SEXP RCatnetSearchSA::search(SEXP rNodeNames, SEXP rSamples,
 		Rprintf("\n");
 	}
 
-Rprintf("search\n");
-
 	ordProb = 0;
 	niter = 0;
 	while (niter < maxIter) {
@@ -816,7 +820,7 @@ Rprintf("search\n");
 	} //while(niter < maxIter)
 	
 	UNPROTECT(1); // rSamples
-Rprintf("free\n");
+
 	if (!isNull(rParentSizes) && length(rParentSizes) == m_numNodes)
 		UNPROTECT(1);
 	if (!isNull(rPerturbations))
@@ -877,7 +881,7 @@ Rprintf("free\n");
 		CATNET_FREE( m_pDrives);
 	m_pDrives = 0;
 	m_nDrives = 0;
-Rprintf("mutex\n");	
+
 	if (m_bUseCache) {
 		MUTEX_DESTROY(m_cache_mutex);
 	}
@@ -926,7 +930,7 @@ Rprintf("mutex\n");
 		CATNET_FREE(pNodeNames);
 		pNodeNames = 0;
 	}
-Rprintf("search exit\n");
+
 	return cnetlist;
 }
 

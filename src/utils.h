@@ -24,6 +24,10 @@
  *      Author: nbalov
  */
 
+/* 
+ * version 1.15.1  12dec2016
+ */
+
 #ifndef UTILS_H_
 #define UTILS_H_
 
@@ -38,6 +42,8 @@
 #include <R.h>
 #include <Rmath.h>
 #include <Rdefines.h>
+
+using namespace std;
 
 #ifndef CATNET_PI
 #define CATNET_PI		(double)3.14159265358979323846264338327950288

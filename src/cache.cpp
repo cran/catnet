@@ -24,6 +24,10 @@
  *      Author: nbalov
  */
 
+/* 
+ * version 1.15.1  12dec2016
+ */
+
 #include "cache.h"
 
 #define CACHE_MAX_LEN_POOL 50
