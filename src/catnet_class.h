@@ -26,7 +26,7 @@
  */
 
 /* 
- * version 1.15.1  12dec2016
+ * version 1.15.5  20mar2019
  */
 
 #include "utils.h"
@@ -291,7 +291,7 @@ public:
 			if(m_nodeNames[i])
 				CATNET_FREE(m_nodeNames[i]);
 			m_nodeNames[i] = (t_node*) CATNET_MALLOC((strlen(str)+1) * sizeof(char));
-			if (m_nodeNames[i] && str)
+			if (m_nodeNames[i])
 				strcpy((char*)m_nodeNames[i], str);
 		}
 	}
