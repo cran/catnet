@@ -25,7 +25,7 @@
  */
 
 /* 
- * version 1.15.4  31oct2017
+ * version 1.15.6  25feb2020
  */
 
 #include "utils.h"
@@ -345,7 +345,7 @@ SEXP RCatnet::genProbList(int node, int paridx, int *pcats) {
 }
 
 char *gen_prob_string(int node, SEXP parlist, int paridx, SEXP catlist, SEXP problist, char *str) {
-	int j, npar;
+	int j, npar, nlen;
 	SEXP parprobs, pcats;
 	char *newstr, *aux, *aux2, *aux3;
 
@@ -363,11 +363,10 @@ char *gen_prob_string(int node, SEXP parlist, int paridx, SEXP catlist, SEXP pro
 			CATNET_FREE(str);
 			return 0;
 		}
-		newstr[0] = 0;
+		nlen = 0;
 		for(j = 0; j < length(pcats); j++) {
-			sprintf(newstr, "%s%s%s %f\n", newstr, str, CHAR(STRING_ELT(pcats, j)), NUMERIC_POINTER(problist)[j]);
+			nlen += sprintf(newstr+nlen, "%s%s %f\n", str, CHAR(STRING_ELT(pcats, j)), NUMERIC_POINTER(problist)[j]);
 		}
-
 		CATNET_FREE(str);
 		str = newstr;
 		return str;
@@ -561,9 +560,9 @@ SEXP RCatnet::genSamples(SEXP rNumSamples, SEXP rPerturbations, SEXP rNaRate) {
 	}
 
 	pPerturbations = 0;
+	PROTECT(rPerturbations = AS_INTEGER(rPerturbations));
 	if(!isNull(rPerturbations)) {
-		PROTECT(rPerturbations = AS_INTEGER(rPerturbations));
-		pPerturbations = INTEGER(rPerturbations);
+		pPerturbations = INTEGER_POINTER(rPerturbations);
 	}
 
 	GetRNGstate();
@@ -630,8 +629,7 @@ SEXP RCatnet::genSamples(SEXP rNumSamples, SEXP rPerturbations, SEXP rNaRate) {
 	}
 	PutRNGstate();
 
-	if(!isNull(rPerturbations))
-		UNPROTECT(1);
+	UNPROTECT(1); // rPerturbations
 
 	if(pnodesample)
 		CATNET_FREE(pnodesample);		
@@ -649,6 +647,3 @@ SEXP RCatnet::genSamples(SEXP rNumSamples, SEXP rPerturbations, SEXP rNaRate) {
 
 	return rsamples;
 }
-
-
-
