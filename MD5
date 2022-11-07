@@ -1,4 +1,4 @@
-bd0ba1836340367afb4a8a355e5b94b3 *DESCRIPTION
+df474a9ebf4b949d7f08beff129aa3c7 *DESCRIPTION
 db136ce38249bdf4af62676215c0fd64 *NAMESPACE
 30f6b8421f766a30eed028b8f00523dd *R/catnet.bif.R
 76450f24cc00da5805820d576f6edd4e *R/catnet.categor.R
@@ -24,6 +24,7 @@ b1d44ead4d0106a378c748d857299898 *R/catnet.samples.R
 102d1bf2c9f6568d692ff664e542d84f *R/graph2catnet.R
 b44b72c12422421fbd06705374da8e96 *R/zzz.R
 0c1d0bec1e36f1c3ed3261c405c50897 *README.md
+6a3e97cc81b586749a620bb2096e25ed *build/vignette.rds
 bd5592b60ed5d59c4279eeac9a78b080 *data/alarmnet.rda
 2d8a4c5989cfec7b88c3c1baa387266f *data/breast.rda
 beba276be7f5956333ec4b4a7d2109c4 *data/novartis.rda
@@ -40,7 +41,7 @@ f8e8fc0ce46ca2b18f42072afafb585c *demo/novartis.r
 d7879b76868ea0fb3fd6cbd3c6f2e668 *demo/test.r
 22e8932152ad4a83e593390c1aa7fbac *inst/doc/catnet.R
 e99393a187d5fde099b7f73cae2c910b *inst/doc/catnet.Rnw
-20274728f98bae09628a247e7107cd8c *inst/doc/catnet.pdf
+a8d5303d89841fd6d226ecda6c0b1ea5 *inst/doc/catnet.pdf
 8bca945f144976a95f10ff82bf9bbc2b *man/CPDAG-class.Rd
 1741c26de00a8a2a5af219dfd84d370a *man/alarm.Rd
 6e85b0b4bf4678807d72ddac92ad5b09 *man/breast.Rd
@@ -94,13 +95,13 @@ a8d38c19403e4d74372c2d550facc9f7 *src/cache.h
 13d0bf9bae55ecfabbf940b93508ac55 *src/catnet_class.h
 a82b778f16b73594b60accebaa173a5f *src/catnet_entropy.cpp
 1faef3f3356fdebedeb8ad283317fc82 *src/catnet_rexport.cpp
-3bbd0b892dd6d6be0e1293600c099eb2 *src/catnet_rexport.h
+b54a67155344c85695258f21d1b89c78 *src/catnet_rexport.h
 e9a41f211744ef3bb1d838fac0e36813 *src/catnet_search.h
 816fcbfad74c2938be8f2557f5427852 *src/catnet_search2.h
 4851f221edffab33ad4e4e2be0cdfb9d *src/ccnInit.c
 a75bfcef9f6695274f07c7a7ed39b567 *src/problist.h
 b8964df0ec9b1867a3f1472c6c34061f *src/pthread.cpp
-2dbcb7576e174f45a52c13e0e85975b6 *src/rcatnet.cpp
+31019dedcd842b48c0017793ce7ba604 *src/rcatnet.cpp
 44cad3f25b45587f59b67a910df6e14d *src/rcatnet.h
 37cad78160af19b21aca68a82c098c9f *src/rcatnet_hist.cpp
 385aba27b40c04f35d280749f3d4d1f9 *src/rcatnet_hist.h

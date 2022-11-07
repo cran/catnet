@@ -17,8 +17,15 @@
  *  http://www.gnu.org/licenses/gpl-2.0.html
  */
 
+/*
+ * rcatnet_export.h
+ *
+ *  Created on: Sep 21, 2009
+ *      Author: nbalov
+ */
+
 /* 
- * version 1.15.6  25feb2020
+ * version 1.16.0  23oct2022
  */
 
 #include <Rinternals.h>
@@ -60,6 +67,6 @@ SEXP catnetEntropyOrder(SEXP rSamples, SEXP rPerturbations);
 SEXP catnetKLpairwise(SEXP rSamples, SEXP rPerturbations);
 SEXP catnetPearsonPairwise(SEXP rSamples, SEXP rPerturbations);
 SEXP catnetSamples(SEXP cnet, SEXP rNumSamples, SEXP rPerturbations, SEXP rNaRate);
-SEXP catnetReleaseCache();
+SEXP catnetReleaseCache(void);
 SEXP catnetSetSeed(SEXP rSeed);
 

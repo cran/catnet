@@ -25,7 +25,7 @@
  */
 
 /* 
- * version 1.15.7  09mar2020
+ * version 1.16.0  23oct2022
  */
 
 #include "utils.h"
@@ -317,7 +317,7 @@ SEXP RCatnet::genRcatnet(const char * objectName = (const char*)"catNetwork") {
 
 SEXP RCatnet::genProbList(int node, int paridx, int *pcats) {
 	int j, npar;
-	SEXP problist;
+	SEXP problist, childlist;
 	double *pslot, *pp;
 
 	if(m_pProbLists == 0 || m_pProbLists[node] == 0 || paridx < 0)
@@ -337,8 +337,10 @@ SEXP RCatnet::genProbList(int node, int paridx, int *pcats) {
 	PROTECT(problist = allocVector(VECSXP, m_numCategories[npar]));
 	for(j = 0; j < m_numCategories[npar]; j++) {
 		pcats[paridx] = j;
-		SET_VECTOR_ELT(problist, j, genProbList(node, paridx + 1, pcats));
-		UNPROTECT(1);
+        childlist = genProbList(node, paridx + 1, pcats);
+		SET_VECTOR_ELT(problist, j, childlist);
+        if (childlist != R_NilValue)
+		    UNPROTECT(1);
 	}
 
 	return problist;
@@ -559,9 +561,9 @@ SEXP RCatnet::genSamples(SEXP rNumSamples, SEXP rPerturbations, SEXP rNaRate) {
 		}
 	}
 
+	PROTECT(rPerturbations = AS_INTEGER(rPerturbations));
 	pPerturbations = NULL;
 	if(!isNull(rPerturbations)) {
-		PROTECT(rPerturbations = AS_INTEGER(rPerturbations));
 		pPerturbations = INTEGER_POINTER(rPerturbations);
 	}
 
@@ -629,12 +631,10 @@ SEXP RCatnet::genSamples(SEXP rNumSamples, SEXP rPerturbations, SEXP rNaRate) {
 	}
 	PutRNGstate();
 
-	if(!isNull(rPerturbations)) {
-		UNPROTECT(1); // rPerturbations
-	}
+	UNPROTECT(1); // rPerturbations
 
 	if(pnodesample)
-		CATNET_FREE(pnodesample);		
+		CATNET_FREE(pnodesample);
 	if(porder)
 		CATNET_FREE(porder);
 
